@@ -116,6 +116,13 @@ export function montarHoja(root, { ronda, storageKey, contexto, enviar, puedeEnv
     <h1>${esc(ronda.titulo || 'Hoja de pruebas')}</h1>
     ${ronda.intro ? `<p class="qh-intro">${esc(ronda.intro)}</p>` : ''}
     <div class="qh-meta">
+      ${/* QUÉ RONDA ES ESTA, a la vista. Quien prueba recibe la dirección por
+            mensaje y vuelve a ella semanas después: sin la fecha y la versión
+            en pantalla, dos rondas distintas se ven iguales y no hay forma de
+            saber si lo que tiene delante es lo último. Lo pone el MOTOR y no
+            el título de cada ronda, para que la siguiente no pueda olvidarlo
+            (el informe ya las llevaba; la pantalla, no). */ ''}
+      ${ronda.id ? `<span>Ronda <b>${esc(ronda.id)}</b></span>` : ''}
       ${ronda.versionMin ? `<span>Versión mínima <b>${esc(ronda.versionMin)}</b></span>` : ''}
       <span class="qh-avance" id="qh-avance"></span>
     </div>

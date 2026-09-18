@@ -91,7 +91,10 @@ import { claimStage } from './stageClaim.js';
  * nacía vacío hasta el siguiente tic (el dueño lo vio en Abre Cajas: «parpadea
  * el reloj»)—. No se arregla pidiendo a tres plantillas que se porten bien: se
  * arregla quitándoles la herramienta. Un core recibe `ronda` (su hueco) y
- * `pintar()` (cómo llenarlo), y no tiene forma de alcanzar el marco.
+ * `pintar()` (cómo llenarlo), y el marco ya no le llega a la mano.
+ * No es una jaula —esto es JavaScript: quien quiera puede buscar el DOM por su
+ * cuenta o importar `mount`—, así que hay SEGUNDA barrera: la regla
+ * `marco-del-shell` (`core/normsCheck.js`) rompe CI si alguien lo intenta.
  *
  * `submit(record, {auto, delay})` registra la respuesta UNA vez (idempotente
  * dentro del ítem: un timeout y un clic registran una sola) y, con `auto`,

@@ -979,7 +979,22 @@ un handler, un observer, un modal) sigue vivo pintando encima del presente.
   `rootSel` — Quiz, Operaciones y Globos pasaron de 0 % a 56-71 % de nodos
   vivos por gesto, con la MISMA cabecera de antes del toque. Quedan `memory` y
   `textCorrectionSolo` (Tildes/Comas), declarados en `REHACEN_EL_MARCO`
-  (`tools/matrix-smoke.mjs`), una lista que solo encoge.
+  (`tools/matrix-smoke.mjs`), una lista que solo encoge. Ojo con el listón: el
+  100 % sería falso —al pasar de pregunta el contenido de la ronda DEBE morir—;
+  lo que se exige es que sobreviva el marco y que `.edu-cabecera` sea **el mismo
+  nodo**. Y la API no es una jaula: en JavaScript siempre se puede buscar el DOM
+  a mano, por eso la segunda barrera es la regla, no la firma.
+- **ABIERTO · EL CONTRATO DEL RELOJ es un frente aparte** (anotado 2026-09-18,
+  hallazgo de la revisión externa). No es «mover dos líneas»: los DOS shells
+  arrancan `montarReloj()` antes de que exista la superficie donde se pinta, y
+  `startElapsedTicker` hace su primer tic **síncrono** → ese primer número se
+  pierde y el siguiente llega un segundo después. Además, el shell libre
+  arranca el cronómetro ANTES de restaurar el `startedAt` guardado
+  (`loadProgress`), así que tras un F5 el tiempo que se ve y el que se registra
+  pueden no partir del mismo origen. Cuando se abra, se decide el orden
+  completo y para los dos shells: **restaurar estado → montar la superficie que
+  recibe el reloj → arrancar el reloj → pintar el contenido**, con su prueba de
+  que el primer valor sale ya y no al segundo.
 - **Tests que lo vigilan**: `reloj-primitivo` + `azar-primitivo` + `icono-primitivo` + `resize-observer` + `marco-del-shell` en
   `core/normsCheck.js`/`tests/norms.test.mjs` · `tests/events.test.mjs`
   (delegación + clearListeners) · `tests/deadlineTicker.test.mjs` (guard

@@ -1,8 +1,8 @@
 {
-  "id": "2026-08-28",
+  "id": "2026-09-18",
   "titulo": "AulaReto · Hoja de pruebas",
-  "intro": "Esta ronda es lo contrario de la anterior: casi todo lo que se ha tocado SÍ se nota, y hace falta una pizarra de verdad para verlo. La semana ha ido entera a Tildes y Comas —el lápiz, el reloj, los puntos y cómo se corrige— y a que los temas lleguen a la hoja. Nada de eso lo puede comprobar el ordenador: el lápiz y la palma necesitan una mano, y los colores necesitan que alguien mire desde el fondo del aula.\n\nOJO: el lápiz CAMBIÓ. Antes había cuatro herramientas (punta, dedo, parte trasera y palma); ahora hay DOS: lo pequeño escribe y la palma borra. Si probaste esto en una ronda anterior, vuelve a probarlo — es otro sistema.\n\nMarca Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no, y escribe en la nota lo que viste aunque sea una tontería. Un «me pareció raro» vale más que un Falla sin explicar.",
-  "versionMin": "1.51.620",
+  "intro": "Esta ronda estrena TRES JUEGOS NUEVOS pensados para los pequeños que aún no leen: Colorear, Tangram y Rompecabezas. Son de dedo puro, así que casi todo lo que hay que mirar aquí solo se ve tocando: si al apoyar la mano se estropea lo pintado, si una pieza del tangram gira donde estaba o sale disparada al otro lado, si la pieza del rompecabezas es del mismo tamaño que el hueco donde va. El ordenador no puede decir si eso «se juega bien»; tú sí.\n\nLo segundo que trae es limpieza: en esos tres juegos ya NO hay barra de arriba (solo el botón de pantalla completa en la esquina), mientras que en los diez ejercicios de siempre —Quiz, Operaciones, Tildes…— la barra sigue donde estaba. Y el reloj ya no debería parpadear al pasar de pregunta ni al abrir una caja: para ver eso hay que ENCENDER el reloj primero, y la hoja te dice dónde.\n\nAviso importante antes de nada: hubo un fallo en el que el número de versión subía pero el juego seguía siendo el de antes. Por eso la prueba 0 no se conforma con leer el número: hay que comprobar que lo nuevo SE VE. Si la prueba 0 falla, para y avisa — todo lo demás sobraría.\n\nMarca Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no, y escribe en la nota lo que viste aunque sea una tontería. Un «me pareció raro» vale más que un Falla sin explicar.",
+  "versionMin": "1.51.723",
   "secciones": [
     {
       "titulo": "Antes de empezar",
@@ -13,387 +13,437 @@
           "ruta": [
             "PC + móvil",
             "aulareto.com",
-            "Barra superior"
+            "Barra superior",
+            "Crear actividad"
           ],
-          "accion": "Abre aulareto.com y recarga con Ctrl+F5 dos veces. En el móvil, cierra la pestaña y vuelve a abrirla.",
-          "espera": "arriba se ve el número de versión y es 1.51.602 o más. Si es menor, para y avisa: estarías probando la de antes.",
+          "accion": "Abre aulareto.com y recarga con Ctrl+F5 dos veces. En el móvil, cierra la pestaña y vuelve a abrirla. Después entra en «Crear actividad» y mira la lista de tipos.",
+          "pasos": [
+            "Arriba se ve el número de versión: tiene que ser 1.51.723 o más.",
+            "En la lista de tipos de actividad tienen que aparecer «Colorear», «Tangram» y «Rompecabezas».",
+            "Si el número es 1.51.723 pero NO están los tres juegos, es justo el fallo que buscamos: apúntalo y vuelve a hacer Ctrl+F5.",
+            "Repite las dos comprobaciones en el móvil."
+          ],
+          "espera": "arriba se lee 1.51.723 o más Y los tres juegos nuevos aparecen al crear una actividad. Si el número es menor, para y avisa: estarías probando la de antes.",
           "casillas": [
-            "PC",
-            "Móvil"
+            "PC: número y juegos nuevos",
+            "Móvil: número y juegos nuevos"
           ],
-          "notaPista": "Qué versión salía en cada aparato"
+          "notaPista": "Apunta qué versión salía en cada aparato y si hizo falta recargar más de una vez para ver los juegos nuevos"
         }
       ]
     },
     {
-      "titulo": "Parte 1 · EL LÁPIZ Y LA PALMA — la prueba importante de esta ronda",
+      "titulo": "Parte 1 · COLOREAR — se pinta con el dedo",
       "pruebas": [
         {
           "n": 1,
-          "titulo": "Calibrar la pizarra: ahora son DOS recuadros",
+          "titulo": "Pintar con el dedo y borrar",
+          "ruta": [
+            "Pizarra del aula (o móvil)",
+            "Colorear",
+            "Individual"
+          ],
+          "accion": "Crea una actividad de Colorear, entra a jugar y pinta el dibujo con el dedo, cambiando de color varias veces.",
+          "pasos": [
+            "Abajo hay una fila de colores y una goma; al tocar un color se nota cuál está elegido.",
+            "Al arrastrar el dedo sale una línea gorda de ese color, y sigue al dedo sin quedarse atrás.",
+            "La línea negra del dibujo NUNCA se tapa: pintes por donde pintes, el contorno se sigue viendo.",
+            "Puedes salirte del contorno y pintar el fondo (el suelo, el sol, los árboles): eso es correcto, la hoja entera se pinta.",
+            "Toca la goma y pasa por encima: borra lo pintado.",
+            "Entra y sal de pantalla completa a media faena: lo pintado tiene que seguir ahí."
+          ],
+          "espera": "se pinta con el dedo del color elegido, el contorno negro nunca queda tapado, la goma borra y al cambiar a pantalla completa no se pierde lo pintado.",
+          "casillas": [
+            "El dedo pinta y la línea sigue al dedo",
+            "El contorno nunca se tapa",
+            "La goma borra",
+            "Pantalla completa no borra lo pintado"
+          ],
+          "notaPista": "Si la línea va a tirones o se corta, di en qué aparato y si estabas a pantalla completa"
+        },
+        {
+          "n": 2,
+          "titulo": "Apoyar la mano mientras se pinta",
+          "ruta": [
+            "Pizarra del aula",
+            "Colorear",
+            "Individual"
+          ],
+          "accion": "Pinta como pintaría un niño de cinco años: apoyando el canto de la mano o la palma en la pantalla mientras arrastra el dedo. Es la situación real del aula.",
+          "pasos": [
+            "Empieza un trazo con el dedo y, sin levantarlo, apoya la palma en otro punto de la pantalla.",
+            "NO tiene que aparecer una raya de lado a lado que cruce el dibujo: eso sería tachar el trabajo del niño.",
+            "El trazo del dedo tiene que continuar normal mientras la mano sigue apoyada.",
+            "Prueba también a apoyar la mano ANTES de empezar a pintar y luego pintar."
+          ],
+          "espera": "apoyar la mano no dibuja ninguna raya cruzada ni corta el trazo que estabas haciendo.",
+          "casillas": [
+            "No aparece ninguna raya cruzada",
+            "El trazo del dedo continúa igual"
+          ],
+          "notaPista": "Si aparece la raya, describe exactamente cómo tenías la mano y en qué pizarra o tablet fue"
+        },
+        {
+          "n": 3,
+          "titulo": "Elegir dibujo y que la hoja quede cuadrada",
+          "ruta": [
+            "PC",
+            "Colorear",
+            "Editar",
+            "Contenido"
+          ],
+          "accion": "En el editor de una actividad de Colorear, recorre la galería de dibujos: están repartidos por temas (animales, frutas, naturaleza, transporte, cosas). Elige uno de cada tema y juégalo.",
+          "pasos": [
+            "Se ven muchos dibujos (más de cuarenta) agrupados por tema, cada uno con su nombre debajo.",
+            "Se reconoce lo que es cada dibujo por la miniatura, sin tener que leer el nombre.",
+            "Al jugar, la hoja donde se pinta es CUADRADA y está centrada: no ladeada ni con un palmo de hueco pintable a un lado.",
+            "Cada tema trae su decorado de fondo dibujado a línea (campo, bosque, mesa, carretera, aula) y también se puede pintar.",
+            "Prueba con un tema oscuro en «Apariencia»: el dibujo se tiene que seguir viendo (la hoja es blanca)."
+          ],
+          "espera": "la galería muestra los dibujos por temas, al jugar la hoja sale cuadrada y centrada, y el decorado de fondo también se puede pintar.",
+          "casillas": [
+            "Los dibujos se reconocen",
+            "La hoja sale cuadrada y centrada",
+            "El decorado se puede pintar",
+            "Con tema oscuro se sigue viendo"
+          ],
+          "notaPista": "Si algún dibujo se ve como una mancha o no se entiende qué es, dime su nombre"
+        }
+      ]
+    },
+    {
+      "titulo": "Parte 2 · TANGRAM — es el que más falló, mírale las manos",
+      "pruebas": [
+        {
+          "n": 4,
+          "titulo": "Un toque gira la pieza SIN moverla de sitio",
+          "ruta": [
+            "Pizarra del aula (o móvil)",
+            "Tangram",
+            "Individual"
+          ],
+          "accion": "Crea una actividad de Tangram con la figura de partida «Cuadrado», entra a jugar y toca una pieza UNA vez (un toque seco, sin arrastrar).",
+          "pasos": [
+            "La pieza gira un poco (un octavo de vuelta) y se queda EN EL MISMO SITIO donde estaba.",
+            "Esto es lo que antes fallaba: la pieza salía disparada lejos al girar. Si se mueve aunque sea un dedo de distancia, es un fallo.",
+            "Repítelo con las siete piezas, incluida la que parece un romboide torcido.",
+            "Toca una pieza DOS veces seguidas: tiene que voltearse (quedar como su reflejo en un espejo), y tampoco moverse de sitio."
+          ],
+          "espera": "un toque gira la pieza sin desplazarla, y dos toques la voltean sin desplazarla.",
+          "casillas": [
+            "Un toque gira y no la mueve",
+            "Pasa con las siete piezas",
+            "Doble toque voltea sin moverla"
+          ],
+          "notaPista": "Si alguna pieza sí se desplaza al girar, di cuál (triángulo grande, pequeño, cuadrado, romboide) y cuánto se fue"
+        },
+        {
+          "n": 5,
+          "titulo": "Arrastrar para ajustar fino, sin que gire",
+          "ruta": [
+            "Pizarra del aula (o móvil)",
+            "Tangram",
+            "Individual"
+          ],
+          "accion": "Coge una pieza y muévela MUY POCO, como quien la ajusta un pelín para que encaje: arrastres cortos, de medio centímetro.",
+          "pasos": [
+            "Un arrastre corto MUEVE la pieza; no la gira. Antes esos ajustes se leían como un toque y la pieza giraba.",
+            "Cuando la pieza llega cerca de su sitio, se ajusta sola al hueco.",
+            "Completa la figura entera: al colocar la última pieza tiene que salir la pantalla de final.",
+            "Prueba lo mismo a pantalla completa: los arrastres cortos tienen que seguir moviendo, no girando."
+          ],
+          "espera": "los arrastres cortos mueven la pieza sin girarla, las piezas se ajustan al llegar a su sitio y al completar la figura sale el final.",
+          "casillas": [
+            "Arrastre corto mueve, no gira",
+            "La pieza se ajusta al llegar",
+            "Al completarla sale el final"
+          ],
+          "notaPista": "Si al ajustar gira, dime cuánto movías la pieza (poquito, un dedo, dos dedos) y si estabas a pantalla completa"
+        },
+        {
+          "n": 6,
+          "titulo": "El «Cuadrado» es un cuadrado de verdad",
+          "ruta": [
+            "PC",
+            "Tangram",
+            "Crear actividad",
+            "Editar"
+          ],
+          "accion": "Crea una actividad de Tangram NUEVA y elige la figura de partida «Cuadrado». Mírala en el editor y también al jugar.",
+          "pasos": [
+            "La figura gris tiene que ser un CUADRADO: cuatro lados iguales, sin picos ni escalones.",
+            "Las siete piezas de colores tienen que cubrirla entera: sin huecos dentro ni piezas colgando por fuera.",
+            "Juégala: se puede completar de verdad, sin que sobre ni falte sitio.",
+            "Si tienes alguna actividad de Tangram creada hace días, ábrela también: tiene que verse ya cuadrada."
+          ],
+          "espera": "el «Cuadrado» es un cuadrado, las siete piezas lo cubren sin huecos ni sobrantes, y se puede completar jugando.",
+          "casillas": [
+            "Es un cuadrado de verdad",
+            "Sin huecos ni piezas fuera",
+            "Se puede completar jugando"
+          ],
+          "notaPista": "Si ves huecos o una pieza colgando, haz foto de la figura tal como sale en el editor"
+        },
+        {
+          "n": 7,
+          "titulo": "Armar una figura propia desde el editor",
+          "ruta": [
+            "PC",
+            "Tangram",
+            "Editar",
+            "Contenido"
+          ],
+          "accion": "En el editor de Tangram, coloca tú las siete piezas donde quieras: lo que montes es la figura que tendrán que armar los niños. Guarda y juégala.",
+          "pasos": [
+            "Se pueden arrastrar las siete piezas por el tablero del editor, y girarlas igual que al jugar.",
+            "Si dejas piezas sueltas, separadas de las demás, el editor tiene que avisarte.",
+            "Guarda y entra a jugar: la figura gris es EXACTAMENTE la que montaste.",
+            "Juégala entera y comprueba que se puede completar."
+          ],
+          "espera": "el docente monta la figura arrastrando las piezas, el editor avisa si quedan sueltas, y al jugar la silueta es la que montó.",
+          "casillas": [
+            "Se arrastran y giran en el editor",
+            "Avisa si quedan piezas sueltas",
+            "Al jugar sale la figura que monté"
+          ],
+          "notaPista": "Di si te resultó fácil de entender qué había que hacer en esa pantalla sin que nadie te lo explicara"
+        }
+      ]
+    },
+    {
+      "titulo": "Parte 3 · ROMPECABEZAS",
+      "pruebas": [
+        {
+          "n": 8,
+          "titulo": "Cada pieza mide lo que su hueco",
+          "ruta": [
+            "PC + móvil",
+            "Rompecabezas",
+            "Individual"
+          ],
+          "accion": "Crea una actividad de Rompecabezas y entra a jugar. Sin tocar nada todavía, COMPARA con la vista una pieza suelta de abajo con el hueco del tablero donde va.",
+          "pasos": [
+            "La pieza suelta y el hueco tienen que ser DEL MISMO TAMAÑO. Antes la pieza salía a la mitad, y comparar pieza y hueco es el juego entero.",
+            "Empieza en 9 piezas (3 por 3) sin que tengas que elegir nada.",
+            "Repite la comparación en el MÓVIL, y también con el móvil girado (tumbado).",
+            "Arrastra una pieza a su sitio: entra sin pelearse, y al soltarla cerca se coloca sola."
+          ],
+          "espera": "la pieza suelta mide lo mismo que su hueco en PC y en móvil, empieza en 9 piezas y las piezas entran arrastrando.",
+          "casillas": [
+            "Pieza y hueco del mismo tamaño en PC",
+            "Igual en móvil (de pie y tumbado)",
+            "Empieza en 9 piezas",
+            "Se colocan arrastrando"
+          ],
+          "notaPista": "Si no coinciden, dime cuál es más grande y cuánto (a ojo: «la pieza es la mitad»), y en qué aparato"
+        },
+        {
+          "n": 9,
+          "titulo": "Lengüetas, pista de fondo y terminar",
+          "ruta": [
+            "PC",
+            "Rompecabezas",
+            "Individual",
+            "Elegir número de piezas"
+          ],
+          "accion": "Juega un rompecabezas entero y fíjate en la forma de las piezas y en la pista del tablero. Prueba también las otras opciones de número de piezas antes de empezar.",
+          "pasos": [
+            "Las piezas tienen lengüeta y hueco (forma de rompecabezas de verdad), no son cuadrados sueltos.",
+            "La lengüeta de una pieza encaja con el hueco de su vecina: se nota al mirarlas.",
+            "En el tablero se ve el dibujo de fondo en claro, como pista. No tiene que haber cuadrículas ni recuadros punteados encima.",
+            "Ninguna pieza sale completamente en blanco ni hay dos piezas idénticas que no se distingan.",
+            "Antes de empezar se puede elegir «Fácil · 4 piezas», 6 o 9: prueba las tres y comprueba que el tablero se rehace bien.",
+            "Completa una: al colocar la última tiene que salir la pantalla de final."
+          ],
+          "espera": "las piezas llevan lengüeta y encajan con sus vecinas, el fondo se ve como pista sin cuadrícula encima, ninguna pieza sale en blanco y al completar sale el final.",
+          "casillas": [
+            "Piezas con lengüeta que encajan",
+            "El fondo es pista, sin cuadrícula",
+            "Ninguna pieza en blanco",
+            "Las tres opciones funcionan"
+          ],
+          "notaPista": "Si hay dos piezas que no se pueden distinguir, di qué dibujo era y en qué número de piezas"
+        }
+      ]
+    },
+    {
+      "titulo": "Parte 4 · LA BARRA DE ARRIBA: en los juegos NO, en los ejercicios SÍ",
+      "pruebas": [
+        {
+          "n": 10,
+          "titulo": "Los tres juegos ya no llevan barra",
+          "ruta": [
+            "PC + móvil",
+            "Colorear · Tangram · Rompecabezas",
+            "Individual"
+          ],
+          "accion": "Entra a jugar en los tres juegos nuevos, uno por uno, y mira la parte de arriba de la pantalla.",
+          "pasos": [
+            "NO tiene que haber ninguna franja de arriba con página, racha ni reloj: el juego empieza pegado al borde.",
+            "En una esquina tiene que estar el botón de pantalla completa, y NADA debe montarse encima.",
+            "Púlsalo: entra a pantalla completa de verdad. Vuelve a pulsarlo (o Esc): sale.",
+            "Comprueba que se puede TOCAR con el dedo en el móvil: que no haya que afinar ni que responda a medias.",
+            "Con la barra fuera, el tablero o el dibujo tiene que aprovechar más pantalla que antes."
+          ],
+          "espera": "en los tres juegos no hay barra arriba, solo el botón de pantalla completa en la esquina, y ese botón se toca y funciona.",
+          "casillas": [
+            "Sin barra en los tres",
+            "El botón de la esquina se ve libre",
+            "Se toca y entra/sale de pantalla completa"
+          ],
+          "notaPista": "Si en algún juego sigue apareciendo una franja arriba, di cuál y haz foto"
+        },
+        {
+          "n": 11,
+          "titulo": "Los ejercicios SÍ conservan su barra",
+          "ruta": [
+            "PC",
+            "Quiz · Operaciones · Tildes · Memoria",
+            "Individual"
+          ],
+          "accion": "Da una vuelta por cuatro ejercicios de los de siempre y mira la barra de arriba en cada uno.",
+          "pasos": [
+            "La franja de arriba SIGUE estando: con sus herramientas, la página en que vas y el reloj si está encendido.",
+            "El botón de pantalla completa está DENTRO de esa franja, no duplicado en la esquina.",
+            "Nada se monta encima de él: se ve entero y se puede pulsar.",
+            "En Tildes y Comas, las herramientas de escribir siguen en su sitio."
+          ],
+          "espera": "los ejercicios mantienen la barra de arriba completa y con un solo botón de pantalla completa.",
+          "casillas": [
+            "La barra sigue en los ejercicios",
+            "Un solo botón de pantalla completa",
+            "Nada tapa el botón"
+          ],
+          "notaPista": "Si ves DOS botones de pantalla completa a la vez, di en qué actividad"
+        }
+      ]
+    },
+    {
+      "titulo": "Parte 5 · EL RELOJ YA NO PARPADEA (hay que encenderlo primero)",
+      "pruebas": [
+        {
+          "n": 12,
+          "titulo": "El reloj no pestañea al pasar de pregunta",
+          "ruta": [
+            "PC",
+            "Quiz",
+            "Editar",
+            "Juego › Tiempo"
+          ],
+          "accion": "IMPORTANTE, sin esto no se ve nada: edita una actividad de Quiz, vete a la pestaña «Juego», y en «Tiempo» pon 60 en «Tiempo por pregunta (s)». Guarda y juega en Individual.",
+          "pasos": [
+            "Mira el reloj de arriba mientras contestas: al pasar de una pregunta a la siguiente NO tiene que pestañear, quedarse en blanco un instante ni volver a empezar la cuenta.",
+            "La cuenta sigue corriendo de una pregunta a otra sin saltos raros.",
+            "La barra fina de debajo del reloj tampoco tiene que dar un tirón.",
+            "Repite exactamente lo mismo en Operaciones y en Explota Globos, poniendo también su tiempo en el editor.",
+            "De paso: el número de página de arriba cambia sin que la barra entera se rehaga."
+          ],
+          "espera": "en Quiz, Operaciones y Explota Globos el reloj sigue corriendo al cambiar de pregunta, sin parpadeos ni reinicios.",
+          "casillas": [
+            "Quiz: sin parpadeo",
+            "Operaciones: sin parpadeo",
+            "Explota Globos: sin parpadeo"
+          ],
+          "notaPista": "Si parpadea, di en cuál y si fue un pestañeo o el reloj se quedó vacío un rato"
+        },
+        {
+          "n": 13,
+          "titulo": "Abre Cajas y su variante Ruleta",
+          "ruta": [
+            "PC",
+            "Abre Cajas",
+            "Individual",
+            "Editar › Cajas / Ruleta"
+          ],
+          "accion": "Juega una actividad de «Abre Cajas» y abre varias cajas seguidas. Luego, en el editor, cámbiala a la variante «Ruleta» y juégala también.",
+          "pasos": [
+            "Con cajas: al abrir una caja, la parte de arriba NO tiene que parpadear; el contador («3 / 8») cambia sin que la barra desaparezca y vuelva.",
+            "Cierra la caja y abre otra: lo mismo, nada de pestañeos.",
+            "Cambia la actividad a «Ruleta» en el editor, guarda y juega.",
+            "Dale a girar: mientras gira y al pararse, la parte de arriba se queda quieta.",
+            "Pulsa «Listo» varias veces: el contador sube pero la barra no vuelve a dibujarse de cero."
+          ],
+          "espera": "ni abrir una caja ni girar la ruleta ni pulsar «Listo» hacen parpadear la parte de arriba; el contador cambia solo.",
+          "casillas": [
+            "Cajas: sin parpadeo al abrir",
+            "Ruleta: sin parpadeo al girar",
+            "Ruleta: sin parpadeo al dar a «Listo»"
+          ],
+          "notaPista": "Era el fallo que se vio en clase: si vuelve, di si parpadea TODO lo de arriba o solo el número"
+        }
+      ]
+    },
+    {
+      "titulo": "Parte 6 · LO QUE SIGUE ABIERTO DE RONDAS ANTERIORES",
+      "pruebas": [
+        {
+          "n": 14,
+          "titulo": "EL LÁPIZ Y LA PALMA en pizarra de verdad",
           "ruta": [
             "Pizarra del aula",
             "Tildes",
             "Individual",
             "Calibrar pizarra"
           ],
-          "accion": "Abre una actividad de Tildes en la pizarra y entra en «Calibrar pizarra». Antes pedía cuatro medidas; ahora tiene que pedir DOS: «Dedo o lápiz» y «Palma». Toca cada recuadro con lo que dice y MANTÉN el contacto un par de segundos.",
+          "accion": "Esto sigue sin comprobarse con una mano de verdad. Calibra la pizarra en «Calibrar pizarra» (pide DOS medidas: «Dedo o lápiz» y «Palma») y después juega una hoja de Tildes.",
           "pasos": [
-            "Solo hay DOS recuadros, no cuatro.",
-            "Al tocar, sale un número y se queda quieto (no baila de 3 a 40 y vuelta).",
-            "El número de la palma tiene que ser CLARAMENTE mayor que el del dedo. Apúntalos los dos en la nota.",
-            "Guarda y cierra."
+            "Solo hay DOS recuadros para calibrar, y el número de la palma sale claramente mayor que el del dedo. Apunta los dos.",
+            "Con el dedo o la punta del lápiz: marcar tildes funciona SIEMPRE, también con toques cortos.",
+            "Con la palma: borra lo marcado, y al empezar a borrar no aparece ninguna rayita de tinta que luego desaparezca.",
+            "Escribe apoyando el canto de la mano, como un niño: lo ya marcado no se borra.",
+            "Apoya la palma entera a propósito: entonces SÍ tiene que borrar."
           ],
-          "espera": "salen dos recuadros, los dos dan un número estable y el de la palma es mayor.",
+          "espera": "el dedo marca siempre, la palma borra sin dejar rastro, y apoyar la mano al escribir no borra nada.",
           "casillas": [
-            "Solo dos recuadros",
-            "Los números no bailan",
-            "Palma > dedo"
-          ],
-          "notaPista": "Apunta los dos números tal cual (p.ej. «dedo 7, palma 22»): son los que decide todo lo demás."
-        },
-        {
-          "n": 2,
-          "titulo": "Escribir con el dedo y borrar con la palma",
-          "ruta": [
-            "Pizarra del aula",
-            "Tildes",
-            "Individual"
-          ],
-          "accion": "Con la pizarra ya calibrada, juega una hoja de Tildes. Marca varias tildes con el dedo (o con la punta del lápiz). Después apoya la PALMA y arrástrala por encima de lo que has marcado.",
-          "pasos": [
-            "Con el dedo o la punta: marca. Toques cortos, de los de marcar una tilde, tienen que marcar SIEMPRE.",
-            "Con la palma: BORRA lo que había, y no deja ninguna marca nueva.",
-            "MIRA BIEN AL EMPEZAR A BORRAR: no tiene que aparecer una rayita de tinta que luego desaparece. Ni un parpadeo. Si ves algo, dilo aunque dudes.",
-            "Escribe una frase entera seguida sin levantar la mano: la línea tiene que salir completa, sin trozos que falten al principio."
-          ],
-          "espera": "el dedo marca siempre, la palma borra, y al borrar NO aparece ningún rastro de tinta.",
-          "casillas": [
+            "Dos recuadros, palma mayor que dedo",
             "El dedo marca siempre",
-            "La palma borra",
-            "Sin rastro al borrar",
-            "La línea sale entera"
+            "La palma borra sin dejar rastro",
+            "Apoyar la mano no borra"
           ],
-          "notaPista": "Si el borrado va mal, prueba también con el canto de la mano y dime si cambia."
+          "notaPista": "Apunta los dos números de la calibración tal cual (p.ej. «dedo 7, palma 22») y, si falla, cómo tenías la mano"
         },
         {
-          "n": 3,
-          "titulo": "Apoyar la mano sin querer",
-          "ruta": [
-            "Pizarra del aula",
-            "Tildes",
-            "Individual"
-          ],
-          "accion": "Escribe como escribiría un niño: apoyando el canto de la mano en la pizarra mientras marca con el dedo. Es la situación real, y es la que más miedo da.",
-          "pasos": [
-            "Lo que marcas con el dedo se queda marcado.",
-            "Apoyar la mano no tiene que borrar lo que ya habías puesto.",
-            "Y si de verdad apoyas la palma entera a propósito, sí tiene que borrar."
-          ],
-          "espera": "escribir apoyando la mano no borra nada; apoyar la palma a propósito sí borra.",
-          "casillas": [
-            "Apoyar la mano no borra",
-            "La palma a propósito sí borra"
-          ],
-          "notaPista": "Esta es la que puede arruinar una clase: si falla, describe exactamente cómo tenías la mano."
-        }
-      ]
-    },
-    {
-      "titulo": "Parte 2 · EL RELOJ, LOS PUNTOS Y LA CORRECCIÓN (todo nuevo)",
-      "pruebas": [
-        {
-          "n": 4,
-          "titulo": "El reloj de la hoja",
-          "ruta": [
-            "Ordenador",
-            "Tildes",
-            "Editar",
-            "Modos"
-          ],
-          "accion": "Edita una actividad de Tildes, vete a la pestaña «Modos» y pon 30 en «Tiempo por frase (s)». Guarda y juega en la PIZARRA, a pantalla completa.",
-          "pasos": [
-            "El reloj sale ARRIBA, en el centro de la barra, y es grande.",
-            "Desde el fondo del aula se tiene que leer el número.",
-            "Va bajando y debajo hay una barra fina que se va consumiendo.",
-            "Deja que llegue a cero SIN tocar nada: tiene que pasar de hoja sola, sin perder lo que llevabas marcado.",
-            "Vuelve al editor, pon 0 y juega otra vez: no tiene que salir NINGÚN reloj (ni parado ni a cero)."
-          ],
-          "espera": "el reloj se lee desde el fondo, baja con su barra, al llegar a cero pasa sola, y con 0 no aparece.",
-          "casillas": [
-            "Se lee desde el fondo",
-            "La barra baja con él",
-            "A cero pasa sola sin perder nada",
-            "Con 0 no sale"
-          ],
-          "notaPista": "Dime si el reloj está bien centrado o se ve corrido hacia un lado."
-        },
-        {
-          "n": 5,
-          "titulo": "Los puntos: 10 por tilde",
-          "ruta": [
-            "Ordenador",
-            "Tildes",
-            "Individual"
-          ],
-          "accion": "CREA una actividad de Tildes NUEVA (no reutilices una vieja) con tres o cuatro tildes. Juégala acertando todas.",
-          "pasos": [
-            "En la pantalla final, cada tilde tiene que valer 10 puntos: cuatro tildes = 40.",
-            "Ahora abre una actividad de Tildes ANTIGUA, de las que ya tenías: esa sigue valiendo 1 por tilde, y es CORRECTO — no se le tocan los puntos a lo que ya estaba hecho.",
-            "En el editor, pestaña «Puntuación», el número se puede cambiar a mano y debajo dice cuánto suma como máximo la actividad."
-          ],
-          "espera": "las nuevas dan 10 por tilde, las viejas siguen como estaban, y el editor deja cambiarlo.",
-          "casillas": [
-            "Nueva = 10 por tilde",
-            "Antigua sin tocar",
-            "El editor lo deja cambiar"
-          ]
-        },
-        {
-          "n": 6,
-          "titulo": "La corrección sale AL FINAL, con todas las hojas",
-          "ruta": [
-            "Pizarra del aula",
-            "Tildes con 3 frases",
-            "Individual"
-          ],
-          "accion": "Juega una actividad de Tildes de tres frases entera, marcando algunas bien, dejándote alguna y poniendo alguna tilde DONDE NO VA (a propósito).",
-          "pasos": [
-            "Entre frase y frase NO tiene que salir ninguna corrección: se pasa directo a la siguiente.",
-            "Al terminar sale una pantalla con las TRES frases, cada una con su lista de palabras a la derecha.",
-            "En la lista, las que faltaban salen en rojo, las acertadas en verde, y la que pusiste de más sale en AMBAR — de otro color, porque es otra cosa.",
-            "El contador de cada frase («2 / 5 correctas») tiene que cuadrar con lo que ves en el texto.",
-            "Se puede bajar por la pantalla sin que aparezca una barra gris fea pegada al borde."
-          ],
-          "espera": "no corrige entre frases, al final salen todas con su lista, y los tres colores se distinguen.",
-          "casillas": [
-            "No corrige entre frases",
-            "Al final salen todas",
-            "Las de más se distinguen",
-            "Los números cuadran"
-          ],
-          "notaPista": "Si algún número no cuadra, apunta cuál decía la lista y cuál el texto."
-        },
-        {
-          "n": 7,
-          "titulo": "El profe cambia un veredicto",
-          "ruta": [
-            "Pizarra del aula",
-            "Tildes",
-            "Individual",
-            "pantalla de corrección"
-          ],
-          "accion": "En esa pantalla de corrección, pulsa el botoncito que hay a la derecha de una palabra que aparezca como fallada.",
-          "pasos": [
-            "La palabra cambia a acertada y el contador de esa frase sube.",
-            "El total de arriba («0 de 12 · 0 pts») sube también, de 10 en 10.",
-            "Vuelve a pulsarlo: se deshace.",
-            "Prueba a perdonar una marca DE MÁS (la ámbar): esa NO tiene que contar como acierto — solo deja de restar. Si el contador de correctas sube al perdonarla, es un fallo.",
-            "Pulsa «Finalizar»: el puntaje que se guarda tiene que ser el que dejaste tú."
-          ],
-          "espera": "anular cambia el veredicto y los puntos, se puede deshacer, y perdonar una de más no regala aciertos.",
-          "casillas": [
-            "Anular cambia los puntos",
-            "Se deshace",
-            "Perdonar no regala acierto",
-            "Finalizar guarda lo que dejé"
-          ],
-          "notaPista": "Este botón solo sale en Individual. Si lo ves en una TAREA de alumno, dilo: sería un fallo."
-        }
-      ]
-    },
-    {
-      "titulo": "Parte 3 · LOS TEMAS AHORA LLEGAN A LA HOJA",
-      "pruebas": [
-        {
-          "n": 8,
-          "titulo": "La hoja de Tildes cambia con el tema",
-          "ruta": [
-            "Pizarra del aula",
-            "Tildes",
-            "Individual",
-            "Apariencia"
-          ],
-          "accion": "Juega una actividad de Tildes y ve cambiando el TEMA en «Apariencia»: prueba Por defecto, Jungla, TV Show y Arcade. Mira la hoja donde está el texto, no solo el borde.",
-          "pasos": [
-            "La HOJA cambia de color con el tema (antes se quedaba siempre crema).",
-            "En los cuatro temas, el reloj de arriba se LEE. Míralo bien en Jungla y en Arcade.",
-            "El texto de la frase se lee en los cuatro, desde el fondo del aula.",
-            "La pantalla de corrección del final tiene el MISMO color de hoja que la de jugar — no una clara y otra oscura."
-          ],
-          "espera": "la hoja se tiñe con el tema, el reloj se lee en todos y jugar y corregir son la misma hoja.",
-          "casillas": [
-            "La hoja cambia de color",
-            "El reloj se lee en los 4",
-            "El texto se lee en los 4",
-            "Jugar y corregir iguales"
-          ],
-          "notaPista": "Si algún tema deja algo casi invisible, dime cuál y qué elemento."
-        },
-        {
-          "n": 9,
-          "titulo": "Que no se haya movido nada en el resto",
-          "ruta": [
-            "Ordenador",
-            "varias actividades"
-          ],
-          "accion": "Da una vuelta rápida por Quiz, Sopa de Letras, Memoria y Ordena las Pelotas, cambiando de tema en cada una. No es una prueba a fondo: es mirar que no se haya roto nada de rebote.",
-          "pasos": [
-            "Cada actividad sigue cambiando con el tema, como antes.",
-            "Ninguna se ve con letras invisibles ni con colores raros.",
-            "El botón de pantalla completa se ve y se puede tocar, y nada se le monta encima."
-          ],
-          "espera": "las demás actividades siguen igual de bien que antes.",
-          "casillas": [
-            "Siguen cambiando con el tema",
-            "Nada invisible",
-            "El botón de pantalla completa libre"
-          ]
-        }
-      ]
-    },
-    {
-      "titulo": "Parte 4 · EL EDITOR",
-      "pruebas": [
-        {
-          "n": 10,
-          "titulo": "La pestaña «Modos» de Tildes",
-          "ruta": [
-            "Ordenador",
-            "Tildes",
-            "Editar",
-            "Modos"
-          ],
-          "accion": "Abre el editor de una actividad de Tildes y mira la pestaña «Modos» de arriba abajo.",
-          "pasos": [
-            "«Individual» tiene que salir UNA vez, no dos.",
-            "Están «Tiempo por frase» y «Corregir al final», y «Corregir al final» viene YA marcado.",
-            "«Puntos por acierto» NO tiene que salir aquí: vive en la pestaña «Puntuación» y en ningún otro sitio.",
-            "Cambia «Tiempo por frase», sal del editor, vuelve a entrar: el número tiene que seguir ahí."
-          ],
-          "espera": "un solo «Individual», los dos ajustes nuevos, los puntos en un solo sitio y todo se guarda.",
-          "casillas": [
-            "Un solo «Individual»",
-            "Están los dos ajustes nuevos",
-            "Los puntos en un solo sitio",
-            "Se guarda"
-          ]
-        },
-        {
-          "n": 11,
-          "titulo": "No deja publicar una actividad vacía",
-          "ruta": [
-            "PC",
-            "Cualquier plantilla",
-            "Crear actividad",
-            "Editor"
-          ],
-          "accion": "Entra con tu cuenta, crea una actividad NUEVA (la que quieras) y, SIN escribir nada dentro, pulsa «Publicar».",
-          "pasos": [
-            "Tiene que salir un aviso naranja diciendo qué falta y por dónde empezar — no debe publicarse.",
-            "La insignia de arriba tiene que seguir diciendo «Borrador», no «Pública».",
-            "Ahora escribe contenido de verdad (una pregunta, un par, unas casillas… lo que pida esa plantilla) y vuelve a pulsar «Publicar».",
-            "Esta vez SÍ tiene que publicarse y la insignia pasar a «Pública»."
-          ],
-          "espera": "vacía no se publica y dice por qué; con contenido se publica sin estorbo.",
-          "casillas": [
-            "Vacía: avisa y NO publica",
-            "Con contenido: publica"
-          ],
-          "notaPista": "Si te deja publicar la vacía, dime con qué plantilla lo probaste"
-        },
-        {
-          "n": 12,
-          "titulo": "La tarjeta «Mi imagen» está en su sitio",
-          "ruta": [
-            "PC",
-            "Cualquier actividad",
-            "Individual",
-            "Apariencia › Fondo"
-          ],
-          "accion": "Abre una actividad y despliega «Apariencia». Mira la sección FONDO.",
-          "pasos": [
-            "Las siete tarjetas (Ninguno, Pizarra verde, Cuadrícula, Corcho, Aula, Arena, Mi imagen) tienen que ser TODAS del mismo tamaño y estar alineadas en su fila.",
-            "«Mi imagen» ya no debe llevar debajo un botón «Subir» descolgado ni letra diminuta.",
-            "Pulsa «Mi imagen»: tiene que abrirse el selector de archivos del ordenador.",
-            "Sube una foto: se pone de fondo y en la esquina de esa tarjeta aparece un lapicito para cambiarla.",
-            "Pulsa el lapicito: tiene que volver a abrirse el selector."
-          ],
-          "espera": "las siete tarjetas iguales y alineadas; pulsar «Mi imagen» abre el selector; con foto puesta, el lapicito la cambia.",
-          "casillas": [
-            "Las siete iguales y alineadas",
-            "Pulsar la tarjeta abre el selector",
-            "El lapicito cambia la foto"
-          ],
-          "notaPista": "Si alguna tarjeta se descuelga, di a qué ancho tenías la ventana (o si estabas en móvil)"
-        }
-      ]
-    },
-    {
-      "titulo": "Parte 5 · LO QUE SIGUE ABIERTO DE RONDAS ANTERIORES",
-      "pruebas": [
-        {
-          "n": 13,
-          "titulo": "EL RELOJ — el profe y el alumno cuentan lo mismo",
+          "n": 15,
+          "titulo": "El profe y el alumno cuentan lo MISMO en «Preparados…»",
           "ruta": [
             "PC (profe) + móvil (alumno)",
             "Quiz",
             "En vivo",
-            "Rondas juntas",
-            "Pantalla de la pregunta"
+            "Rondas juntas"
           ],
-          "accion": "Crea una sala En vivo con un Quiz desde el PC. Entra con el móvil usando el PIN. Lanza la primera pregunta y mira LAS DOS PANTALLAS A LA VEZ mientras corre la cuenta atrás de «Preparados…».",
+          "accion": "Sigue sin comprobarse con dos aparatos reales. Crea una sala En vivo con un Quiz desde el PC, entra con el móvil por el PIN, lanza la primera pregunta y mira LAS DOS PANTALLAS A LA VEZ.",
           "pasos": [
-            "Cuando aparezca la cuenta atrás, mira el número del PC y el del móvil en el mismo instante.",
-            "Tienen que marcar el MISMO número (o como mucho uno de diferencia por el parpadeo de la pantalla).",
-            "Cuando se abran las respuestas, el móvil te tiene que dejar tocar YA — no unos segundos después.",
+            "Cuando salga la cuenta atrás de «Preparados…», mira el número del PC y el del móvil en el mismo instante.",
+            "Tienen que marcar el MISMO número (como mucho uno de diferencia por el refresco de pantalla).",
+            "En cuanto se abran las respuestas, el móvil tiene que dejar tocar YA, no unos segundos después.",
             "Contesta y comprueba que la respuesta cuenta (que no salga «sin respuesta»)."
           ],
-          "espera": "los dos aparatos cuentan el mismo número y el móvil puede responder en cuanto se abre.",
+          "espera": "los dos aparatos cuentan el mismo número y el móvil puede responder en cuanto se abre la pregunta.",
           "casillas": [
             "Cuentan lo mismo",
             "El móvil responde a tiempo"
           ],
           "notaPista": "Si van desfasados, dime CUÁNTOS segundos y qué aparato iba adelantado"
-        },
-        {
-          "n": 14,
-          "titulo": "La app entera funciona con el wifi cortado",
-          "ruta": [
-            "Móvil (o portátil)",
-            "aulareto.com",
-            "Modo avión",
-            "Cualquier actividad en Individual"
-          ],
-          "accion": "Con internet: abre aulareto.com y entra en una actividad cualquiera en Individual (que cargue del todo). AHORA pon el modo avión — o apaga el wifi y los datos. Con la página ya abierta, recarga (Ctrl+F5 en el portátil; en el móvil, tirar hacia abajo).",
-          "pasos": [
-            "Con el modo avión puesto, recarga la página.",
-            "Mira la FORMA: los botones tienen que seguir siendo botones, las tarjetas tarjetas, y nada debe salirse por los lados ni pisarse.",
-            "Entra en una actividad y juégala un poco: las opciones de respuesta tienen que seguir en su rejilla de colores.",
-            "Cambia el tema a Arcade (Apariencia › Arcade) y mira el texto: tiene que verse con LETRAS DE VIDEOJUEGO (cuadraditas), no con una letra de máquina de escribir normal.",
-            "Si algo de esto sale mal, haz FOTO de la pantalla entera (con la barra de arriba, para que se vea la versión)."
-          ],
-          "espera": "sin internet la app se ve EXACTAMENTE igual que con internet: nada descolocado, nada desbordado, y el tema Arcade con su letra de píxeles.",
-          "casillas": [
-            "La forma es la misma sin internet",
-            "Arcade conserva su letra de píxeles"
-          ],
-          "notaPista": "Si algo se descoloca, describe QUÉ pantalla y adjunta la foto — es el fallo que esta ronda busca"
         }
       ]
     },
     {
-      "titulo": "Parte 6 · SI TE QUEDA TIEMPO",
+      "titulo": "Parte 7 · SI TE QUEDA TIEMPO",
       "pruebas": [
         {
-          "n": 15,
+          "n": 16,
           "titulo": "Una vuelta libre buscando roturas",
           "ruta": [
             "Lo que tengas a mano",
             "Varias actividades",
             "El modo que quieras"
           ],
-          "accion": "Juega un rato a lo que quieras, cambiando de tema y de modo, y con el móvil girado y sin girar.",
+          "accion": "Juega un rato a lo que quieras, mezclando los juegos nuevos con los de siempre, cambiando de tema y de modo, y con el móvil girado y sin girar.",
+          "pasos": [
+            "Nada se sale de la pantalla ni se pisa con otra cosa.",
+            "Ningún texto queda ilegible, cortado o encima de otro.",
+            "Al salir de un juego y entrar en otro, no se queda nada de la pantalla anterior."
+          ],
           "espera": "nada se sale de la pantalla, nada se pisa, y no aparece ningún texto ilegible o cortado.",
           "casillas": [
             "Nada roto"
