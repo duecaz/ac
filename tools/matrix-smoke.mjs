@@ -652,12 +652,18 @@ for (const t of seeded) {
       // DEUDA DECLARADA, y solo puede ENCOGER. Estas seis vuelven a montar el
       // player entero en cada gesto —cabecera incluida—, así que el reloj
       // parpadea: lo vio el dueño en Abre Cajas (2026-09-18) y allí se arregló
-      // de raíz (montar una vez, refrescar solo lo que cambia). Las seis
-      // comparten causa: el contrato del shell secuencial dice «renderItem
-      // pinta el ítem» y cada plantilla pinta TODO, cabecera incluida. El
-      // arreglo de verdad es que el shell sea el dueño del marco y `renderItem`
-      // llene solo su hueco — es un cambio de contrato para seis players, no un
-      // parche, y va con su propia verificación visual. Mientras, esta lista
+      // de raíz (montar una vez, refrescar solo lo que cambia).
+      // NO comparten una causa, son TRES FAMILIAS (dicho aquí antes con una
+      // sola, y era falso — un diagnóstico equivocado escrito al lado de la red
+      // manda a arreglar el sitio que no es):
+      //   · quiz · math · globos → `runSequentialPlayer` (core/soloPlayer.js):
+      //     el contrato dice «renderItem pinta el ítem» y cada una pinta TODO.
+      //   · tildes · comas      → `core/textCorrectionSolo.js`: su `shell()`
+      //     interno hace `mount(rootSel, …)` en cada repintado (uno solo, para
+      //     las dos).
+      //   · memory              → su propio `paint()` con `mount()`, sin shell
+      //     de por medio.
+      // Son TRES arreglos distintos, cada uno con su verificación; esta lista
       // GRITA cada vez que alguien la mira y no deja entrar una séptima.
       const REHACEN_EL_MARCO = new Set(['quiz', 'memory', 'tildes', 'comas', 'math', 'globos']);
       // LA PIEZA MIDE SU HUECO (rompecabezas). Medido antes de arreglarlo: 117
@@ -1382,6 +1388,50 @@ try {
   const gIa = await gestoModal(page, '#ww-ia-go', 'input[id$="tema"]');
   gestos.push({ label: '(editor quiz)', mode: 'modal', sitio: 'escribir con IA', ...gIa });
 } catch (e) { gestos.push({ label: '(modal)', mode: 'error', sitio: '?', error: String(e.message).split('\n')[0] }); }
+
+// ── LA RULETA TAMPOCO REHACE EL MARCO (Abre Cajas con selector='wheel') ─────
+// La norma es «un gesto del juego no destruye el marco» (§23) y NO puede
+// depender de qué selector eligió el docente: la variante de cajas se arregló
+// primero —el dueño vio el reloj parpadear— y la de ruleta seguía volviendo a
+// montar el player entero en cada giro, con el mismo defecto y sin red que lo
+// dijera. Corre UNA vez y fuera del bucle porque la matriz siembra UNA
+// actividad por plantilla (con su defaultContent) y esta es la MISMA plantilla
+// con otra regla.
+try {
+  await page.evaluate(async () => {
+    const { getTemplate } = await import('/core/registry.js');
+    const storage = await import('/core/storage.js');
+    const T = getTemplate('question-live');
+    if (!T) throw new Error('no hay plantilla question-live');
+    storage.save({
+      id: 'mx_question-live_wheel', template: 'question-live', title: 'Matriz · Ruleta de preguntas',
+      content: T.meta.defaultContent ? T.meta.defaultContent() : {},
+      rules: { ...(T.meta.defaultRules ? T.meta.defaultRules() : {}), selector: 'wheel' },
+      scoring: T.meta.defaultScoring ? T.meta.defaultScoring() : {},
+      updatedAt: new Date().toISOString(),
+    });
+  });
+  await page.evaluate(() => { location.hash = '#/play/mx_question-live_wheel'; });
+  await page.waitForSelector('[data-ww-start]', { timeout: 9000 });
+  await page.click('[data-ww-start]');
+  await page.waitForSelector('[data-ab="spin"]', { timeout: 9000 });
+  await page.evaluate(() => {
+    const w = document.querySelector('#ww-player-widget');
+    for (const el of w ? w.querySelectorAll('*') : []) el.dataset.wwMarca = '1';
+  });
+  await page.click('[data-ab="spin"]');
+  await page.waitForSelector('.ab-open', { timeout: 15000 });   // el giro dura 3,5 s
+  const rul = await page.evaluate(() => {
+    const h = /** @type {HTMLElement|null} */ (document.querySelector('#ww-player-widget .edu-cabecera'));
+    return { hay: !!h, marca: h ? h.dataset.wwMarca === '1' : null };
+  });
+  const malRul = !rul.hay ? 'la ruleta se queda sin cabecera al salir la pregunta'
+    : !rul.marca ? 'girar rehace la cabecera: el reloj parpadea en cada giro (§23)' : '';
+  hits.push({ label: 'Ruleta preguntas', mode: 'solo', control: 'jugar no rehace el marco', estado: malRul || 'ok', mal: !!malRul });
+} catch (e) {
+  hits.push({ label: 'Ruleta preguntas', mode: 'solo', control: 'jugar no rehace el marco', estado: String(e.message).split('\n')[0], mal: true });
+}
+
 // Deja el DOM como estaba para lo que venga detrás (el informe no navega más).
 await page.evaluate(() => { location.hash = '#/mine'; });
 await page.waitForTimeout(150);

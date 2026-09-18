@@ -156,77 +156,98 @@ function renderWheel(rootSel, activity, opts = {}) {
   let rotation = 0;
   let spinning = false;
 
-  const rootEl = () => raizDe(rootSel);
+  // SE MONTA UNA VEZ, igual que la variante de cajas. La norma es «un gesto
+  // del juego no destruye el marco», y una norma no puede depender de qué
+  // selector eligió el docente: la ruleta rehacía el player entero en cada
+  // giro y en cada «Listo», con el mismo reloj parpadeando que el dueño vio en
+  // las cajas (2026-09-18). La cabecera es de la PLATAFORMA (§23).
+  mount(rootSel, html`
+    <div class="ab-play text-center py-3 px-2">
+      ${cabeceraHtml({ pagina: `${done.size} / ${items.length}` })}
+      <div class="edu-sec edu-sec--tablero ww-wheel-stage" data-ab-rueda></div>
+      <div class="mt-3" data-ab-mandos></div>
+      <div data-ab-panel></div>
+    </div>`);
 
-  function paint() {
-    if (openIdx !== null) {
-      const idx = openIdx;
-      const item = items[idx];
-      mount(rootSel, html`
-        <div class="ab-play text-center py-3 px-2">
-            <div class="ab-open card border-warning mx-auto" style="max-width:480px;border-width:2px">
-            <div class="card-body">
-              <small class="text-muted d-block mb-2">Pregunta ${idx + 1}</small>
-              ${item.image ? `<img src="${escapeHtml(item.image)}" class="img-fluid rounded mb-3 d-block mx-auto" style="max-height:200px">` : ''}
-              <h4 class="card-title text-center">${escapeHtml(item.question || '')}</h4>
-              <div class="d-flex gap-2 justify-content-center mt-3">
-                <button class="btn btn-success" id="ab-done"><i class="bi bi-check2-circle"></i> Listo</button>
-                <button class="btn btn-outline-secondary" id="ab-back"><i class="bi bi-arrow-repeat"></i> Volver</button>
-              </div>
-            </div>
+  const root = raizDe(rootSel);
+  const ruedaOpt = /** @type {HTMLElement|null} */ (root?.querySelector('[data-ab-rueda]') ?? null);
+  const mandosOpt = /** @type {HTMLElement|null} */ (root?.querySelector('[data-ab-mandos]') ?? null);
+  const panelOpt = root?.querySelector('[data-ab-panel]') ?? null;
+  if (!ruedaOpt || !mandosOpt || !panelOpt) return;   // el marco no llegó a montarse (§23)
+  const rueda = ruedaOpt, mandos = mandosOpt, panel = panelOpt;
+
+  /** Los índices que quedan por salir. @returns {number[]} */
+  const disponibles = () => items.map((_, i) => i).filter(i => !done.has(i));
+
+  /** La tarjeta de la pregunta que acaba de salir. @param {number} idx @returns {string} */
+  function tarjetaHtml(idx) {
+    const item = items[idx];
+    if (!item) return '';
+    return `
+      <div class="ab-open card border-warning mx-auto mt-3" style="max-width:480px;border-width:2px">
+        <div class="card-body">
+          <small class="text-muted d-block mb-2">Pregunta ${idx + 1}</small>
+          ${item.image ? `<img src="${escapeHtml(item.image)}" class="img-fluid rounded mb-3 d-block mx-auto" style="max-height:200px">` : ''}
+          <h4 class="card-title text-center">${escapeHtml(item.question || '')}</h4>
+          <div class="d-flex gap-2 justify-content-center mt-3">
+            <button class="btn btn-success" id="ab-done"><i class="bi bi-check2-circle"></i> Listo</button>
+            <button class="btn btn-outline-secondary" id="ab-back"><i class="bi bi-arrow-repeat"></i> Volver</button>
           </div>
         </div>
-      `);
-      on(rootSel, 'click', '#ab-done', () => { done.add(idx); openIdx = null; paint(); });
-      on(rootSel, 'click', '#ab-back', () => { openIdx = null; paint(); });
-      return;
-    }
-
-    const available = items.map((_, i) => i).filter(i => !done.has(i));
-    if (available.length === 0) {
-      terminar();
-      return;
-    }
-
-    const entries = available.map(i => String(i + 1));
-    mount(rootSel, html`
-      <div class="ab-play text-center py-3">
-        ${cabeceraHtml({ pagina: `${done.size} / ${items.length}` })}
-        <div class="edu-sec edu-sec--tablero ww-wheel-stage">
-          ${wheelSvg(entries, { rotation, dur: 0, spinning: false })}
-          <div class="ww-wheel-pointer">▶</div>
-        </div>
-        <div class="mt-3">
-          <button class="btn btn-warning btn-lg px-5" data-ab="spin" ${spinning ? 'disabled' : ''}>
-            <i class="bi bi-arrow-repeat"></i> Girar
-          </button>
-        </div>
-      </div>
-    `);
-
-    on(rootSel, 'click', '[data-ab="spin"]', () => {
-      if (spinning || available.length === 0) return;
-      spinning = true;
-
-      const btn = /** @type {HTMLButtonElement|null} */ (rootEl()?.querySelector('[data-ab="spin"]') ?? null);
-      if (btn) btn.disabled = true;
-      // El giro entero es de core/ruleta/spin.js. Aquí vivía una COPIA a la que
-      // le faltaba medio guard (solo `rootEl()`, sin `ctx.alive()`): el selector
-      // del escenario es genérico, así que la ruleta pendiente podía revelar su
-      // pregunta encima del juego montado DESPUÉS (§23).
-      rotation = girar({
-        svg: rootEl()?.querySelector('svg'), rotation, count: available.length,
-        dur: SPIN_DUR_PICK,
-        vivo: () => ctx.alive() && !!rootEl(),
-        alParar: (target, normalizada) => {
-          spinning = false;
-          rotation = normalizada;
-          openIdx = available[target];
-          paint();
-        },
-      });
-    });
+      </div>`;
   }
 
-  paint();
+  /** Lo ÚNICO que cambia: la rueda (sus gajos son los que quedan), el mando,
+   *  el panel y el contador de la cabecera (por su dato, no rehaciéndola). */
+  function refrescar() {
+    const quedan = disponibles();
+    if (openIdx === null && quedan.length === 0) { terminar(); return; }
+    const abierta = openIdx !== null;
+    // Con la pregunta a la vista, la rueda se aparta (no se destruye el marco
+    // que la contiene): es un cambio de VISTA dentro del juego.
+    rueda.style.display = abierta ? 'none' : '';
+    mandos.style.display = abierta ? 'none' : '';
+    if (!abierta) {
+      rueda.innerHTML = wheelSvg(quedan.map(i => String(i + 1)), { rotation, dur: 0, spinning: false })
+        + `<div class="ww-wheel-pointer">▶</div>`;
+      mandos.innerHTML = `<button class="btn btn-warning btn-lg px-5" data-ab="spin"${spinning ? ' disabled' : ''}>`
+        + `<i class="bi bi-arrow-repeat"></i> Girar</button>`;
+    }
+    panel.innerHTML = openIdx !== null ? tarjetaHtml(openIdx) : '';
+    hudSet(root, 'pagina', `${done.size} / ${items.length}`);
+  }
+
+  // Los handlers se cablean UNA vez (delegados sobre la raíz, que ya no se
+  // reemplaza).
+  on(rootSel, 'click', '[data-ab="spin"]', () => {
+    const quedan = disponibles();
+    if (spinning || quedan.length === 0) return;
+    spinning = true;
+
+    const btn = /** @type {HTMLButtonElement|null} */ (mandos.querySelector('[data-ab="spin"]'));
+    if (btn) btn.disabled = true;
+    // El giro entero es de core/ruleta/spin.js. Aquí vivía una COPIA a la que
+    // le faltaba medio guard (solo `rootEl()`, sin `ctx.alive()`): el selector
+    // del escenario es genérico, así que la ruleta pendiente podía revelar su
+    // pregunta encima del juego montado DESPUÉS (§23).
+    rotation = girar({
+      svg: rueda.querySelector('svg'), rotation, count: quedan.length,
+      dur: SPIN_DUR_PICK,
+      vivo: () => ctx.alive() && !!raizDe(rootSel),
+      alParar: (target, normalizada) => {
+        spinning = false;
+        rotation = normalizada;
+        openIdx = quedan[target];
+        refrescar();
+      },
+    });
+  });
+  on(rootSel, 'click', '#ab-done', () => {
+    if (openIdx !== null) { done.add(openIdx); openIdx = null; }
+    if (done.size === items.length) { terminar(); return; }
+    refrescar();
+  });
+  on(rootSel, 'click', '#ab-back', () => { openIdx = null; refrescar(); });
+
+  refrescar();
 }

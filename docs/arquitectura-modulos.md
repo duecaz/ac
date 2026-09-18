@@ -32,7 +32,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 2148 | 7 · 1033 | 0.48 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 15 · 3700 | 13 · 1724 | 0.47 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 42 · 5819 | 19 · 3180 | 0.55 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 42 · 5840 | 19 · 3180 | 0.54 |
 | **informes/tareas** | después de clase | 10 · 1388 | 5 · 619 | 0.45 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 94 · 8520 | 13 · 1945 | 0.23 |
 | **infra/común** | todo lo anterior | 195 · 26787 | 79 · 11114 | 0.41 |
@@ -108,7 +108,7 @@ graph TD
 | **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (575) · `adapters/pocketbase/realtimeAnswers.js` (484) · `adapters/local/realtime.js` (389) · `adapters/pocketbase/remoteStore.js` (308) · `adapters/pocketbase/realtimeStream.js` (218) |
 | **core** | `core/soloPlayer.js` (542) · `core/auth.js` (490) · `core/vsAnimations.js` (444) · `core/aiContent.js` (413) · `core/storage.js` (380) |
 | **kernel** | `kernel/contracts/activity.js` (449) · `kernel/contracts/session.js` (354) · `kernel/contracts/template.js` (342) · `kernel/session/vsMachine.js` (286) · `kernel/session/teamsMachine.js` (251) |
-| **plantillas** | `templates/match/player.js` (351) · `templates/diagram/player.js` (306) · `templates/colorear/player.js` (300) · `templates/puzzle/game/imagen.js` (254) · `templates/diagram/editor.js` (241) |
+| **plantillas** | `templates/match/player.js` (351) · `templates/diagram/player.js` (306) · `templates/colorear/player.js` (300) · `templates/puzzle/game/imagen.js` (254) · `templates/question-live/player.js` (254) |
 | **contenido** | `kernel/content/qaAdapt.js` (169) · `kernel/content/models.js` (155) · `kernel/content/switch.js` (131) · `kernel/content/convert.js` (123) · `kernel/content/sessionItems.js` (37) |
 | **config** | `pocketbase.config.js` (45) |
 
