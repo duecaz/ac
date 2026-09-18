@@ -69,6 +69,7 @@
   - [§30b · Y ADEMÁS: toda ruta tiene una DECISIÓN escrita](#30b--y-además-toda-ruta-tiene-una-decisión-escrita)
 - [⚖️ §31 · COSTURAS — toda declaración tiene lector, toda regla un dueño, toda red se comprueba en rojo](#-31--costuras--toda-declaración-tiene-lector-toda-regla-un-dueño-toda-red-se-comprueba-en-rojo)
   - [Convención de los MD (decidida el 2026-08-11)](#convención-de-los-md-decidida-el-2026-08-11)
+- [§32 · LO QUE EL NAVEGADOR CACHEA LLEGA JUNTO — o la app corre MEZCLADA](#32--lo-que-el-navegador-cachea-llega-junto--o-la-app-corre-mezclada)
   - [Cómo se auto-verifica todo](#cómo-se-auto-verifica-todo)
 
 ### Ir a otro documento
@@ -1417,6 +1418,42 @@ ficha. Tres reglas, vigiladas por `tests/docs.test.mjs`:
    como ronda de `qa/` (su `accion`/`espera` ES el cuando/entonces). Un MD que
    describe comportamiento sin ninguna de esas tres formas es un candidato a
    pudrirse.
+
+---
+## §32 · LO QUE EL NAVEGADOR CACHEA LLEGA JUNTO — o la app corre MEZCLADA
+
+**Dueño**: `tools/stamp-assets.mjs` · **Vigilan**: `tests/cacheBusting.test.mjs`
+(el generador, ejecutado) y `tools/cq-sonda.mjs` (lo que el navegador PIDE).
+
+Cada fichero que el navegador guarda caduca por su cuenta. Publicar una versión
+no invalida nada: invalida la URL que cambia. Así que si la URL no cambia, la
+app puede correr con piezas de dos versiones a la vez — y el chip de la barra,
+que sale de `core/constants.js`, dirá la nueva.
+
+Ha pasado tres veces, y cada una costó una mañana:
+
+| Cuándo | Qué llegó viejo | Cura |
+|---|---|---|
+| v1.51.495 | las hojas de estilo | `?v=VERSION` en cada `<link>` propio |
+| v1.51.5xx | `assets/animations/*.json` (los pide `fetch`, no un `<link>`) | `?v=VERSION` en la ruta, dentro del módulo |
+| v1.51.716 | `templates/tangram/game/siluetas.js` | import map con TODOS los módulos sellados |
+
+**La regla**: todo lo que se sirve desde este repo y puede cambiar entre
+versiones se pide con `?v=<VERSION>`. Lo que trae su versión EN LA RUTA
+(`vendor/bootstrap-5.3.3/`, `assets/js/lottie…-5.13.0.min.js`) no se sella: es
+inmutable por nombre, y sellarlo obligaría a rebajarlo en cada parche.
+
+**PROHIBIDO** dar por buena una prueba visual sin saber qué versión de CADA
+pieza estaba en pantalla. Es la prohibición que de verdad importa: un reporte
+ambiguo («¿está mal, o es la caché?») se lo come el que prueba, no el que
+programó, y enseña a desconfiar de los arreglos que sí funcionan.
+
+**Cómo se cumple sin build**: los módulos no pueden llevar `?v=` en cada
+`import` (no hay paso de compilación, y es a propósito), así que
+`stamp-assets.mjs` genera un `<script type="importmap">` con los 366 módulos
+propios apuntando a su URL sellada. Un navegador que no entienda el mapa lo
+ignora y queda como antes: la cura no puede romper nada. La ENTRADA cargada con
+`src` se sella en el atributo, porque a ella el mapa no llega.
 
 ---
 ### Cómo se auto-verifica todo

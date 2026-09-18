@@ -54,6 +54,15 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CONGELADO = new Set([
 ]);
 
+// ── LO QUE EL NAVEGADOR PIDE DE VERDAD ───────────────────────────────────────
+// Segunda cosa que solo se ve aquí: que cada módulo se pida con `?v=<VERSION>`.
+// El import map (`tools/stamp-assets.mjs`) es la cura de que la app corra
+// MEZCLADA —módulos nuevos con uno viejo del caché, que fue media mañana del
+// dueño el 18-09—, pero un mapa mal colocado el navegador lo IGNORA EN
+// SILENCIO: leer el HTML diría que está, y aun así se pediría sin sellar. Se
+// escuchan las peticiones reales.
+const { VERSION } = await import('../core/constants.js');
+
 const { base: BASE, cerrar } = await abrirServidor();
 const bye = (code) => { cerrar(); process.exit(code); };
 process.on('SIGINT', () => bye(130));
@@ -155,8 +164,23 @@ const PANTALLAS = [
     antes: (p) => p.click('[data-ww-start]').then(() => p.waitForSelector('.co-hoja', { timeout: 9000 })) },
 ];
 
+/** Los módulos pedidos SIN el sello de hoy (los de vendor/ van versionados en
+ *  su ruta; el de entrada puede llevar el `?_=` del recargador). */
+/** @type {string[]} */
+const sinSellar = [];
+/** @param {import('playwright').Page} p */
+const escucharModulos = (p) => p.on('request', (r) => {
+  const u = r.url().replace(BASE, '');
+  // `vendor/` y `assets/js/` llevan la versión EN EL NOMBRE (bootstrap-5.3.3,
+  // lottie…-5.13.0): son inmutables por ruta y sellarlas solo obligaría a
+  // volver a bajarlas en cada parche de la app.
+  if (!/\.js(\?|$)/.test(u) || u.includes('/vendor/') || u.includes('/assets/js/')) return;
+  if (!u.includes(`?v=${VERSION}`) && !u.includes('?_=')) sinSellar.push(u);
+});
+
 for (const pant of PANTALLAS) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  escucharModulos(page);
   // El editor exige sesión (§22): sin esto la ruta gatea y la pantalla no se
   // barre — y un barrido que no llega a la pantalla decía «✅» igual.
   await page.addInitScript(() => {
@@ -225,6 +249,24 @@ for (const pant of PANTALLAS) {
   await page.close();
 }
 
+// ── LOS MÓDULOS LLEGAN SELLADOS (lo pedido, no lo escrito) ───────────────────
+// La página del ALUMNO entra aquí aunque no tenga reglas cq que barrer: carga
+// los mismos módulos, y es donde un fichero viejo se nota con la clase delante.
+{
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  escucharModulos(page);
+  await page.goto(`${BASE}/student.html?backend=local`, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => document.querySelector('#app')?.children.length > 0, { timeout: 20000 }).catch(() => {});
+  await page.waitForTimeout(500);
+  await page.close();
+}
+const unicos = [...new Set(sinSellar)];
+if (unicos.length) {
+  mal(`${unicos.length} módulo(s) se piden SIN el sello v${VERSION} — pueden llegar del caché mientras el resto es nuevo: ${unicos.slice(0, 4).join(' · ')}`);
+} else {
+  ok(`todos los módulos se piden con ?v=${VERSION} (el import map llega y el navegador lo aplica)`);
+}
+
 // El trinquete solo puede encoger: una entrada congelada que ya nadie produce
 // es una excepción viva para un defecto muerto, y mañana tapa uno nuevo.
 if (CONGELADO.size) {
@@ -233,6 +275,6 @@ if (CONGELADO.size) {
 
 await browser.close();
 console.log(fallos
-  ? `\n❌ ${fallos} problema(s): hay unidades cq resolviéndose contra el VIEWPORT`
-  : '\n✅ ninguna unidad cq se resuelve contra el viewport (§3)');
+  ? `\n❌ ${fallos} problema(s) en lo que solo se ve en el navegador (unidades cq · sello de los módulos)`
+  : '\n✅ ninguna unidad cq contra el viewport (§3) y los módulos llegan sellados');
 bye(fallos ? 1 : 0);

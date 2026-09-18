@@ -3,7 +3,7 @@ import { BaseTemplate } from '../../templates/base.js';
 import { renderTangramPlayer } from './player.js';
 import { renderTangramEditor } from './editor.js';
 import { scoreTangramSubmission } from './scorer.js';
-import { normalizarContenido, normalizarItem } from './content.js';
+import { normalizarContenido, normalizarItem, colocacionesDePreset, esCuadradoRoto } from './content.js';
 import { ORDEN_SILUETAS } from './game/siluetas.js';
 
 export class TangramTemplate extends BaseTemplate {
@@ -20,7 +20,7 @@ export class TangramTemplate extends BaseTemplate {
     contentModel: 'tangram',     // registrado en kernel/content/models.js
     // v2 (§24): el ítem guarda `nombre` + las 7 `colocaciones` que armó el
     // docente; la v1 guardaba solo `figura` del catálogo. Ver migrateContent.
-    templateVersion: 2,
+    templateVersion: 3,
     // OBLIGATORIO (contrato): frase corta de cómo se juega — la pantalla de inicio.
     instructions: 'Arrastra las piezas hasta cubrir la figura gris. Toca una pieza para girarla; tócala dos veces para voltearla.',
     // El EDITOR se declara (lo exige el contrato): `generado:true` dice que
@@ -73,9 +73,20 @@ export class TangramTemplate extends BaseTemplate {
    * @param {C} content
    * @returns {C}
    */
-  static migrateContent(content) {
+  static migrateContent(content, desde = 1) {
     if (!content || typeof content !== 'object' || !Array.isArray(/** @type {{items?: unknown}} */ (content).items)) return content;
-    return /** @type {C} */ (/** @type {unknown} */ (normalizarContenido(content)));
+    const v2 = normalizarContenido(content);
+    // v3 · EL «CUADRADO» QUE NO ERA UN CUADRADO. Las actividades creadas antes
+    // de v1.51.715 copiaron del catálogo una disección rota (la pieza del
+    // cuadrado fuera, el paralelogramo volteado). Se sube SOLO si las siete
+    // piezas están exactamente donde las dejó aquel catálogo: si el docente
+    // movió una, la figura es suya (§24) y se queda como está.
+    if (desde < 3) {
+      for (const it of v2.items) {
+        if (esCuadradoRoto(it.colocaciones)) it.colocaciones = colocacionesDePreset('cuadrado');
+      }
+    }
+    return /** @type {C} */ (/** @type {unknown} */ (v2));
   }
 
   // Preview de tarjeta (miniatura del home) — OBLIGATORIO (contrato). Markup

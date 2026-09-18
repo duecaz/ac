@@ -341,4 +341,46 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   ok('ensureContent no reescribe un contenido v2 válido');
 }
 
+// ── (h) v3 · EL CUADRADO ROTO QUE YA ESTABA GUARDADO ────────────────────────
+// Arreglar el catálogo no arregla lo que el docente ya creó: su actividad
+// copió las colocaciones malas. El contenido del usuario solo cambia por
+// migración versionada (§24), así que la subida va aquí — y SOLO si las siete
+// piezas siguen exactamente donde las dejó aquel catálogo.
+{
+  const T = getTemplate('tangram');
+  const ROTO = [
+    { pieza: 'grande1', x: 0.5, y: 0.5, rot: 225, flip: false },
+    { pieza: 'grande2', x: 0.5, y: 0.5, rot: 135, flip: false },
+    { pieza: 'mediano', x: 1, y: 0.5, rot: 180, flip: false },
+    { pieza: 'pequeno1', x: 0.75, y: 0.75, rot: 315, flip: false },
+    { pieza: 'pequeno2', x: 0.75, y: 0.75, rot: 225, flip: false },
+    { pieza: 'cuadrado', x: 0.25, y: 0.75, rot: 45, flip: false },
+    { pieza: 'paralelogramo', x: 1, y: 1, rot: 225, flip: true },
+  ];
+  const conRoto = (extra = {}) => ({ items: [{ id: 'it_1', nombre: 'Cuadrado', colocaciones: ROTO.map(c => ({ ...c, ...extra[c.pieza] })) }] });
+  const unidad = [[[0, 0], [1, 0], [1, 1], [0, 1]]];
+
+  assert.strictEqual(T.meta.templateVersion, 3, 'la plantilla declara la versión que trae la reparación');
+
+  // 1) La figura rota, intacta, se REPARA: pasa a ser un cuadrado de verdad.
+  const reparado = T.migrateContent(conRoto(), 2);
+  const err = xorArea(unidad, reparado.items[0].colocaciones, PIEZAS, 400);
+  assert.ok(err < 0.005, `el cuadrado guardado no se reparó: XOR ${(err * 100).toFixed(1)} %`);
+  assert.strictEqual(reparado.items[0].nombre, 'Cuadrado', 'el nombre que puso el docente no se toca');
+  assert.strictEqual(reparado.items[0].id, 'it_1', 'ni el id');
+
+  // 2) CONTRA-PRUEBA: si el docente MOVIÓ una pieza, la figura es suya.
+  const tocado = conRoto({ mediano: { x: 0.875 } });
+  const despues = T.migrateContent(tocado, 2);
+  assert.deepStrictEqual(despues.items[0].colocaciones, tocado.items[0].colocaciones,
+    'una figura que el docente retocó NO se reescribe (§24)');
+
+  // 3) Idempotente, y desde la versión 3 ya no se toca nada.
+  assert.deepStrictEqual(T.migrateContent(T.migrateContent(conRoto(), 2), 3), T.migrateContent(conRoto(), 2),
+    'migrar dos veces da lo mismo');
+  assert.deepStrictEqual(T.migrateContent(conRoto(), 3).items[0].colocaciones, ROTO,
+    'un contenido que ya se declara v3 no se vuelve a tocar');
+  ok('v3: el «Cuadrado» roto ya guardado se repara, y una figura retocada por el docente no');
+}
+
 console.log(`\n${passed} aserciones OK — tangram`);

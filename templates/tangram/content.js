@@ -38,6 +38,33 @@ export function colocacionesDePreset(figura) {
   return f.solucion.map(c => ({ pieza: c.pieza, x: c.x, y: c.y, rot: c.rot, flip: c.flip }));
 }
 
+/** LA HUELLA de una figura: sus 7 colocaciones como UNA cadena, en orden fijo.
+ *  Sirve para RECONOCER una figura concreta ya guardada, no para construirla.
+ *  @param {Colocacion[]} colocaciones @returns {string} */
+const huella = (colocaciones) => colocaciones
+  .map(c => `${c?.pieza}:${+c.x},${+c.y},${(((c.rot || 0) % 360) + 360) % 360},${c.flip ? 1 : 0}`)
+  .sort().join('|');
+
+/** La huella de la disección ROTA del «Cuadrado», la que estuvo en el catálogo
+ *  hasta v1.51.715: la pieza del cuadrado colgaba fuera, el paralelogramo iba
+ *  volteado y dentro quedaban dos huecos (XOR del 12,6 % contra el cuadrado
+ *  unidad). Va como huella y no como siete colocaciones sueltas a propósito: no
+ *  es una figura que se pueda construir —no se debe—, es lo único que hace
+ *  falta para reconocerla en el contenido ya guardado y poder subirlo (§24: el
+ *  contenido del usuario cambia por migración versionada, nunca porque una
+ *  tabla se reinterprete al cargar). */
+const CUADRADO_ROTO = 'cuadrado:0.25,0.75,45,0|grande1:0.5,0.5,225,0|grande2:0.5,0.5,135,0'
+  + '|mediano:1,0.5,180,0|paralelogramo:1,1,225,1|pequeno1:0.75,0.75,315,0|pequeno2:0.75,0.75,225,0';
+
+/** ¿Estas colocaciones son EXACTAMENTE el cuadrado roto? Exactamente: si el
+ *  docente movió una sola pieza, la figura es SUYA y no se toca — puede que
+ *  quisiera justo eso.
+ *  @param {Colocacion[]} colocaciones @returns {boolean} */
+export function esCuadradoRoto(colocaciones) {
+  if (!Array.isArray(colocaciones) || colocaciones.length !== ORDEN_PIEZAS.length) return false;
+  return huella(colocaciones) === CUADRADO_ROTO;
+}
+
 /** Una colocación bien formada: pieza con nombre y números finitos. El flip
  *  se lee como booleano (un JSON tocado a mano puede traer 0/1).
  *  @param {unknown} c @returns {c is Colocacion} */

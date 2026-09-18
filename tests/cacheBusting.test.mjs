@@ -21,7 +21,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { VERSION } from '../core/constants.js';
-import { sellarHtml, htmlsDelProyecto } from '../tools/stamp-assets.mjs';
+import { sellarHtml, htmlsDelProyecto, modulosDelProyecto, importMapHtml } from '../tools/stamp-assets.mjs';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 
@@ -110,6 +110,47 @@ const HTMLS = htmlsDelProyecto();
   assert.deepStrictEqual(sinSellar, [],
     `.json de assets/ sin sellar (llegarán tarde tras editarlos): ${sinSellar.join(' · ')}`);
   ok(`los ${total} .json de assets/ pedidos por fetch llevan el sello de versión`);
+}
+
+// ── 5. Y LOS MÓDULOS. Misma enfermedad, una capa más abajo ──────────────────
+// (dueño, 2026-09-18) Se arregló una figura del tangram, el chip decía
+// `v1.51.715` y la figura seguía rota: el chip sale de `core/constants.js`,
+// que sí había llegado nuevo, mientras `siluetas.js` venía del caché. Los
+// módulos se piden por su ruta pelada —solo el de entrada lleva `?_=`, y esa
+// query NO se hereda—, así que cada fichero caduca por su cuenta y la app corre
+// MEZCLADA. El dueño creó actividades que nacían mal media mañana.
+// La cura sin build: un import map con TODOS los módulos propios sellados.
+//
+// AQUÍ se prueba el GENERADOR, ejecutándolo. Que las páginas de verdad pidan
+// cada módulo sellado se mide en el navegador (`tools/cq-sonda.mjs`): mirar el
+// HTML diría cómo está escrito, no qué pide el navegador — y el mapa lo ignora
+// en silencio si va mal colocado, que es justo el fallo que habría que cazar.
+{
+  const modulos = modulosDelProyecto();
+  assert.ok(modulos.length > 300, `el escáner debería ver los módulos del proyecto, vio ${modulos.length}`);
+  for (const clave of ['core/constants.js', 'templates/tangram/game/siluetas.js', 'themes/builtin/default.js', 'main.teacher.js']) {
+    assert.ok(modulos.includes(clave), `falta ${clave}: se pediría sin sellar`);
+  }
+  for (const fuera of ['tools/preflight.mjs', 'tests/run.mjs']) {
+    assert.ok(!modulos.includes(fuera), `${fuera} no se sirve: no pinta en el mapa`);
+  }
+
+  const html = '<head><link rel="stylesheet" href="styles/x.css"></head><body><script type="module" src="main.x.js"></script></body>';
+  const uno = sellarHtml(html, '9.9.9', ['core/a.js']);
+  assert.ok(uno.includes('"/core/a.js": "/core/a.js?v=9.9.9"'), 'el mapa lleva el módulo sellado');
+  assert.ok(uno.indexOf('importmap') < uno.indexOf('type="module" src'),
+    'el mapa va ANTES del primer módulo (después, el navegador lo ignora en silencio)');
+  assert.ok(uno.includes('src="main.x.js?v=9.9.9"'),
+    'la entrada por `src` va sellada en el atributo: a ella el mapa NO llega, y arrastra a las demás');
+  assert.strictEqual(sellarHtml(uno, '9.9.9', ['core/a.js']), uno, 'sellar dos veces da lo mismo');
+  assert.strictEqual((sellarHtml(uno, '9.9.8', ['core/a.js']).match(/importmap/g) || []).length, 1,
+    'una versión nueva REEMPLAZA el mapa, no lo acumula');
+  const sinModulos = '<body><p>hola</p></body>';
+  assert.strictEqual(sellarHtml(sinModulos, '9.9.9', ['core/a.js']), sinModulos, 'una página sin módulos no se toca');
+  assert.deepStrictEqual(JSON.parse(importMapHtml(['core/a.js', 'core/b.js'], '1.0.0').replace(/<\/?script[^>]*>/g, '')).imports,
+    { '/core/a.js': '/core/a.js?v=1.0.0', '/core/b.js': '/core/b.js?v=1.0.0' },
+    'el mapa es un import map válido con claves ABSOLUTAS (que es como resuelve el navegador un ./x.js)');
+  ok(`el generador sella los ${modulos.length} módulos en un mapa válido, colocado antes del primero y sin acumularse`);
 }
 
 console.log(`\n  ${passed} cacheBusting checks passed`);
