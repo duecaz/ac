@@ -72,7 +72,7 @@ const DEMO = {
   // es solo qué nivel se juega; el banco lo trae la app.
   colorear: { items: [{ id: 'it_demo1', dibujo: 'casa' }] },
   tangram:  { items: [{ id: 'it_demo1', figura: 'gato' }] },
-  puzzle:   { items: [{ id: 'it_demo1', dibujo: 'casa', filas: 2, columnas: 2 }] },
+  puzzle:   { items: [{ id: 'it_demo1', dibujo: 'casa', filas: 3, columnas: 3 }] },
   ballsort: { level: 'classic', mode: 'moves', random: true, items: [] },
   diagram: { image: null, pins: [] },
 };

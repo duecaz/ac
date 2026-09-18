@@ -237,10 +237,9 @@ habría degradado el puzzle EN SILENCIO para no tocar una regla. Ahora son
 
 **Lo que queda** (no es deuda oculta, es la siguiente tanda):
 
-1. **El arte del rompecabezas sigue siendo el feo.** Para darle las láminas
-   buenas hay que enseñarle a `viewBoxAjustado` a encontrar la figura sin
-   `data-color` — se puede, midiendo la caja de los trazos, pero es una tanda
-   aparte con su propia red.
+1. ~~**El arte del rompecabezas sigue siendo el feo.**~~ **HECHO (v1.51.710,
+   tanda 1 de §8d)**: el player mide la caja con `getBBox()` y se la pasa a
+   `viewBoxAjustado`; las 43 láminas de OpenMoji se juegan en el puzzle.
 2. **Tocar-y-rellenar desapareció.** Si algún día se quiere de vuelta (para un
    ratón, o para quien no controla el trazo), cabe como opción de partida con el
    tope de R2 — y entonces hará falta un banco con zonas de arte decente, que es
@@ -328,6 +327,23 @@ necesita el ritual entero y capturas antes/después, de noche.
 Con la tanda 1 el rompecabezas pasa de «no se reconoce» a «jugable y honesto» en
 una sesión, y **desbloquea de paso las 43 láminas de OpenMoji para el puzzle**
 (la deuda de §7e.1), porque el recorte en el navegador no necesita zonas.
+
+**EJECUTADA (v1.51.710).** 1a: `imagenDe()` pasa por `svgParaPuzzle()` y, sin
+zonas, por la caja de `getBBox()` (`cajaDeSvg`, player); los dos bancos se
+juegan y el legado se renombró `*-geo` (8 nombres chocaban con OpenMoji y la
+lámina buena era inalcanzable — lo fija `tests/puzzle.test.mjs`). 1b: fantasma
+al 50 %, sin huecos punteados salvo el destino. 1c: nace en 3×3, «Fácil · 4
+piezas». **Lo que la sonda dijo y NO se cumple**: «ninguna pieza con menos del
+15 % de tinta» falla en 39 de 51 dibujos (antes del recorte, en 41). El recorte
+quita el AIRE, pero no la FORMA: un sol o una pelota son redondos y las cuatro
+esquinas de un cuadrado 3×3 quedan casi vacías (sol: 4 % en cada esquina,
+autobús: 0 % en toda la fila de arriba). Es geometría, no un fallo del
+algoritmo, y ningún recorte lo arregla. Lo arregla lo que hacen los puzzles de
+verdad: **la imagen llena el marco** — un fondo de escena (el decorado por tema
+de `core/escenasDibujo.js`, ya dibujado para Colorear, en versión coloreada
+plana) detrás de la figura, para que la esquina sea «el sol» o «la hierba» y
+no un trozo en blanco. Va a la tanda 2 como **2d**, antes de las piezas Bézier:
+sin ella, las piezas con pestaña siguen naciendo vacías por las esquinas.
 
 #### TANDA 2 · DE NOCHE — pesada (ritual entero, capturas y redes nuevas)
 

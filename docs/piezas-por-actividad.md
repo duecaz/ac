@@ -27,7 +27,7 @@ Andamio = la plantilla ya usa `styles/scaffold.css` (roles declarados, §3b).
 | **Explota Globos** (`globos`) | `16/10` | — | `header «1 / 3» (sin nombre)` 100%×6% → **barra**<br>`ww-prow` 100%×10% → **barra**<br>`gl-field` 100%×80% → **escenario** | `header «1 / 3» (sin nombre)` 100%×4% → **barra**<br>`ww-prow` 100%×12% → **barra**<br>`gl-field` 100%×82% → **escenario** |
 | **Colorear** (`colorear`) | `4/3` | — | `header (sin nombre)` 100%×6% → **barra**<br>`div (sin nombre)` 100%×63% → **escenario**<br>`div (sin nombre)` 100%×15% → **barra**<br>`div «Listo» (sin nombre)` 100%×11% → **barra** | `header (sin nombre)` 100%×4% → **barra**<br>`div (sin nombre)` 100%×68% → **escenario**<br>`div (sin nombre)` 76%×17% → **barra**<br>`div «Listo» (sin nombre)` 100%×7% → **barra** |
 | **Tangram** (`tangram`) | `4/3` | — | `header (sin nombre)` 100%×6% → **barra**<br>`ta-tablero` 100%×92% → **escenario** | `header (sin nombre)` 100%×4% → **barra**<br>`ta-tablero` 100%×95% → **escenario** |
-| **Rompecabezas** (`puzzle`) | `4/3` | — | `header «0 / 4» (sin nombre)` 100%×6% → **barra**<br>`pu-arena` 100%×92% → **escenario** | `header «0 / 4» (sin nombre)` 100%×4% → **barra**<br>`pu-arena` 100%×95% → **escenario** |
+| **Rompecabezas** (`puzzle`) | `4/3` | — | `header «0 / 9» (sin nombre)` 100%×6% → **barra**<br>`pu-arena` 100%×92% → **escenario** | `header «0 / 9» (sin nombre)` 100%×4% → **barra**<br>`pu-arena` 100%×95% → **escenario** |
 
 ## Qué cambia al girar el hueco
 
@@ -74,4 +74,4 @@ clase propia es el primer paso de cualquier reparto.
 - **Colorear** → `div (sin nombre)`
 - **Colorear** → `div «Listo» (sin nombre)`
 - **Tangram** → `header (sin nombre)`
-- **Rompecabezas** → `header «0 / 4» (sin nombre)`
+- **Rompecabezas** → `header «0 / 9» (sin nombre)`

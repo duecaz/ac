@@ -5,7 +5,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { celdas, celdaBajo, solape, encaja, barajarPosiciones, ENCAJA_MIN } from '../templates/puzzle/game/rejilla.js';
-import { svgAColor, dataUrlDeSvg, viewBoxAjustado, zonasSvg } from '../templates/puzzle/game/imagen.js';
+import { svgAColor, dataUrlDeSvg, viewBoxAjustado, zonasSvg, svgParaPuzzle, tieneZonas, MARGEN_SIN_ZONAS } from '../templates/puzzle/game/imagen.js';
 import { scorePuzzleSubmission } from '../templates/puzzle/scorer.js';
 import '../templates/puzzle/index.js'; // side-effect: registra la plantilla
 import { getTemplate } from '../core/registry.js';
@@ -269,6 +269,61 @@ const parseViewBox = (svg) => {
   ok('viewBoxAjustado(): las 9 celdas de la casa en 3×3 tocan al menos una zona (0 piezas en blanco)');
 }
 
+// ── svgParaPuzzle — EL PIPELINE QUE USA EL PLAYER, entero salvo el getBBox ──
+// `viewBoxAjustado` estuvo probada y SIN LECTOR (§31): el player hacía
+// `dataUrlDeSvg(svgAColor(texto))` y nunca la llamaba. Este test mira la
+// data URL FINAL, que es lo que llega a `background-image`: si alguien vuelve
+// a saltarse el recorte, aquí sale «0 0 100 100» y se ve. (Verificado en rojo
+// dejando `svgParaPuzzle` sin el paso de recorte.)
+const svgDeDataUrl = (url) => {
+  assert.ok(url.startsWith('data:image/svg+xml,'), 'svgParaPuzzle() devuelve una data: URL de SVG');
+  return decodeURIComponent(url.slice('data:image/svg+xml,'.length));
+};
+const dibujosZonasDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'juegos', 'dibujos', 'zonas');
+{
+  const casaTexto = readFileSync(join(dibujosZonasDir, 'casa.svg'), 'utf8');
+  assert.deepStrictEqual(parseViewBox(casaTexto), [0, 0, 100, 100], 'la casa legada nace sobre el lienzo entero');
+  assert.strictEqual(tieneZonas(casaTexto), true, 'la casa legada trae zonas data-color');
+
+  const salida = svgDeDataUrl(svgParaPuzzle(casaTexto));
+  assert.notDeepStrictEqual(parseViewBox(salida), [0, 0, 100, 100], 'la URL final NO lleva el lienzo entero: el recorte está cableado');
+  assert.deepStrictEqual(parseViewBox(salida), parseViewBox(viewBoxAjustado(casaTexto)), 'el viewBox final es EXACTAMENTE el de viewBoxAjustado (un solo dueño del recorte)');
+  assert.match(salida, /data-zona="tejado"[^>]*fill="#c0392b"/, 'y las zonas van con su data-color aplicado');
+  ok('svgParaPuzzle(): con la casa legada, la data URL final lleva el viewBox recortado y las zonas coloreadas');
+}
+
+// ── viewBoxAjustado con CAJA aportada (las láminas sin zonas de OpenMoji) ──
+// En el navegador la caja sale de `getBBox()`; aquí se simula pasándola. La
+// caja MANDA aunque el SVG no traiga zonas — y CONTRA-PRUEBA: sin caja y sin
+// zonas, el original, como hoy.
+{
+  const sinZonas = `<svg viewBox="0 0 100 100"><g transform="scale(1.5)"><path d="M10 10 C 20 30, 40 30, 50 10 Z" fill="#EA5A47"/></g></svg>`;
+  assert.strictEqual(tieneZonas(sinZonas), false, 'una lámina de OpenMoji no trae data-color');
+  assert.strictEqual(viewBoxAjustado(sinZonas, 0.06), sinZonas, 'CONTRA-PRUEBA: sin caja y sin zonas reconocibles → el original, sin tocar');
+
+  const caja = { minX: 15, minY: 15, maxX: 75, maxY: 45 };   // 60×30, como si la diera getBBox()
+  const [vx, vy, vw, vh] = parseViewBox(viewBoxAjustado(sinZonas, 0, caja));
+  assert.deepStrictEqual([vx, vy, vw, vh], [15, 0, 60, 60], 'con caja y margen 0: cuadrada al lado mayor (60) y centrada sobre la caja');
+  const [mx, my, mw, mh] = parseViewBox(viewBoxAjustado(sinZonas, 0.06, caja));
+  assert.strictEqual(mw, 60 * 1.12, 'con margen 0.06: 6 % de aire a cada lado del lado mayor');
+  assert.strictEqual(mw, mh, 'sigue cuadrada (el tablero es 1:1)');
+  assert.deepStrictEqual([mx + mw / 2, my + mh / 2], [45, 30], 'y centrada en el centro de la caja');
+
+  // La caja aportada MANDA incluso si el texto SÍ tiene zonas reconocibles
+  // (OpenMoji lleva rects bajo un `scale()` que el parser del texto no ve).
+  const conRectBajoScale = `<svg viewBox="0 0 100 100"><g transform="scale(1.38889)"><rect x="19" y="32" width="34" height="24" fill="#fff"/></g></svg>`;
+  const [cx, cy, cw] = parseViewBox(viewBoxAjustado(conRectBajoScale, 0, caja));
+  assert.deepStrictEqual([cx, cy, cw], [15, 0, 60], 'la caja aportada gana a la que el texto deja adivinar');
+  ok('viewBoxAjustado(texto, margen, caja): la caja aportada manda; sin caja ni zonas, el original');
+
+  // Y el pipeline con caja: recorta con MARGEN_SIN_ZONAS y NO colorea nada.
+  const salida = svgDeDataUrl(svgParaPuzzle(sinZonas, { caja }));
+  assert.deepStrictEqual(parseViewBox(salida), parseViewBox(viewBoxAjustado(sinZonas, MARGEN_SIN_ZONAS, caja)), 'svgParaPuzzle con caja = viewBoxAjustado con el margen de las láminas sin zonas');
+  assert.ok(MARGEN_SIN_ZONAS > 0.04, 'el margen del camino medido es mayor que el 4 % del banco (getBBox excluye el trazo)');
+  assert.strictEqual(svgDeDataUrl(svgParaPuzzle(sinZonas)), sinZonas, 'sin caja ni zonas: viaja tal cual (nada que recortar ni colorear)');
+  ok('svgParaPuzzle(texto, {caja}): el camino de OpenMoji recorta con su margen y no toca el color');
+}
+
 // ── scorer ───────────────────────────────────────────────────────────────────
 {
   const item = { filas: 2, columnas: 2 };
@@ -294,6 +349,44 @@ const parseViewBox = (svg) => {
   assert.strictEqual(T.meta.modes.async, false, 'un juego no se ofrece como Tarea');
   assert.strictEqual(T.meta.play.submit, 'gesto', 'el toque ES la respuesta: cero botones de envío');
   ok('checkTemplateContract(PuzzleTemplate) sin incidencias');
+}
+
+// ── LOS DOS BANCOS NO COMPARTEN NOMBRE ──────────────────────────────────────
+// Ocho legados (casa, gato, sol…) se llamaban igual que su lámina de OpenMoji y
+// el player resolvía primero el legado: la lámina buena era INALCANZABLE por
+// nombre y el editor la escondía para no prometer una miniatura que no se
+// jugaba. Con nombres distintos, los dos bancos se eligen y se juegan.
+{
+  const { DIBUJOS, DIBUJOS_PUZZLE, rutaDibujo, rutaDibujoPuzzle } = await import('../core/bancoDibujos.js');
+  const openmoji = new Set(DIBUJOS.map(d => d.nombre));
+  const choques = DIBUJOS_PUZZLE.map(d => d.nombre).filter(n => openmoji.has(n));
+  assert.deepStrictEqual(choques, [], `nombre repetido entre bancos: ${choques.join(', ')}`);
+  // Contra-prueba: cada banco sigue resolviendo los suyos, y solo los suyos.
+  for (const d of DIBUJOS_PUZZLE) {
+    assert.ok(rutaDibujoPuzzle(d.nombre), `${d.nombre}: el legado no resuelve su ruta`);
+    assert.strictEqual(rutaDibujo(d.nombre, 'color'), null, `${d.nombre}: un legado no puede resolver en OpenMoji`);
+  }
+  assert.ok(rutaDibujo('casa', 'color') && !rutaDibujoPuzzle('casa'), 'la casa a secas es la de OpenMoji');
+  ok(`los ${DIBUJOS_PUZZLE.length} legados y las ${DIBUJOS.length} láminas de OpenMoji no comparten nombre`);
+}
+
+// ── NACE EN 3×3 Y «FÁCIL» SIGUE SIENDO 2×2 (dueño, 2026-09-18) ──────────────
+{
+  const T = getTemplate('puzzle');
+  const { PUZZLE_POR_DEFECTO } = await import('../templates/puzzle/content.js');
+  const def = PUZZLE_POR_DEFECTO();
+  assert.deepStrictEqual([def.filas, def.columnas], [3, 3], 'el rompecabezas nace en 3×3');
+  const opt = T.meta.play.options.find(o => o.id === 'piezas');
+  assert.ok(opt, 'la opción de partida «piezas» existe');
+  const a = /** @type {any} */ ({ content: T.meta.defaultContent() });
+  assert.strictEqual(opt.get(a), '3x3', 'la opción refleja el defecto');
+  assert.strictEqual(opt.get({ content: { items: [{}] } }), '3x3', 'sin filas declaradas cae al MISMO defecto que content.js (§21b)');
+  const facil = opt.values.find(v => v.value === '2x2');
+  assert.match(facil?.label ?? '', /Fácil/, 'la de 4 piezas se llama «Fácil»');
+  const b = opt.set(a, '2x2');
+  assert.deepStrictEqual([b.content.items[0].filas, b.content.items[0].columnas], [2, 2], 'elegir Fácil da 2×2');
+  assert.deepStrictEqual([a.content.items[0].filas, a.content.items[0].columnas], [3, 3], 'set es PURO: la actividad original no se toca (§24)');
+  ok('nace en 3×3; «Fácil · 4 piezas» sigue dando 2×2 y set() es puro');
 }
 
 console.log(`\n✅ puzzle: ${passed} checks`);

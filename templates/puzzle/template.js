@@ -32,8 +32,12 @@ function contenidoDe(a) {
 
 /** @param {Partial<PuzzleItem>|null|undefined} it @returns {string} */
 function tamanoDe(it) {
-  const f = it?.filas || 2, c = it?.columnas || 2;
-  return Object.keys(TAMANOS).find(k => TAMANOS[k].filas === f && TAMANOS[k].columnas === c) || '2x2';
+  // El respaldo es EL MISMO con el que nace el ítem (§21b): antes decía «2» aquí
+  // y «2» en content.js, dos copias de un dato que dejaron de coincidir.
+  const def = PUZZLE_POR_DEFECTO();
+  const busca = (/** @type {number} */ f, /** @type {number} */ c) =>
+    Object.keys(TAMANOS).find(k => TAMANOS[k].filas === f && TAMANOS[k].columnas === c);
+  return busca(it?.filas || def.filas, it?.columnas || def.columnas) || busca(def.filas, def.columnas) || '3x3';
 }
 
 export class PuzzleTemplate extends BaseTemplate {
@@ -68,13 +72,13 @@ export class PuzzleTemplate extends BaseTemplate {
       options: [{
         id: 'piezas', label: 'Piezas',
         values: [
-          { value: '2x2', label: '4 piezas' },
+          { value: '2x2', label: 'Fácil · 4 piezas' },
           { value: '2x3', label: '6 piezas' },
           { value: '3x3', label: '9 piezas' },
         ],
         get: (a) => tamanoDe(contenidoDe(a).items?.[0]),
         set: (a, v) => {
-          const t = TAMANOS[v] || TAMANOS['2x2'];
+          const t = TAMANOS[v] || TAMANOS[tamanoDe(null)];
           const c = contenidoDe(a);
           /** @type {PuzzleContent} */
           const content = {

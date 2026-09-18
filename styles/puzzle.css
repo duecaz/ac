@@ -50,17 +50,22 @@
   position: absolute; inset: 0;
   background-repeat: no-repeat;
   background-size: 100% 100%;
-  opacity: .32;                 /* la pista: se ve el dibujo entero, tenue */
+  /* LA PISTA. A .32 el fantasma y las piezas parecían dos dibujos distintos
+     (el dueño: «no se ve que es el mismo»); a .5 se lee como el mismo dibujo
+     apagado, y la pieza puesta encima sigue destacando porque va al 100 %. */
+  opacity: .5;
   pointer-events: none;
 }
+/* LOS HUECOS NO SE DIBUJAN. Una rejilla discontinua encima del fantasma
+   troceaba la pista en nueve cajas y el niño buscaba «la caja», no «el trozo
+   del dibujo». Solo el hueco DESTINO de la pieza que se arrastra se marca. */
 .pu-hueco {
   position: absolute;
   box-sizing: border-box;
-  border: max(1.5px, .35cqmin) dashed var(--ww-fg, rgba(0,0,0,.4));
-  opacity: .55;
+  border: max(1.5px, .35cqmin) dashed transparent;
   pointer-events: none;
 }
-.pu-hueco--target { border-color: var(--ww-accent, #2563eb); opacity: 1; }
+.pu-hueco--target { border-color: var(--ww-accent, #2563eb); }
 
 /* LA BANDEJA — piezas barajadas alrededor del tablero (norte: «repartidas
    alrededor»). `flex: 0 0 auto`: HUG de su contenido — la bandeja mide lo que

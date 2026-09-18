@@ -38,17 +38,22 @@
 // Atributos con `data-color="…"` en una etiqueta abierta o autocerrada.
 const ZONA_RE = /<([a-zA-Z][\w:-]*)((?:\s+[^<>]*?)?\s+data-color="([^"]*)"[^<>]*?)(\/?)>/g;
 
+/** ¿Trae el SVG zonas `data-color`? Es lo que separa los DOS bancos: el legado
+ *  (`dibujos/zonas/`) las trae y su caja se calcula del texto; las láminas de
+ *  OpenMoji no traen ninguna y su caja hay que medirla en el navegador.
+ *  @param {unknown} texto @returns {boolean} */
+export const tieneZonas = (texto) => /\sdata-color="/.test(String(texto ?? ''));
+
 /**
- * Devuelve el SVG (texto) con `fill` = `data-color` en cada zona, y el
- * `viewBox` recortado a lo que de verdad dibujan las zonas (`viewBoxAjustado`,
- * abajo) — así ninguna pieza del rompecabezas cae en aire vacío del margen
- * del lienzo. Puro: no toca el DOM, no muta el argumento.
+ * Devuelve el SVG (texto) con `fill` = `data-color` en cada zona. SOLO colorea:
+ * el recorte del `viewBox` es de `svgParaPuzzle` (abajo), que es quien encadena
+ * los pasos — antes lo llamaba esta función por dentro y el pipeline tenía dos
+ * dueños a medias (§21b). Puro: no toca el DOM, no muta el argumento.
  * @param {string} texto
  * @returns {string}
  */
 export function svgAColor(texto) {
-  const ajustado = viewBoxAjustado(texto);
-  return ajustado.replace(ZONA_RE, (m, tag, attrs, color, cierre) => {
+  return texto.replace(ZONA_RE, (m, tag, attrs, color, cierre) => {
     const conFill = /\sfill="[^"]*"/.test(attrs)
       ? attrs.replace(/\sfill="[^"]*"/, ` fill="${color}"`)
       : `${attrs} fill="${color}"`;
@@ -60,6 +65,37 @@ export function svgAColor(texto) {
  *  @param {string} texto @returns {string} */
 export function dataUrlDeSvg(texto) {
   return `data:image/svg+xml,${encodeURIComponent(texto)}`;
+}
+
+// El margen cuando la caja viene MEDIDA (`getBBox()` del navegador): ese
+// cálculo excluye el TRAZO, y las láminas de OpenMoji llevan contorno negro de
+// 2 unidades — con el 4 % del banco legado el borde quedaba cortado a ras.
+export const MARGEN_SIN_ZONAS = 0.06;
+
+/**
+ * EL PIPELINE ENTERO de la imagen del rompecabezas, salvo medir en el
+ * navegador: recorte del `viewBox` → color de las zonas → `data:` URL. Es UNA
+ * función a propósito (§21b): el player y el editor llaman a ESTA, y Node
+ * puede comprobar que la URL final lleva el `viewBox` recortado. Antes cada
+ * llamante encadenaba `dataUrlDeSvg(svgAColor(...))` por su cuenta, y
+ * `viewBoxAjustado` —escrita con su test— se quedó SIN LECTOR en el player
+ * (§31): el defecto que su propio comentario describe (piezas en aire) siguió
+ * vivo en pantalla mientras la suite lo daba por resuelto.
+ *
+ * - Con zonas `data-color` (banco legado): la caja sale del texto y se aplica
+ *   el color de cada zona.
+ * - Sin zonas (OpenMoji, ya coloreadas): la caja la APORTA quien llama
+ *   (`caja`, medida con `getBBox()`), con `MARGEN_SIN_ZONAS`. Sin caja no hay
+ *   nada que recortar y el SVG viaja tal cual. No se pasa por `svgAColor`: no
+ *   habría nada que colorear y leerlo confundiría.
+ * @param {string} texto
+ * @param {{caja?: Bbox|null}} [opts]
+ * @returns {string} la `data:` URL
+ */
+export function svgParaPuzzle(texto, { caja = null } = {}) {
+  if (caja) return dataUrlDeSvg(viewBoxAjustado(texto, MARGEN_SIN_ZONAS, caja));
+  if (tieneZonas(texto)) return dataUrlDeSvg(svgAColor(viewBoxAjustado(texto)));
+  return dataUrlDeSvg(texto);
 }
 
 // ── El recorte del viewBox ───────────────────────────────────────────────
@@ -171,13 +207,20 @@ const num = (n) => Math.round(n * 1000) / 1000;
  * CUADRADA centrada (el tablero es 1:1; una caja rectangular deformaría el
  * dibujo al forzarla a cuadrado). Sin zonas reconocibles, o con una caja de
  * área nula, devuelve el texto TAL CUAL (nada que recortar). Puro.
+ *
+ * `cajaOpcional`: la caja ya medida por quien llama (el navegador la da gratis
+ * con `getBBox()`, en unidades del `viewBox`). Si viene, MANDA sobre las
+ * zonas: así «margen + cuadrar + reescribir el viewBox» tiene un solo dueño
+ * (§21b) y el player solo aporta el dato que este módulo, puro para Node, no
+ * puede obtener.
  * @param {unknown} svgTexto
  * @param {number} [margen]
+ * @param {Bbox|null} [cajaOpcional]
  * @returns {string}
  */
-export function viewBoxAjustado(svgTexto, margen = 0.04) {
+export function viewBoxAjustado(svgTexto, margen = 0.04, cajaOpcional = null) {
   const texto = String(svgTexto ?? '');
-  const caja = bboxDeZonas(zonasSvg(texto));
+  const caja = cajaOpcional ?? bboxDeZonas(zonasSvg(texto));
   if (!caja) return texto;
   let { minX, minY, maxX, maxY } = caja;
   const w = maxX - minX, h = maxY - minY;

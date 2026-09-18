@@ -5,12 +5,12 @@
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { renderEditorJuego } from '../../core/editorJuego.js';
-import { svgAColor } from './game/imagen.js';
+import { svgParaPuzzle } from './game/imagen.js';
 import { ensureContent, contenidoPuzzle as contenido } from './content.js';
-// El banco es el MISMO que el de Colorear (§21b: un banco, un dueño) y se
-// importa estático, igual que allí. Nació dinámico («lo escribe otro agente en
-// paralelo») y ese andamio sobrevivió al fichero que esperaba.
-import { DIBUJOS_PUZZLE as DIBUJOS, rutaDibujoPuzzle } from '../../core/bancoDibujos.js';
+// Los DOS bancos viven en el mismo módulo (§21b: un banco, un dueño) y se
+// importan estáticos, igual que en Colorear. Nació dinámico («lo escribe otro
+// agente en paralelo») y ese andamio sobrevivió al fichero que esperaba.
+import { TEMAS, dibujosDe, rutaDibujo, DIBUJOS_PUZZLE, rutaDibujoPuzzle } from '../../core/bancoDibujos.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
@@ -39,46 +39,60 @@ function contentHtml(a) {
       </select>
     </div>
     <label class="form-label fw-bold">Dibujo</label>
-    <div class="pu-banco d-flex flex-wrap gap-2" data-dibujo="${escapeHtml(it.dibujo)}">
-      <p class="small text-muted">Cargando el banco de dibujos…</p>
+    <div class="pu-banco">
+      ${TEMAS.map(t => grupoHtml(t.label, dibujosDe(t.id).map(d => tileHtml(d.nombre, d.label, rutaDibujo(d.nombre, 'color') ?? '', d.nombre === it.dibujo)))).join('')}
+      ${grupoHtml('Geométricos', DIBUJOS_PUZZLE.map(d => tileHtml(d.nombre, d.label, '', d.nombre === it.dibujo)))}
     </div>`;
+}
+
+/** @param {string} titulo @param {string[]} tiles @returns {string} */
+function grupoHtml(titulo, tiles) {
+  // Las clases `.co-ed-*` son las del selector de Colorear (styles/colorear.css,
+  // que teacher.html carga siempre): mismo dibujo, misma rejilla, misma marca
+  // de elegido — dos selectores del mismo banco no deben verse distintos.
+  return `<h6 class="co-ed-tema">${escapeHtml(titulo)}</h6><div class="co-ed-grid">${tiles.join('')}</div>`;
 }
 
 /**
  * @param {string} nombre
  * @param {string} label
- * @param {string} svgColor
+ * @param {string} src  la miniatura; vacía si se pinta después (`pintarLegados`)
  * @param {boolean} activo
  * @returns {string}
  */
-function tileHtml(nombre, label, svgColor, activo) {
+function tileHtml(nombre, label, src, activo) {
   return `
-    <button type="button" class="pu-tile btn p-1 ${activo ? 'btn-primary' : 'btn-outline-secondary'}"
-            data-nombre="${escapeHtml(nombre)}" title="${escapeHtml(label || nombre)}"
-            style="width:76px;height:76px;display:flex;align-items:center;justify-content:center;">
-      <span style="width:56px;height:56px;display:block;pointer-events:none;">${svgColor}</span>
+    <button type="button" class="pu-tile co-ed-pick ${activo ? 'co-ed-pick--on' : ''}"
+            data-nombre="${escapeHtml(nombre)}" aria-pressed="${activo}" title="${escapeHtml(label || nombre)}">
+      <span class="co-ed-mini">${src ? `<img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async">` : ''}</span>
+      <span class="co-ed-label">${escapeHtml(label)}</span>
+      <span class="co-ed-tick" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
     </button>`;
 }
 
-/** @param {Element} root @param {Activity} a @returns {Promise<void>} */
-async function pintarBanco(root, a) {
-  const cont = root.querySelector('.pu-banco');
-  if (!cont) return;
-  const actual = contenido(a).items[0].dibujo;
-  const piezas = await Promise.all(DIBUJOS.map(async (d) => {
-    let svg = '';
+/** Las miniaturas de los 8 legados: sus SVG nacen en blanco (`fill="#ffffff"`)
+ *  y el color viene en `data-color`, así que la miniatura no puede ser el
+ *  fichero tal cual como en OpenMoji — pasa por el MISMO pipeline que el juego
+ *  (`svgParaPuzzle`, recorte incluido) y se enseña lo que se va a jugar.
+ *  @param {Element} root @returns {Promise<void>} */
+async function pintarLegados(root) {
+  await Promise.all(DIBUJOS_PUZZLE.map(async (d) => {
+    const hueco = root.querySelector(`.pu-tile[data-nombre="${d.nombre}"] .co-ed-mini`);
+    const ruta = rutaDibujoPuzzle(d.nombre);
+    if (!hueco || !ruta) return;
     try {
-      const ruta = rutaDibujoPuzzle(d.nombre);
-      // `rutaDibujo` devuelve null para un nombre que no está en el banco: sin
-      // ruta no hay miniatura que pintar (el botón sale vacío, no roto).
-      if (ruta) {
-        const res = await fetch(ruta);
-        svg = svgAColor(await res.text());
-      }
-    } catch { svg = ''; }
-    return tileHtml(d.nombre, d.label, svg, d.nombre === actual);
+      const res = await fetch(ruta);
+      if (!res.ok) return;   // sin miniatura el botón sale con la etiqueta, no roto
+      const img = document.createElement('img');
+      img.src = svgParaPuzzle(await res.text());
+      img.alt = '';
+      hueco.replaceChildren(img);
+    } catch {
+      // Best-effort declarado: es una miniatura del formulario; el nombre y la
+      // etiqueta siguen ahí y elegir funciona igual. El juego avisa por su
+      // cuenta si el dibujo no carga (R6 se cumple donde importa).
+    }
   }));
-  cont.innerHTML = piezas.join('');
 }
 
 /**
@@ -88,7 +102,7 @@ async function pintarBanco(root, a) {
  * @returns {void}
  */
 function wireContent(root, a, ctx) {
-  pintarBanco(root, a);
+  pintarLegados(root);
   on(root, 'change', '.pu-tamano', (_e, el) => {
     const [f, c] = ('value' in el ? String(el.value) : '').split('x').map(Number);
     if (!f || !c) return;
@@ -101,10 +115,12 @@ function wireContent(root, a, ctx) {
     if (!nombre) return;
     contenido(a).items[0].dibujo = nombre;
     ctx.onChange(a);
+    // Se marca a mano en vez de `ctx.repaint()` (Colorear): repintar volvería
+    // a pedir por red las ocho miniaturas legadas.
     for (const b of root.querySelectorAll('.pu-tile')) {
       const on_ = b === el;
-      b.classList.toggle('btn-primary', on_);
-      b.classList.toggle('btn-outline-secondary', !on_);
+      b.classList.toggle('co-ed-pick--on', on_);
+      b.setAttribute('aria-pressed', String(on_));
     }
   });
 }

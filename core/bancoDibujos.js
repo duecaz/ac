@@ -126,22 +126,24 @@ export function rutaDibujo(nombre, variante = 'linea') {
 // silencio (piezas en blanco, recorte sin ajustar) para no tocar una regla. Son
 // dos colecciones con dos contratos, y se dicen.
 //
-// Estas ocho son las originales, dibujadas a mano. Siguen siendo geométricas y
-// feas —el mismo problema que el dueño señaló— pero cumplen SU contrato: el
-// puzzle funciona. Cambiarlas por arte de verdad pide enseñarle a
-// `viewBoxAjustado` a encontrar la figura sin `data-color`, y eso es una tanda
-// aparte (docs/handoff-juegos-inicial.md §7e).
+// Estas ocho son las originales, dibujadas a mano: geométricas y sencillas.
+// Desde v1.51.710 el puzzle también recorta las láminas de OpenMoji (mide la
+// figura con `getBBox()` en el navegador, `templates/puzzle/player.js`), así
+// que los DOS bancos se juegan. Los nombres llevan el sufijo `-geo` a propósito:
+// ocho de ellos (casa, gato, sol…) existen también en `DIBUJOS`, y con el mismo
+// nombre uno de los dos era inalcanzable — una actividad guardada con
+// `dibujo: 'casa'` juega la casa de OpenMoji, que es la buena.
 
 /** @type {Dibujo[]} */
 export const DIBUJOS_PUZZLE = [
-  { nombre: 'casa',     label: 'Casa',     archivo: 'casa.svg',     tema: 'cosas' },
-  { nombre: 'pez',      label: 'Pez',      archivo: 'pez.svg',      tema: 'animales' },
-  { nombre: 'flor',     label: 'Flor',     archivo: 'flor.svg',     tema: 'naturaleza' },
-  { nombre: 'coche',    label: 'Coche',    archivo: 'coche.svg',    tema: 'transporte' },
-  { nombre: 'globo',    label: 'Globos',   archivo: 'globo.svg',    tema: 'cosas' },
-  { nombre: 'gato',     label: 'Gato',     archivo: 'gato.svg',     tema: 'animales' },
-  { nombre: 'sol',      label: 'Sol',      archivo: 'sol.svg',      tema: 'naturaleza' },
-  { nombre: 'mariposa', label: 'Mariposa', archivo: 'mariposa.svg', tema: 'animales' },
+  { nombre: 'casa-geo',     label: 'Casa',     archivo: 'casa.svg',     tema: 'cosas' },
+  { nombre: 'pez-geo',      label: 'Pez',      archivo: 'pez.svg',      tema: 'animales' },
+  { nombre: 'flor-geo',     label: 'Flor',     archivo: 'flor.svg',     tema: 'naturaleza' },
+  { nombre: 'coche-geo',    label: 'Coche',    archivo: 'coche.svg',    tema: 'transporte' },
+  { nombre: 'globo-geo',    label: 'Globos',   archivo: 'globo.svg',    tema: 'cosas' },
+  { nombre: 'gato-geo',     label: 'Gato',     archivo: 'gato.svg',     tema: 'animales' },
+  { nombre: 'sol-geo',      label: 'Sol',      archivo: 'sol.svg',      tema: 'naturaleza' },
+  { nombre: 'mariposa-geo', label: 'Mariposa', archivo: 'mariposa.svg', tema: 'animales' },
 ];
 
 /** Ruta de una lámina CON ZONAS (Rompecabezas). @param {string|null|undefined} nombre @returns {string|null} */

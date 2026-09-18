@@ -10,23 +10,66 @@ import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
 import { shuffle } from '../../core/azar.js';
 import { celdas, encaja, barajarPosiciones } from './game/rejilla.js';
-import { svgAColor, dataUrlDeSvg } from './game/imagen.js';
+import { svgParaPuzzle } from './game/imagen.js';
 import { scorePuzzleSubmission } from './scorer.js';
-// El banco es el MISMO que el de Colorear (§21b: un banco, un dueño) y se
-// importa estático, igual que allí. Nació dinámico («lo escribe otro agente en
-// paralelo») y ese andamio sobrevivió al fichero que esperaba.
-import { rutaDibujoPuzzle } from '../../core/bancoDibujos.js';
+// Los DOS bancos viven en el mismo módulo (§21b: un banco, un dueño) y se
+// importan estáticos, igual que en Colorear. Nació dinámico («lo escribe otro
+// agente en paralelo») y ese andamio sobrevivió al fichero que esperaba.
+import { rutaDibujoPuzzle, rutaDibujo } from '../../core/bancoDibujos.js';
 import { PUZZLE_POR_DEFECTO } from './content.js';
+
+/**
+ * La caja envolvente REAL de un SVG, medida por el navegador: se monta en un
+ * contenedor oculto (oculto por `visibility`, no por `display:none` — sin
+ * caja de layout `getBBox()` devuelve ceros), se lee `getBBox()` del `<svg>`
+ * raíz —en unidades de usuario, es decir, en coordenadas del `viewBox`, con
+ * las transformaciones de los hijos ya aplicadas (las láminas de OpenMoji
+ * llevan un `scale(1.38889)`, que un parser del texto no vería)— y se quita.
+ * Esto es lo ÚNICO que `game/imagen.js` no puede hacer: tiene que seguir
+ * siendo puro para que Node pruebe el recorte. El texto es un asset propio del
+ * sitio (`assets/juegos/dibujos/`), no contenido del usuario.
+ * @param {string} texto
+ * @returns {import('./game/imagen.js').Bbox|null}
+ */
+function cajaDeSvg(texto) {
+  const cont = document.createElement('div');
+  cont.style.cssText = 'position:absolute;visibility:hidden;width:100px;height:100px;overflow:hidden;';
+  cont.innerHTML = texto;
+  document.body.appendChild(cont);
+  try {
+    const svg = cont.querySelector('svg');
+    const b = svg instanceof SVGGraphicsElement ? svg.getBBox() : null;
+    // Una caja sin área (SVG vacío o sin pintar) no sirve para recortar:
+    // mejor sin caja (viaja tal cual) que un viewBox de lado cero.
+    return b && b.width > 0 && b.height > 0
+      ? { minX: b.x, minY: b.y, maxX: b.x + b.width, maxY: b.y + b.height }
+      : null;
+  } finally {
+    cont.remove();
+  }
+}
+
+/** @param {string} ruta @returns {Promise<string|null>} */
+async function textoDe(ruta) {
+  const res = await fetch(ruta);
+  return res.ok ? res.text() : null;
+}
 
 /** @param {string} nombre @returns {Promise<string|null>} */
 async function imagenDe(nombre) {
-  // `rutaDibujo` da null si el nombre no está en el banco (contenido viejo):
-  // sin ruta no hay imagen, y el player ya pinta su aviso.
-  const ruta = rutaDibujoPuzzle(nombre);
-  if (!ruta) return null;
-  const res = await fetch(ruta);
-  if (!res.ok) return null;
-  return dataUrlDeSvg(svgAColor(await res.text()));
+  // Primero el banco CON ZONAS (legado): su caja sale del texto. Si el nombre
+  // no está ahí, la lámina coloreada de OpenMoji: sin zonas, la caja se mide
+  // en el navegador. Si no está en ninguno (contenido viejo), no hay imagen y
+  // el player ya pinta su aviso.
+  const conZonas = rutaDibujoPuzzle(nombre);
+  if (conZonas) {
+    const texto = await textoDe(conZonas);
+    return texto === null ? null : svgParaPuzzle(texto);
+  }
+  const lamina = rutaDibujo(nombre, 'color');
+  if (!lamina) return null;
+  const texto = await textoDe(lamina);
+  return texto === null ? null : svgParaPuzzle(texto, { caja: cajaDeSvg(texto) });
 }
 
 /**
@@ -63,8 +106,9 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
   const ctx = runFreeformPlayer(rootSel, activity, opts);
   const contenido = /** @type {Partial<PuzzleContent>} */ (activity.content ?? {});
   /** @type {PuzzleItem} */
-  const item = contenido.items?.[0] || PUZZLE_POR_DEFECTO();
-  const filas = item.filas || 2, columnas = item.columnas || 2;
+  const def = PUZZLE_POR_DEFECTO();
+  const item = contenido.items?.[0] || def;
+  const filas = item.filas || def.filas, columnas = item.columnas || def.columnas;
   const total = filas * columnas;
   const rejilla = celdas(filas, columnas);
 

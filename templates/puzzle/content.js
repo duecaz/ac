@@ -15,10 +15,13 @@ import { rid } from '../../core/ids.js';
  * @typedef {import('../../kernel/contracts/activity.js').PuzzleItem} PuzzleItem
  */
 
-/** CON QUÉ PARTIDA NACE un rompecabezas: la casa, en 2×2 (cuatro piezas es lo
- *  que resuelve sin ayuda quien todavía no lee).
+/** CON QUÉ PARTIDA NACE un rompecabezas: la casa, en 3×3. Nacía en 2×2 «porque
+ *  cuatro piezas las resuelve quien no lee», pero con cuatro el juego se acaba
+ *  en dos gestos y aburre; nueve es el punto medio de los referentes (6-12) y,
+ *  con el recorte del aire (v1.51.710), ya no deja ninguna pieza en blanco. La
+ *  opción de partida «Fácil» sigue ofreciendo 2×2 (dueño, 2026-09-18).
  *  @returns {PuzzleItem} */
-export const PUZZLE_POR_DEFECTO = () => ({ id: rid('it_'), dibujo: 'casa', filas: 2, columnas: 2 });
+export const PUZZLE_POR_DEFECTO = () => ({ id: rid('it_'), dibujo: 'casa', filas: 3, columnas: 3 });
 
 /** La actividad vista como la de ESTA plantilla — `ensureContent` es quien la
  *  deja en esta forma, así que antes de él el contenido puede ser otro.
