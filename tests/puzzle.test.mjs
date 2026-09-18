@@ -158,7 +158,7 @@ const parseViewBox = (svg) => {
 // (cero aire de más sobre lo que la geometría obliga), con una tolerancia
 // de redondeo mínima.
 {
-  const dibujosDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'juegos', 'dibujos');
+  const dibujosDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'juegos', 'dibujos', 'zonas');
   const svgs = readdirSync(dibujosDir).filter(f => f.endsWith('.svg'));
   assert.ok(svgs.length >= 1, 'hay SVG en el banco que auditar');
   const margen = 0.04, EPS = 0.002;
@@ -249,7 +249,7 @@ const parseViewBox = (svg) => {
     return false;
   };
 
-  const dibujosDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'juegos', 'dibujos');
+  const dibujosDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'juegos', 'dibujos', 'zonas');
   const casaTexto = readFileSync(join(dibujosDir, 'casa.svg'), 'utf8');
   const zonas = zonasSvg(casaTexto);
   const [vx, vy, vw, vh] = parseViewBox(viewBoxAjustado(casaTexto));

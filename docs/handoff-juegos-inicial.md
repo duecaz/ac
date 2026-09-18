@@ -198,3 +198,54 @@ máximo dos, ya elegida: *«Pintar: tocando / con el dedo»*.
    de «mejora» a «lo que hace viable el banco».
 3. **¿Salirse de la raya puntúa?** Es lo que convierte este juego en una medida
    de motricidad y no en un pasatiempo.
+
+### 7e · EJECUTADO (v1.51.704) — el banco nuevo y el trazo libre
+
+El dueño decidió las tres cosas de §7d de una vez: **acepta CC BY-SA**, **se
+añade el trazo libre**, y pidió recursos «cerrados temáticos». Hecho, y las dos
+primeras decisiones resultaron ser la misma:
+
+**Las láminas de contorno de OpenMoji son `fill="none"` con trazo — línea pura,
+sin una sola región rellenable.** Para tocar-y-rellenar no sirve ni una. Para
+pintar con el dedo son exactamente lo que hace falta. Por eso el trazo libre no
+es un adorno pedagógico: es lo que abre 4.000 láminas dibujadas por
+ilustradores sin convertir nada, y lo que hace que el banco deje de costar una
+hora por dibujo.
+
+- **43 láminas en 5 temas cerrados** (animales 12 · frutas 8 · naturaleza 8 ·
+  transporte 8 · cosas 7), importadas con `tools/importar-dibujos.mjs`, que se
+  puede volver a correr para añadir más. Créditos y licencia en
+  `assets/juegos/dibujos/CREDITOS.md`; cada fichero lleva el suyo dentro.
+- **Se descartó el balón** (U+26BD) al VERLO: sus pentágonos son negros de
+  diseño y como lámina para colorear es una mancha. Lo que se importa se mira.
+- **Dos capas**: el lienzo donde se pinta va DEBAJO y la lámina encima. Como la
+  lámina es transparente, la tinta se ve por los huecos y el trazo negro no se
+  puede tapar. La alternativa —recortar la pintura al contorno— cuesta más y
+  quita justo lo que se entrena: salirse tiene que ser POSIBLE para que no
+  salirse signifique algo.
+- **El scorer mide cobertura**, no zonas tocadas, con techo en el 35 %:
+  emborronar el lienzo entero no puede puntuar más que colorear bien.
+
+**EL BANCO SE PARTIÓ EN DOS, y conviene entender por qué** (§21b decía «un banco,
+un dueño»): Rompecabezas no recorta piezas a ciegas — deduce dónde está la
+figura dentro del lienzo a partir de las zonas `data-color`, y sin ellas el
+recorte deja piezas vacías. Colorear quiere la mejor ilustración posible;
+Rompecabezas quiere zonas. Compartir un banco que sirve a medias a los dos
+habría degradado el puzzle EN SILENCIO para no tocar una regla. Ahora son
+`DIBUJOS` (43, línea + color) y `DIBUJOS_PUZZLE` (las 8 originales, en
+`dibujos/zonas/`), con dos contratos escritos.
+
+**Lo que queda** (no es deuda oculta, es la siguiente tanda):
+
+1. **El arte del rompecabezas sigue siendo el feo.** Para darle las láminas
+   buenas hay que enseñarle a `viewBoxAjustado` a encontrar la figura sin
+   `data-color` — se puede, midiendo la caja de los trazos, pero es una tanda
+   aparte con su propia red.
+2. **Tocar-y-rellenar desapareció.** Si algún día se quiere de vuelta (para un
+   ratón, o para quien no controla el trazo), cabe como opción de partida con el
+   tope de R2 — y entonces hará falta un banco con zonas de arte decente, que es
+   convertir las variantes EN COLOR de OpenMoji (sí traen formas cerradas) con
+   la regla de solapes relajada, porque el arte real solapa.
+3. **Salirse de la raya no puntúa todavía.** La cobertura se mide contra el
+   lienzo entero, no contra la silueta. Medirlo contra la figura es lo que
+   convertiría esto en una medida de motricidad de verdad.

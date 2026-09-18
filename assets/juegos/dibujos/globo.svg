@@ -1,10 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <ellipse cx="20" cy="35" rx="14" ry="18" data-zona="globoIzq" data-color="#e74c3c"
-    fill="#ffffff" stroke="#222" stroke-width="2.5"/>
-  <ellipse cx="80" cy="35" rx="14" ry="18" data-zona="globoDer" data-color="#3aa1c9"
-    fill="#ffffff" stroke="#222" stroke-width="2.5"/>
-  <ellipse cx="50" cy="28" rx="16" ry="20" data-zona="globoCentro" data-color="#f4c542"
-    fill="#ffffff" stroke="#222" stroke-width="2.5"/>
-  <rect x="38" y="58" width="24" height="26" data-zona="canasta" data-color="#8a5a34"
-    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
+<!-- Dibujo de OpenMoji (openmoji.org) · CC BY-SA 4.0 · reescalado a 100×100 · U+1F388 -->
+<g transform="scale(1.38889)">
+<g>
+    <polyline fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" stroke-width="2.1216" points="34,47.2098 34.01,49.1498 34.04,55.6098 28.12,51.7998 22.2,47.9998 28.09,45.3398 30.04,44.4598"/>
+    <circle cx="45" cy="27" r="23.0003" fill="none" stroke="#000000" stroke-miterlimit="10" stroke-width="2"/>
+    <path fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" stroke-width="2" d="M17.7253,65.09c0.5048,0.0395,1.0254-0.0002,1.547-0.1285c2.7035-0.6648,4.41-3.458,3.8116-6.2388"/>
+    <path fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" stroke-width="2" d="M23.1406,58.907c-0.1631-0.4794-0.2535-0.9936-0.2582-1.5307c-0.0246-2.7839,2.2596-5.1284,5.102-5.2364"/>
+  </g>
+</g>
 </svg>

@@ -60,10 +60,11 @@ const BASELINE = {
   newTemplate: 2, pbRules: 1, pbSchema: 2, persistPolicy: 6, quizAnswer: 2,
   quotas: 4, raceResume: 3, realtimePort: 1, roundsLoop: 8,
   unscorable: 8, vocabulario: 2,
-  // `colorear: 1` (v1.51.668): la suite lee los SVG del banco de dibujos con
-  // readFileSync para contrastar `zonas` del índice contra el fichero REAL — es
-  // DATO verificado, no código, pero el contador ve una lectura y la cuenta.
-  colorear: 1,
+  // `colorear` BAJA DE 1 A 0 (v1.51.704): su cita era el `zonas` del índice
+  // contrastado contra el SVG real, y las zonas desaparecieron con el banco
+  // nuevo (ahora se pinta a mano alzada sobre línea). La suite sigue leyendo los
+  // SVG, pero para comprobar DATOS del fichero —lienzo, crédito, transparencia—,
+  // que es lo que el contador no cuenta como cita de fuente.
 };
 // `tcTools` salió de la lista en v1.51.488 (bajó de 4 a 0): las dos afirmaciones
 // que eran de PÍXELES —«el marco ya no es una segunda tarjeta», «el botón de

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <polygon points="10,55 50,15 90,55" data-zona="tejado" data-color="#c0392b"
+    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
+  <rect x="15" y="55" width="70" height="40" data-zona="pared" data-color="#f6e6c8"
+    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
+  <rect x="60" y="58" width="24" height="26" data-zona="ventana" data-color="#6fb7e0"
+    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
+  <rect x="36" y="63" width="22" height="32" data-zona="puerta" data-color="#7a4a2b"
+    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
+</svg>

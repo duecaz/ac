@@ -15,14 +15,14 @@ import { scorePuzzleSubmission } from './scorer.js';
 // El banco es el MISMO que el de Colorear (§21b: un banco, un dueño) y se
 // importa estático, igual que allí. Nació dinámico («lo escribe otro agente en
 // paralelo») y ese andamio sobrevivió al fichero que esperaba.
-import { rutaDibujo } from '../../core/bancoDibujos.js';
+import { rutaDibujoPuzzle } from '../../core/bancoDibujos.js';
 import { PUZZLE_POR_DEFECTO } from './content.js';
 
 /** @param {string} nombre @returns {Promise<string|null>} */
 async function imagenDe(nombre) {
   // `rutaDibujo` da null si el nombre no está en el banco (contenido viejo):
   // sin ruta no hay imagen, y el player ya pinta su aviso.
-  const ruta = rutaDibujo(nombre);
+  const ruta = rutaDibujoPuzzle(nombre);
   if (!ruta) return null;
   const res = await fetch(ruta);
   if (!res.ok) return null;

@@ -10,7 +10,7 @@ import { ensureContent, contenidoPuzzle as contenido } from './content.js';
 // El banco es el MISMO que el de Colorear (§21b: un banco, un dueño) y se
 // importa estático, igual que allí. Nació dinámico («lo escribe otro agente en
 // paralelo») y ese andamio sobrevivió al fichero que esperaba.
-import { DIBUJOS, rutaDibujo } from '../../core/bancoDibujos.js';
+import { DIBUJOS_PUZZLE as DIBUJOS, rutaDibujoPuzzle } from '../../core/bancoDibujos.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
@@ -68,7 +68,7 @@ async function pintarBanco(root, a) {
   const piezas = await Promise.all(DIBUJOS.map(async (d) => {
     let svg = '';
     try {
-      const ruta = rutaDibujo(d.nombre);
+      const ruta = rutaDibujoPuzzle(d.nombre);
       // `rutaDibujo` devuelve null para un nombre que no está en el banco: sin
       // ruta no hay miniatura que pintar (el botón sale vacío, no roto).
       if (ruta) {

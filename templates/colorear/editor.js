@@ -6,7 +6,7 @@
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { renderEditorJuego } from '../../core/editorJuego.js';
-import { DIBUJOS, rutaDibujo } from '../../core/bancoDibujos.js';
+import { TEMAS, dibujosDe, rutaDibujo } from '../../core/bancoDibujos.js';
 import { ensureContent, contenidoColorear as contenido } from './content.js';
 
 /**
@@ -25,19 +25,24 @@ export const renderColorearEditor = (root, activity, onChange) =>
 /** @param {Activity} a @returns {string} */
 function contentHtml(a) {
   const elegido = contenido(a).items[0].dibujo;
+  // POR TEMAS, y no una rejilla de 43. El profe no viene a «ver el banco»: viene
+  // con una idea («animales») y quiere salir de aquí en dos toques. Sin agrupar,
+  // elegir era recorrer una pared de dibujos.
   return `
-    <p class="text-muted small">Elige el dibujo que va a colorear la clase.</p>
-    <div class="co-ed-grid">
-      ${DIBUJOS.map(d => `
-        <button type="button" class="co-ed-pick ${d.nombre === elegido ? 'co-ed-pick--on' : ''}"
-                data-dibujo="${d.nombre}" aria-pressed="${d.nombre === elegido}">
-          <span class="co-ed-mini">
-            <img src="${rutaDibujo(d.nombre)}" alt="" loading="lazy" decoding="async">
-          </span>
-          <span class="co-ed-label">${escapeHtml(d.label)}</span>
-          <span class="co-ed-tick" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
-        </button>`).join('')}
-    </div>`;
+    <p class="text-muted small">Elige la lámina que va a colorear la clase.</p>
+    ${TEMAS.map(t => `
+      <h6 class="co-ed-tema">${escapeHtml(t.label)}</h6>
+      <div class="co-ed-grid">
+        ${dibujosDe(t.id).map(d => `
+          <button type="button" class="co-ed-pick ${d.nombre === elegido ? 'co-ed-pick--on' : ''}"
+                  data-dibujo="${d.nombre}" aria-pressed="${d.nombre === elegido}">
+            <span class="co-ed-mini">
+              <img src="${rutaDibujo(d.nombre)}" alt="" loading="lazy" decoding="async">
+            </span>
+            <span class="co-ed-label">${escapeHtml(d.label)}</span>
+            <span class="co-ed-tick" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
+          </button>`).join('')}
+      </div>`).join('')}`;
 }
 
 /**

@@ -1,10 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <polygon points="10,55 50,15 90,55" data-zona="tejado" data-color="#c0392b"
-    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
-  <rect x="15" y="55" width="70" height="40" data-zona="pared" data-color="#f6e6c8"
-    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
-  <rect x="60" y="58" width="24" height="26" data-zona="ventana" data-color="#6fb7e0"
-    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
-  <rect x="36" y="63" width="22" height="32" data-zona="puerta" data-color="#7a4a2b"
-    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
+<!-- Dibujo de OpenMoji (openmoji.org) · CC BY-SA 4.0 · reescalado a 100×100 · U+1F3E0 -->
+<g transform="scale(1.38889)">
+<g>
+    <rect x="25" y="40" width="9" height="16" fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" stroke-width="2"/>
+    <rect x="40" y="40" width="8" height="7" fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" stroke-width="2"/>
+    <polygon fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" stroke-width="2" points="53,32 19,32.0003 19,31 35,15 53,31"/>
+    <rect x="19" y="32" width="34" height="24" fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" stroke-width="2"/>
+    <polygon fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" stroke-width="2" points="29,21 24,26 24,17 29,17"/>
+  </g>
+</g>
 </svg>
