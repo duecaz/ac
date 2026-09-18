@@ -121,13 +121,35 @@ export function createPocketbaseRemoteStore() {
         }
       }
 
+      /** El camino inverso, para la fila que NO conocemos: CREAR primero y, si el
+       *  id ya estaba, actualizar. Es el mismo baile del revés, y el motivo es
+       *  la consola: probar con PATCH una actividad recién creada imprime un
+       *  404 rojo en cada primera sincronización. La actividad se guardaba bien
+       *  —el POST de después la crea— pero el dueño lo vio y preguntó, con
+       *  razón. Una consola llena de errores ESPERADOS enseña a no mirar los de
+       *  verdad, que es exactamente lo que nos costó horas el 16 de septiembre.
+       *  PocketBase responde 400 al crear con un id que ya existe. */
+      async function crearOActualizar() {
+        try {
+          await pbFetch('/api/collections/activities/records', {
+            method: 'POST', body: JSON.stringify(payload),
+          });
+        } catch (e) {
+          const st = estadoPb(e);
+          if (st !== 400 && st !== 409) throw e;
+          await pbFetch(`/api/collections/activities/records/${pbId}`, {
+            method: 'PATCH', body: JSON.stringify(payload),
+          });
+        }
+      }
+
       if (getSynced().has(pbId)) {
-        // Record is known to exist in PB → PATCH directly, no 404 in console.
+        // La fila EXISTE que sepamos → PATCH directo, sin 404 en la consola.
         // Si aun así da 404, fue BORRADA fuera: se olvida la marca y se recrea.
         await upsert(() => unmarkSynced(pbId));
       } else {
-        // Unknown state: try PATCH first; 404 means it doesn't exist yet → POST.
-        await upsert();
+        // No la conocemos → lo más probable con diferencia es que sea NUEVA.
+        await crearOActualizar();
       }
       markSynced(pbId);
     },

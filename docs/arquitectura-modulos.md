@@ -35,7 +35,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 42 · 5796 | 19 · 3180 | 0.55 |
 | **informes/tareas** | después de clase | 10 · 1388 | 5 · 619 | 0.45 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 91 · 7766 | 13 · 1945 | 0.25 |
-| **infra/común** | todo lo anterior | 195 · 26601 | 79 · 10410 | 0.39 |
+| **infra/común** | todo lo anterior | 195 · 26623 | 79 · 10428 | 0.39 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -105,7 +105,7 @@ graph TD
 |---|---|
 | **arranque** | `pb_hooks/aulareto-lib.js` (364) · `pb_hooks/aulareto.pb.js` (354) · `qa/hoja.js` (330) · `main.teacher.js` (166) · `main.embed.js` (69) |
 | **vistas** | `views/hostLive.js` (377) · `views/teamsView.js` (361) · `views/playerView.js` (350) · `views/vs/arena.js` (343) · `views/live/hostRondas.js` (325) |
-| **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (575) · `adapters/pocketbase/realtimeAnswers.js` (484) · `adapters/local/realtime.js` (389) · `adapters/pocketbase/remoteStore.js` (279) · `adapters/pocketbase/realtimeStream.js` (218) |
+| **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (575) · `adapters/pocketbase/realtimeAnswers.js` (484) · `adapters/local/realtime.js` (389) · `adapters/pocketbase/remoteStore.js` (301) · `adapters/pocketbase/realtimeStream.js` (218) |
 | **core** | `core/soloPlayer.js` (542) · `core/auth.js` (490) · `core/vsAnimations.js` (444) · `core/aiContent.js` (413) · `core/storage.js` (380) |
 | **kernel** | `kernel/contracts/activity.js` (425) · `kernel/contracts/session.js` (354) · `kernel/contracts/template.js` (342) · `kernel/session/vsMachine.js` (286) · `kernel/session/teamsMachine.js` (251) |
 | **plantillas** | `templates/match/player.js` (351) · `templates/diagram/player.js` (306) · `templates/tangram/player.js` (303) · `templates/colorear/player.js` (265) · `templates/diagram/editor.js` (241) |

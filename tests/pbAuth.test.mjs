@@ -36,14 +36,32 @@ const act = { id: 'act_owned01', template: 'quiz', title: 'T', visibility: 'priv
 // ── saveActivity firma con token y añade owner ───────────────────────────────
 {
   calls.length = 0;
-  script = [{ status: 404, body: {} }, { status: 200, body: { id: 'actowned010000' } }]; // PATCH 404 → POST 200
+  script = [{ status: 200, body: { id: 'actowned010000' } }];
   await rs.saveActivity(act);
-  const post = calls.find(c => c.method === 'POST');
-  assert.ok(post, 'hubo POST de creación');
+  // UNA ACTIVIDAD QUE NO CONOCEMOS SE CREA, NO SE ACTUALIZA. Antes se probaba
+  // PATCH primero y el 404 de rigor salía en rojo en la consola en CADA primera
+  // sincronización. Se guardaba bien —el POST de después la creaba— pero una
+  // consola llena de errores ESPERADOS enseña a no mirar los de verdad, que es
+  // lo que nos costó horas el 16 de septiembre.
+  assert.strictEqual(calls[0].method, 'POST', 'la primera llamada de una fila desconocida es POST, no PATCH');
+  assert.strictEqual(calls.length, 1, 'y con eso basta: ni un 404 de paso');
+  const post = calls[0];
   assert.strictEqual(post.headers['Authorization'], 'TOK123', 'la escritura lleva el token del profe');
   const body = JSON.parse(post.body);
   assert.strictEqual(body.owner, 'teacher_9', 'el registro incluye owner = id del profe');
-  ok('saveActivity firma con token y setea owner');
+  ok('una actividad nueva se CREA de primeras (sin 404 en la consola), firmada y con owner');
+}
+
+// ── …y si el id ya existía, se actualiza (contra-prueba del anterior) ─────────
+// El orden nuevo no puede perder el caso legítimo: dos navegadores del mismo
+// profe, o la marca de sincronizadas vaciada, dan una fila que SÍ existe.
+{
+  calls.length = 0;
+  script = [{ status: 400, body: { message: 'id ya existe' } }, { status: 200, body: {} }];
+  await rs.saveActivity({ ...act, id: 'act_owned02' });
+  assert.deepStrictEqual(calls.map(c => c.method), ['POST', 'PATCH'],
+    'si el id ya estaba, el POST cae en 400 y se actualiza');
+  ok('CONTRA-PRUEBA: una fila que ya existía se actualiza igual');
 }
 
 // ── fallback anónimo si el token es rechazado (401) con reglas aún públicas ───
