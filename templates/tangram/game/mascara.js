@@ -2,7 +2,7 @@
 // una matriz de bits en memoria (sin canvas, sin DOM), así se prueba entera
 // desde Node y el player la reutiliza tal cual sobre un <canvas> oculto real.
 // Se llama UNA vez por soltar pieza, nunca por fotograma (lo dice el enunciado).
-import { transformarPieza } from './geometria.js';
+import { poligonosDe } from './geometria.js';
 
 /**
  * @typedef {import('./piezas.js').Punto} Punto
@@ -67,27 +67,17 @@ function dentroPoligono(pts, x, y) {
   return dentro;
 }
 
-/** Colocación → su polígono ya transformado, resolviendo el nombre de pieza
- *  contra el diccionario `piezas` (id → {puntos}).
- *  @param {Colocacion} colocacion
- *  @param {Record<string, Pieza>} piezas
- *  @returns {Punto[]|null} */
-function poligonoDeColocacion(colocacion, piezas) {
-  const pieza = piezas[colocacion.pieza];
-  if (!pieza) return null;
-  return transformarPieza(pieza.puntos, colocacion);
-}
-
 /** Un polígono suelto ([[x,y],...]) o una colocación ({pieza,x,y,rot,flip})
  *  → siempre su polígono de puntos. Un array que NO trae pares de números no
  *  es ninguna de las dos cosas: `null`, igual que una colocación de una pieza
- *  que no está en el diccionario.
+ *  que no está en el diccionario. El polígono de la colocación lo pone su
+ *  dueño, `poligonosDe` (game/geometria.js), no una copia local.
  *  @param {Figura} f
  *  @param {Record<string, Pieza>} piezas
  *  @returns {Punto[]|null} */
 function puntosDe(f, piezas) {
   if (Array.isArray(f)) return Array.isArray(f[0]) ? f : null;
-  return poligonoDeColocacion(f, piezas);
+  return poligonosDe([f], piezas)[0] ?? null;
 }
 
 /** Rasteriza uno o varios polígonos/colocaciones dentro del rectángulo

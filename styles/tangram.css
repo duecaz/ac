@@ -4,9 +4,10 @@
    piezas y la paleta del banco NO son parte de este contrato: son DATO inline
    desde JS (game/piezas.js), como las bolas de Pelotas — la única excepción a
    "nada de #hex" que permite §3 (color de contenido, no del chrome). Los
-   selectores `.ta-edit-*` son el FORMULARIO del editor (miniaturas de
-   siluetas): ahí sí se permite `px` — `EDITOR_SEL` de tests/styles.test.mjs
-   los reconoce por el `edit` en el nombre. */
+   selectores `.ta-edit-*` son el FORMULARIO del editor (figuras de partida,
+   tablero del docente y la vista de la unión): ahí sí se permite `px` —
+   `EDITOR_SEL` de tests/styles.test.mjs los reconoce por el `edit` en el
+   nombre. */
 
 .ta-play { display: flex; flex-direction: column; height: 100%; }
 
@@ -52,18 +53,45 @@
 .ta-pieza polygon:active { cursor: grabbing; }
 
 /* ── Editor (formulario, px permitido: EDITOR_SEL los reconoce por "edit") ── */
+/* Figuras de partida: una tira de miniaturas que se CARGAN al tablero. */
 .ta-edit-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 12px;
-  margin-top: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
 }
 .ta-edit-tile {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 8px; border: 2px solid #dee2e6; border-radius: 10px;
+  padding: 6px; border: 2px solid #dee2e6; border-radius: 10px;
   background: #fff; cursor: pointer;
 }
-.ta-edit-tile.is-active { border-color: #0d6efd; }
-.ta-edit-mini { width: 100%; height: 72px; }
-.ta-edit-mini polygon { fill: #888; stroke: #444; stroke-width: .006; }
+.ta-edit-tile:hover { border-color: #0d6efd; }
+.ta-edit-mini { width: 100%; height: 56px; }
+.ta-edit-mini polygon { fill: #888; stroke: #888; stroke-width: .02; stroke-linejoin: round; }
 .ta-edit-tile__nombre { font-size: 12px; text-align: center; }
+
+/* La mesa: el tablero (las piezas, el MISMO game/tablero.js del player) y al
+   lado «así la verá la clase» (la unión gris, con las mismas reglas de
+   costura que .ta-silueta). En estrecho, apilados. */
+.ta-edit-mesa {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(160px, 2fr);
+  gap: 12px;
+  align-items: start;
+}
+@media (max-width: 640px) { .ta-edit-mesa { grid-template-columns: 1fr; } }
+.ta-edit-tablero {
+  width: 100%; aspect-ratio: 1 / 1; max-height: 520px;
+  border: 2px solid #dee2e6; border-radius: 10px; background: #fff;
+  touch-action: none;   /* el dedo arrastra piezas, no la página */
+}
+.ta-edit-fondo { fill: #fff; }
+.ta-edit-tablero .ta-pieza polygon { stroke: #fff; }   /* el formulario no lleva tokens de skin */
+.ta-edit-vista { display: flex; flex-direction: column; gap: 6px; }
+.ta-edit-vista-svg {
+  width: 100%; max-height: 220px;
+  border: 1px dashed #dee2e6; border-radius: 10px; background: #fafafa;
+}
+.ta-edit-vista-svg .ta-silueta { opacity: 1; }
+.ta-edit-vista-svg .ta-silueta polygon { fill: #666; stroke: #666; }
+.ta-edit-aviso { margin: 0; }

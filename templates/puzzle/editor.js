@@ -10,7 +10,8 @@ import { ensureContent, contenidoPuzzle as contenido } from './content.js';
 // Los DOS bancos viven en el mismo módulo (§21b: un banco, un dueño) y se
 // importan estáticos, igual que en Colorear. Nació dinámico («lo escribe otro
 // agente en paralelo») y ese andamio sobrevivió al fichero que esperaba.
-import { TEMAS, dibujosDe, rutaDibujo, DIBUJOS_PUZZLE, rutaDibujoPuzzle } from '../../core/bancoDibujos.js';
+import { TEMAS, dibujosDe, rutaDibujo, DIBUJOS_PUZZLE, rutaDibujoPuzzle, temaDe } from '../../core/bancoDibujos.js';
+import { escenaColorDe } from '../../core/escenasDibujo.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
@@ -84,7 +85,7 @@ async function pintarLegados(root) {
       const res = await fetch(ruta);
       if (!res.ok) return;   // sin miniatura el botón sale con la etiqueta, no roto
       const img = document.createElement('img');
-      img.src = svgParaPuzzle(await res.text());
+      img.src = svgParaPuzzle(await res.text(), { escena: escenaColorDe(temaDe(d.nombre)) });
       img.alt = '';
       hueco.replaceChildren(img);
     } catch {

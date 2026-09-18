@@ -1097,6 +1097,7 @@ const COINCIDENCIAS = {
   '0.05': 'margen de la caja del tangram (MARGEN_CAJA, ya con dueño en templates/tangram/game/mascara.js) · un umbral del cálculo de contraste — geometría y color, sin relación',
   '0.04': 'umbral de XOR de área para dar el tangram por RESUELTO (UMBRAL_RESUELTO) · margen del viewBox recortado del rompecabezas — un veredicto y un margen, sin relación',
   '0.3': 'respaldo de cobertura de Colorear cuando el lienzo no se puede leer (getImageData) · un valor de una animación del modo Individual — un respaldo de puntuación y un fotograma, sin relación',
+  '0.42': 'CUELLO de la lengüeta del rompecabezas (dónde arranca la curva sobre la arista, fracción de celda) · fracción del ancho de la fila de piezas del tangram en hueco apaisado — geometría de una pieza y maquetación de una bandeja, sin relación',
   '0.02': 'MINIMO de Colorear: la cobertura por debajo de la cual «no has pintado nada» · un valor de la arena del duelo — un umbral pedagógico y una medida de maquetación, sin relación',
   '4000': 'tope de caracteres del mensaje de un log de error · tope de caracteres indexados por el buscador · SPIN_DUR_DEFAULT (el dueño declarado de la duración de giro, ya conectado en wheel/editor.js, wheel/template.js y core/ruleta/render.js) — tres topes de texto/tiempo sin relación entre sí',
 };

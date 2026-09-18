@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **367 módulos · 1473 imports internos.**
+> **369 módulos · 1486 imports internos.**
 
 ### Ir a otro documento
 
@@ -34,8 +34,8 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 15 · 3700 | 13 · 1724 | 0.47 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 42 · 5796 | 19 · 3180 | 0.55 |
 | **informes/tareas** | después de clase | 10 · 1388 | 5 · 619 | 0.45 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 91 · 7876 | 13 · 1945 | 0.25 |
-| **infra/común** | todo lo anterior | 195 · 26625 | 79 · 10521 | 0.40 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 93 · 8444 | 13 · 1945 | 0.23 |
+| **infra/común** | todo lo anterior | 195 · 26730 | 79 · 10909 | 0.41 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -60,11 +60,11 @@ graph TD
   AD["<b>adaptadores</b><br/><small>el transporte: PocketBase | local</small><br/><small>16 módulos</small>"]
   C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>167 módulos</small>"]
   K["<b>kernel</b><br/><small>el motor de sesión: cuándo se liquida</small><br/><small>19 módulos</small>"]
-  T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>95 módulos</small>"]
+  T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>97 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>6 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
   V -->|451| C
-  T -->|243| C
+  T -->|247| C
   AD -->|29| C
   A -->|24| C
   A -->|18| V
@@ -107,8 +107,8 @@ graph TD
 | **vistas** | `views/hostLive.js` (377) · `views/teamsView.js` (361) · `views/playerView.js` (350) · `views/vs/arena.js` (343) · `views/live/hostRondas.js` (325) |
 | **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (575) · `adapters/pocketbase/realtimeAnswers.js` (484) · `adapters/local/realtime.js` (389) · `adapters/pocketbase/remoteStore.js` (301) · `adapters/pocketbase/realtimeStream.js` (218) |
 | **core** | `core/soloPlayer.js` (542) · `core/auth.js` (490) · `core/vsAnimations.js` (444) · `core/aiContent.js` (413) · `core/storage.js` (380) |
-| **kernel** | `kernel/contracts/activity.js` (425) · `kernel/contracts/session.js` (354) · `kernel/contracts/template.js` (342) · `kernel/session/vsMachine.js` (286) · `kernel/session/teamsMachine.js` (251) |
-| **plantillas** | `templates/match/player.js` (351) · `templates/diagram/player.js` (306) · `templates/tangram/player.js` (303) · `templates/puzzle/player.js` (266) · `templates/colorear/player.js` (265) |
+| **kernel** | `kernel/contracts/activity.js` (442) · `kernel/contracts/session.js` (354) · `kernel/contracts/template.js` (342) · `kernel/session/vsMachine.js` (286) · `kernel/session/teamsMachine.js` (251) |
+| **plantillas** | `templates/match/player.js` (351) · `templates/diagram/player.js` (306) · `templates/puzzle/player.js` (290) · `templates/puzzle/game/imagen.js` (283) · `templates/colorear/player.js` (265) |
 | **contenido** | `kernel/content/qaAdapt.js` (169) · `kernel/content/models.js` (155) · `kernel/content/switch.js` (131) · `kernel/content/convert.js` (123) · `kernel/content/sessionItems.js` (37) |
 | **config** | `pocketbase.config.js` (45) |
 
@@ -121,7 +121,7 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 | `core/html.js` | 120 |
 | `core/events.js` | 76 |
 | `core/registry.js` | 53 |
-| `core/frontera.js` | 49 |
+| `core/frontera.js` | 50 |
 | `core/toast.js` | 43 |
 | `core/ids.js` | 30 |
 | `core/clock.js` | 26 |
@@ -141,7 +141,7 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 | `core/auth.js` | 490 | 22 |
 | `adapters/pocketbase/realtimeAnswers.js` | 484 | 1 |
 | `core/vsAnimations.js` | 444 | 4 |
-| `kernel/contracts/activity.js` | 425 | 0 |
+| `kernel/contracts/activity.js` | 442 | 0 |
 | `core/aiContent.js` | 413 | 3 |
 | `adapters/local/realtime.js` | 389 | 0 |
 

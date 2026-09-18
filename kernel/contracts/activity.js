@@ -212,10 +212,27 @@
  */
 
 /**
- * Tangram: `figura` es el nombre de una silueta del catálogo.
+ * Tangram (v2): dónde queda cada una de las 7 piezas en el cuadrado unidad —
+ * la misma forma que `Colocacion` de templates/tangram/game/geometria.js (el
+ * kernel no importa de las plantillas, así que se declara aquí).
+ * @typedef {Object} TangramColocacion
+ * @property {string} pieza
+ * @property {number} x
+ * @property {number} y
+ * @property {number} rot
+ * @property {boolean} flip
+ */
+/**
+ * Tangram (v2): la silueta que juega la clase ES la unión de `colocaciones`
+ * (7, una por pieza, ya imantadas), que el docente arma en el editor —el
+ * catálogo son solo figuras de partida—. `nombre` es lo que se lee al
+ * resolver. La v1 guardaba `figura` (nombre de silueta del catálogo) y la
+ * sube `TangramTemplate.migrateContent` (§24).
  * @typedef {Object} TangramItem
  * @property {string} id
- * @property {string} figura
+ * @property {string} nombre
+ * @property {TangramColocacion[]} colocaciones
+ * @property {string} [figura]   legado v1 — solo hasta migrar
  */
 /**
  * @typedef {Object} TangramContent

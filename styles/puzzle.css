@@ -85,7 +85,9 @@
      ya declara el eje en línea. */
   display: flex; flex-wrap: wrap; align-content: center;
   justify-content: center;
-  gap: max(4px, 1.4cqmin);
+  /* El hueco entre piezas es pequeño A PROPÓSITO: la caja ya lleva el aire
+     de las lengüetas (TAB por lado), que separa los núcleos de sobra. */
+  gap: max(2px, .6cqmin);
   padding: max(4px, 1cqmin);
 }
 .pu-piece {
@@ -103,26 +105,53 @@
      del ancho — dos de esas ya no cabían de alto en la franja y se comían
      el tablero. Con el piso táctil, si NO caben todas en una fila (3×3 en un
      marco estrecho), `flex-wrap` abre una segunda. */
-  width: calc(min(100cqw, 62cqh) / var(--pu-columnas, 2) * .7);   /* 0,7 de una celda; al encajar toma el 100 % */
-  border-radius: max(4px, 1cqmin);
-  background-repeat: no-repeat;
-  box-shadow: 0 max(2px, .5cqmin) max(6px, 1.4cqmin) rgba(0,0,0,.28);
+  /* LA CAJA de la pieza es la celda ampliada por las LENGÜETAS (`--pu-caja` =
+     1+2·TAB, lo declara el player desde game/contornos.js: un solo dueño del
+     margen). El NÚCLEO es 0,55 de una celda (la caja, 0,88): con el núcleo a
+     0,7 la caja medía 1,12 celdas —el margen de las lengüetas es aire en la
+     bandeja— y nueve piezas ya no cabían en una fila a 1280×800: la bandeja
+     abría una segunda, el flex ACHATABA el tablero (439×341, medido) y las
+     celdas dejaban de ser cuadradas. Por eso el tamaño lleva DOS topes más,
+     los de la FRANJA que le queda a la bandeja (100 − 62 − 2 = 36 cqh; 33
+     tras relleno y huecos): que las filas DECLARADAS por el player
+     (`--pu-filas-bandeja`: 1 hasta 6 piezas, 2 con más) quepan de alto —el
+     tope se pasa a ancho por la proporción de la celda— y que las piezas de
+     cada fila (`--pu-por-fila`) quepan a lo ancho (90cqw: el resto son
+     huecos y relleno). Con eso la bandeja nunca pasa de sus filas ni se
+     come el tablero, en ninguna ventana (medido apaisado y vertical). Al
+     encajar, la caja toma (1+2·TAB) celdas del tablero. */
+  width: min(
+    calc(min(100cqw, 62cqh) / var(--pu-columnas, 2) * .55 * var(--pu-caja, 1.6)),
+    calc(33cqh / var(--pu-filas-bandeja, 2) * var(--pu-filas, 1) / var(--pu-columnas, 1)),
+    calc(90cqw / var(--pu-por-fila, 1))
+  );
+  /* La SOMBRA sigue al recorte: `box-shadow` pinta la caja cuadrada; `filter:
+     drop-shadow` en la caja EXTERIOR (que no lleva clip) sigue la forma. Es
+     ESTÁTICA (nunca se anima ni se transiciona: ley de animaciones). */
+  filter: drop-shadow(0 max(2px, .5cqmin) max(3px, .8cqmin) rgba(0,0,0,.35));
   cursor: grab;
   touch-action: none; user-select: none; -webkit-user-select: none;
   will-change: transform;
 }
+/* LA FORMA: recortada por el <clipPath> de su contorno (objectBoundingBox,
+   escala con la caja) y con la imagen ENTERA de fondo, desplazada a su celda
+   (`background-size`/`-position` en %, calculados en game/contornos.js). */
+.pu-piece__forma {
+  width: 100%; height: 100%;
+  background-repeat: no-repeat;
+}
 .pu-piece--arrastrando {
   cursor: grabbing;
   z-index: 20;
-  box-shadow: 0 max(4px, 1cqmin) max(12px, 2.4cqmin) rgba(0,0,0,.4);
 }
 .pu-piece--volviendo { transition: transform 220ms ease; }
 .pu-piece--fija {
   cursor: default;
   pointer-events: none;
-  box-shadow: none;
-  border-radius: 0;
+  filter: none;
 }
+/* Las definiciones de los recortes no ocupan sitio en el tablero. */
+.pu-clips { position: absolute; }
 
 .pu-error {
   margin: auto;

@@ -91,8 +91,11 @@ export const DIBUJOS = [
 /** El tema de una lámina, o `null` si no está en el banco. Lo pide el player
  *  para elegir el FONDO de la hoja: un animal se colorea sobre un campo, un
  *  coche sobre una carretera. */
-/** @param {string|null|undefined} nombre @returns {string|null} */
-export const temaDe = (nombre) => DIBUJOS.find(d => d.nombre === nombre)?.tema ?? null;
+/** Mira en LOS DOS bancos: el rompecabezas también pone su decorado por tema y
+ *  un legado `casa-geo` es tan «cosas» como la casa de OpenMoji.
+ *  @param {string|null|undefined} nombre @returns {string|null} */
+export const temaDe = (nombre) =>
+  (DIBUJOS.find(d => d.nombre === nombre) ?? DIBUJOS_PUZZLE.find(d => d.nombre === nombre))?.tema ?? null;
 
 /** Las láminas de un tema, en el orden del banco. */
 /** @param {string} tema @returns {Dibujo[]} */

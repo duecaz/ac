@@ -8,14 +8,17 @@ import { capturarPuntero } from '../../core/events.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
-import { shuffle } from '../../core/azar.js';
+import { azar, shuffle } from '../../core/azar.js';
+import { rid } from '../../core/ids.js';
 import { celdas, encaja, barajarPosiciones } from './game/rejilla.js';
+import { contornos, TAB, fondoPieza, cajaEncajada, rectNucleo } from './game/contornos.js';
 import { svgParaPuzzle } from './game/imagen.js';
 import { scorePuzzleSubmission } from './scorer.js';
 // Los DOS bancos viven en el mismo módulo (§21b: un banco, un dueño) y se
 // importan estáticos, igual que en Colorear. Nació dinámico («lo escribe otro
 // agente en paralelo») y ese andamio sobrevivió al fichero que esperaba.
-import { rutaDibujoPuzzle, rutaDibujo } from '../../core/bancoDibujos.js';
+import { rutaDibujoPuzzle, rutaDibujo, temaDe } from '../../core/bancoDibujos.js';
+import { escenaColorDe } from '../../core/escenasDibujo.js';
 import { PUZZLE_POR_DEFECTO } from './content.js';
 
 /**
@@ -60,16 +63,19 @@ async function imagenDe(nombre) {
   // Primero el banco CON ZONAS (legado): su caja sale del texto. Si el nombre
   // no está ahí, la lámina coloreada de OpenMoji: sin zonas, la caja se mide
   // en el navegador. Si no está en ninguno (contenido viejo), no hay imagen y
-  // el player ya pinta su aviso.
+  // el player ya pinta su aviso. En los dos casos la figura se compone sobre
+  // el DECORADO de su tema (§8d del handoff: la imagen llena el marco, o las
+  // esquinas del tablero son piezas en blanco).
+  const escena = escenaColorDe(temaDe(nombre));
   const conZonas = rutaDibujoPuzzle(nombre);
   if (conZonas) {
     const texto = await textoDe(conZonas);
-    return texto === null ? null : svgParaPuzzle(texto);
+    return texto === null ? null : svgParaPuzzle(texto, { escena });
   }
   const lamina = rutaDibujo(nombre, 'color');
   if (!lamina) return null;
   const texto = await textoDe(lamina);
-  return texto === null ? null : svgParaPuzzle(texto, { caja: cajaDeSvg(texto) });
+  return texto === null ? null : svgParaPuzzle(texto, { caja: cajaDeSvg(texto), escena });
 }
 
 /**
@@ -85,15 +91,20 @@ function estiloHueco(c, filas, columnas) {
     + `width:${100 / columnas}%;height:${100 / filas}%;`;
 }
 
+// LA PIEZA: una caja exterior (`.pu-piece`, la que se arrastra y se mide,
+// con la sombra —`box-shadow` no sigue al recorte, `filter: drop-shadow` sí—)
+// y dentro la FORMA (`.pu-piece__forma`), recortada por el `<clipPath>` de su
+// contorno y con la imagen entera de fondo desplazada a su celda (la
+// aritmética del fondo para la caja ampliada vive en `game/contornos.js`).
 // `url('...')` con comilla SIMPLE a propósito: la URL viaja dentro de un
 // atributo `style="..."` delimitado con comillas DOBLES — una comilla doble
 // literal ahí cortaría el atributo a mitad de camino. `encodeURIComponent`
 // (game/imagen.js) ya escapa cualquier comilla simple que traiga la imagen.
-/** @param {string} dataUrl @param {Celda} c @param {number} filas @param {number} columnas @returns {string} */
-function fondoPieza(dataUrl, c, filas, columnas) {
-  return `background-image:url('${dataUrl}');`
-    + `background-size:${columnas * 100}% ${filas * 100}%;`
-    + `background-position:${c.bgPos};`;
+/** @param {string} dataUrl @param {string} clipId @param {Celda} c @param {number} filas @param {number} columnas @returns {string} */
+function piezaHtml(dataUrl, clipId, c, filas, columnas) {
+  return `<div class="pu-piece" data-piece="${c.i}" style="aspect-ratio:${filas}/${columnas}">`
+    + `<div class="pu-piece__forma" style="clip-path:url(#${clipId}-${c.i});`
+    + `background-image:url('${dataUrl}');${fondoPieza(c, filas, columnas).css}"></div></div>`;
 }
 
 /**
@@ -111,9 +122,15 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
   const filas = item.filas || def.filas, columnas = item.columnas || def.columnas;
   const total = filas * columnas;
   const rejilla = celdas(filas, columnas);
+  // LA BANDEJA se DECLARA (el CSS no sabe contar piezas): hasta 6 piezas van
+  // en UNA fila, con más, en DOS de ⌈n/2⌉. El CSS acota el tamaño de la pieza
+  // para que esas filas quepan en la franja y a lo ancho (styles/puzzle.css):
+  // si la bandeja se desbordase, el flex achataría el tablero (medido).
+  const filasBandeja = total > 6 ? 2 : 1;
+  const porFila = Math.ceil(total / filasBandeja);
 
   mount(rootSel, html`
-    <div class="ww-player pu-play" style="--pu-columnas:${columnas}">
+    <div class="ww-player pu-play" style="--pu-filas:${filas};--pu-columnas:${columnas};--pu-caja:${1 + 2 * TAB};--pu-filas-bandeja:${filasBandeja};--pu-por-fila:${porFila}">
       ${cabeceraHtml({ pagina: `0 / ${total}` })}
       <div class="edu-sec edu-sec--tablero pu-arena">
         <div class="pu-board" data-pu-board></div>
@@ -153,15 +170,19 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
 
   emitGame(GameEvents.QUESTION_SHOWN, { idx: 0, total: 1, item });
 
+  // Los CONTORNOS (lengüeta y hueco) se deciden con el azar del juego y viven
+  // como `<clipPath>` en el tablero, con ids únicos POR MONTAJE (`rid`): el
+  // escenario se remonta y dos rondas con el mismo `#pu-clip-0` chocarían.
+  const clipId = rid('clip_');
+  const formas = contornos(filas, columnas, azar.random);
   boardEl.innerHTML = `
+    <svg width="0" height="0" aria-hidden="true" class="pu-clips"><defs>${formas.map(f =>
+      `<clipPath id="${clipId}-${f.i}" clipPathUnits="objectBoundingBox"><path d="${f.d}"/></clipPath>`).join('')}</defs></svg>
     <div class="pu-ghost" style="background-image:url(&quot;${dataUrl}&quot;)"></div>
     ${rejilla.map(c => `<div class="pu-hueco" data-hueco="${c.i}" style="${estiloHueco(c, filas, columnas)}"></div>`).join('')}`;
 
   const orden = barajarPosiciones(total, shuffle);
-  piecesEl.innerHTML = orden.map(i => {
-    const c = rejilla[i];
-    return `<div class="pu-piece" data-piece="${i}" style="aspect-ratio:${filas}/${columnas};${fondoPieza(dataUrl, c, filas, columnas)}"></div>`;
-  }).join('');
+  piecesEl.innerHTML = orden.map(i => piezaHtml(dataUrl, clipId, rejilla[i], filas, columnas)).join('');
 
   let encajadas = 0;
   const maxScore = scorePuzzleSubmission({ value: { encajadas: total, total }, item, activity }).points;
@@ -222,14 +243,17 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
       h: (pieceRect.height / boardRect.height) * 100,
     } : { x: -999, y: -999, w: 0, h: 0 };
 
-    if (encaja(pieceRectPct, cellRectPct(i))) {
-      const c = rejilla[i];
+    // Se juzga el NÚCLEO de la pieza (su caja menos el margen de las
+    // lengüetas), no la caja ampliada: con ella el solape con la propia celda
+    // no llega al 50 % y no encajaría ni soltada en su sitio.
+    if (encaja(rectNucleo(pieceRectPct), cellRectPct(i))) {
+      const caja = cajaEncajada(rejilla[i], filas, columnas);
       pieza.style.transform = '';
       pieza.style.position = 'absolute';
-      pieza.style.left = `${(c.col * 100) / columnas}%`;
-      pieza.style.top = `${(c.fila * 100) / filas}%`;
-      pieza.style.width = `${100 / columnas}%`;
-      pieza.style.height = `${100 / filas}%`;
+      pieza.style.left = `${caja.left}%`;
+      pieza.style.top = `${caja.top}%`;
+      pieza.style.width = `${caja.width}%`;
+      pieza.style.height = `${caja.height}%`;
       pieza.classList.add('pu-piece--fija');
       boardEl.appendChild(pieza);   // ya no se puede mover: queda fija en su hueco
       encajadas++;

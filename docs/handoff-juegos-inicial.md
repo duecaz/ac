@@ -345,6 +345,18 @@ plana) detrás de la figura, para que la esquina sea «el sol» o «la hierba» 
 no un trozo en blanco. Va a la tanda 2 como **2d**, antes de las piezas Bézier:
 sin ella, las piezas con pestaña siguen naciendo vacías por las esquinas.
 
+**2d EJECUTADA (v1.51.711).** `escenaColorDe(tema)` (`core/escenasDibujo.js`)
+es la MISMA geometría que la escena de línea de Colorear, coloreada plana (las
+formas declaran su color con `data-fill`; una lista, dos salidas). El player
+del puzzle compone la figura recortada sobre ella (`componerEscena`, pies en
+`SUELO`). Medido con la sonda de piezas (bloques 6×6 por celda, umbral 40):
+la primera versión, con el mismo prado a los dos lados, dejaba **49 de 51**
+dibujos con dos piezas casi idénticas (abajo izquierda = abajo derecha); con
+un elemento propio en cada esquina y algo a media altura en un lateral, **51
+de 51** se distinguen. La causa (dónde hay elementos) la fija
+`tests/colorear.test.mjs` §9; el efecto lo mide la sonda, que vive con las
+otras de esta sesión (no es red de CI: 2,5 min de navegador por barrido).
+
 #### TANDA 2 · DE NOCHE — pesada (ritual entero, capturas y redes nuevas)
 
 | # | Qué | Coste | Por qué de noche |
@@ -355,6 +367,32 @@ sin ella, las piezas con pestaña siguen naciendo vacías por las esquinas.
 
 **Orden dentro de la noche**: 2a primero (es independiente y es lo que más se
 nota), luego 2b. 2c solo si se quieren figuras antes de que exista 2b.
+
+**EJECUTADA (v1.51.711, noche del 2026-09-18), con este resultado:**
+- **2a HECHA.** `templates/puzzle/game/contornos.js` (puro): por cada arista
+  interior se decide con el azar inyectado hacia dónde sale la lengüeta; la
+  vecina recibe la MISMA curva invertida. El path va normalizado a la caja de
+  la pieza (celda + `TAB`=0,3 por lado) para un `<clipPath
+  clipPathUnits="objectBoundingBox">` — lo único que escala con la pieza. La
+  sombra sigue al recorte con `filter: drop-shadow` en la caja exterior
+  (estática). El encaje se juzga con el NÚCLEO (`rectNucleo`). Mirado en
+  captura: piezas con lengüeta, imagen alineada con el fantasma al encajar,
+  matriz 39/0.
+- **2b HECHA.** Formato v2 del tangram (`{nombre, colocaciones}`,
+  `templateVersion: 2` + `migrateContent` idempotente); `game/tablero.js` es
+  el tablero ÚNICO (gestos, imán, pintado) que montan player y editor; el
+  docente arrastra las 7 piezas, ve la unión gris «así la verá la clase» y un
+  aviso si las piezas no se tocan (`componentesConexas`). El catálogo queda
+  como «figuras de partida». Deuda anotada: el imán es la rejilla 1/16 y la
+  casa vive en múltiplos de √2/4 — cargada intacta se guarda exacta; movida y
+  devuelta a mano se pega a 0,6875 (bajo el trazo; el XOR del 4 % lo tolera).
+- **2c NO HECHA.** El agente que la intentaba (render → mirar → iterar) se
+  cortó por límite de sesión sin dejar ninguna figura que pasara el juicio
+  visual. Con 2b hecha deja de ser puente: el docente construye la figura en
+  el editor y la guarda con nombre. Si se quiere un catálogo de partida más
+  rico, se hace ahí (arrastrar, mirar, guardar) y se exporta a `siluetas.js`
+  con su `solucion` — que es exactamente el método que faltaba (mirar antes
+  de dar por buena una figura).
 
 **Lo que NO se hace**: buscar más bancos de tangram (§8c, ya mirado).
 

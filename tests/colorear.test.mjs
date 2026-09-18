@@ -164,4 +164,67 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   ok(`los ${TEMAS.length} temas tienen decorado de LÍNEA, pintable y apoyado en el mismo suelo`);
 }
 
+// ── 8. LA MISMA ESCENA, COLOREADA PLANA (para el rompecabezas) ───────────────
+// Una geometría, dos lecturas (§21b): la variante de color no puede redibujar
+// nada — solo rellena cielo y suelo y pinta las formas que DECLARAN su color.
+{
+  const { escenaColorDe } = await import('../core/escenasDibujo.js');
+  for (const t of TEMAS) {
+    const linea = escenaDe(t.id), color = escenaColorDe(t.id);
+    assert.ok(color, `el tema "${t.id}" no tiene escena coloreada`);
+    assert.match(color, /<rect x="0" y="0" width="100" height="100" fill="#[0-9a-f]{6}"\/>/, `${t.id}: sin cielo`);
+    assert.ok(color.includes(`<rect x="0" y="${SUELO}" width="100"`), `${t.id}: el suelo relleno no apoya en SUELO`);
+    // Las mismas formas: cada `d=`/`cx=` de la línea está en la coloreada.
+    for (const m of linea.matchAll(/ d="[^"]*"| cx="[^"]*"| x="\d+" y="\d+" width/g)) {
+      assert.ok(color.includes(m[0]), `${t.id}: la variante coloreada perdió una forma (${m[0].slice(0, 30)}…)`);
+    }
+    // Todo `data-fill` declarado se convirtió en `fill`, y al menos hay uno.
+    const declarados = [...linea.matchAll(/data-fill="(#[0-9a-f]{6})"/g)].map(m => m[1]);
+    assert.ok(declarados.length >= 1, `${t.id}: ninguna forma declara color`);
+    for (const c of declarados) assert.ok(color.includes(`fill="${c}"`), `${t.id}: el color ${c} declarado no se aplicó`);
+    assert.ok(!/fill="none"[^>]*data-fill=/.test(color), `${t.id}: queda una forma con data-fill sin aplicar`);
+    // La de LÍNEA sigue sin relleno alguno (Colorear la necesita transparente).
+    assert.ok(!/\sfill="#/.test(linea), `${t.id}: la escena de línea trae relleno`);
+  }
+  assert.strictEqual(escenaColorDe('inventado'), '');
+  assert.strictEqual(escenaColorDe(null), '');
+  ok(`los ${TEMAS.length} temas tienen su escena coloreada plana: mismas formas, cielo, suelo y los colores declarados`);
+}
+
+// ── 9. CADA ESQUINA TIENE LO SUYO (las piezas del rompecabezas se distinguen) ─
+// Medido con la sonda de piezas 3×3 (v1.51.711): con el mismo prado a los dos
+// lados, 49 de 51 dibujos daban dos piezas casi idénticas; con un elemento
+// propio en cada esquina y algo a media altura en un lado, 51 de 51 se
+// distinguen. Este test fija la CAUSA (dónde hay elementos), que es lo que se
+// puede comprobar sin navegador; la sonda mide el EFECTO.
+{
+  /** Dónde ancla cada forma: el centro de un círculo, la esquina de un rect o
+   *  el primer punto de un path. @param {string} esc @returns {[number, number][]} */
+  const anclas = (esc) => {
+    /** @type {[number, number][]} */
+    const out = [];
+    for (const m of esc.matchAll(/<circle[^>]*cx="([\d.]+)"[^>]*cy="([\d.]+)"/g)) out.push([+m[1], +m[2]]);
+    for (const m of esc.matchAll(/<rect[^>]*\sx="([\d.]+)"[^>]*\sy="([\d.]+)"/g)) out.push([+m[1], +m[2]]);
+    for (const m of esc.matchAll(/<path[^>]*\sd="M([\d.]+) ([\d.]+)/g)) out.push([+m[1], +m[2]]);
+    return out;
+  };
+  const REGIONES = {
+    'arriba izquierda': (/** @type {number} */ x, /** @type {number} */ y) => x < 30 && y < 33,
+    'arriba derecha':   (/** @type {number} */ x, /** @type {number} */ y) => x > 70 && y < 33,
+    'abajo izquierda':  (/** @type {number} */ x, /** @type {number} */ y) => x < 30 && y > 67,
+    'abajo derecha':    (/** @type {number} */ x, /** @type {number} */ y) => x > 70 && y > 67,
+  };
+  for (const t of TEMAS) {
+    const pts = anclas(escenaDe(t.id));
+    for (const [nombre, dentro] of Object.entries(REGIONES)) {
+      assert.ok(pts.some(([x, y]) => dentro(x, y)), `escena "${t.id}": nada en la esquina ${nombre} — esa pieza saldría en blanco`);
+    }
+    // A media altura, en un lado al menos: una figura alta y estrecha (la piña)
+    // deja los dos laterales del medio iguales si el decorado no pone nada ahí.
+    assert.ok(pts.some(([x, y]) => (x < 30 || x > 70) && y >= 33 && y <= 67),
+      `escena "${t.id}": nada a media altura en los laterales — las piezas 3 y 5 serían iguales`);
+  }
+  ok(`las ${TEMAS.length} escenas ponen algo propio en las cuatro esquinas y a media altura`);
+}
+
 console.log(`\ncolorear.test: ${passed} checks passed`);

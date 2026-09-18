@@ -3,9 +3,11 @@
 import assert from 'node:assert';
 import { PIEZAS, ORDEN_PIEZAS, areaPoligono } from '../templates/tangram/game/piezas.js';
 import { SILUETAS, ORDEN_SILUETAS } from '../templates/tangram/game/siluetas.js';
-import { transformarPieza, imanRotacion, imanPosicion, imantar } from '../templates/tangram/game/geometria.js';
+import { transformarPieza, imanRotacion, imanPosicion, imantar, poligonosDe, bboxDe } from '../templates/tangram/game/geometria.js';
 import { xorArea, estaResuelto, UMBRAL_RESUELTO, componentesConexas } from '../templates/tangram/game/mascara.js';
 import { scoreTangramSubmission, PUNTOS_RESOLVER, PIEZAS_TOTAL } from '../templates/tangram/scorer.js';
+import { ensureContent, normalizarItem } from '../templates/tangram/content.js';
+import { TangramTemplate } from '../templates/tangram/template.js';
 import '../templates/tangram/index.js'; // efecto: registra la plantilla
 import { getTemplate } from '../core/registry.js';
 import { checkTemplateContract } from '../core/templateContract.js';
@@ -162,11 +164,130 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   assert.strictEqual(T.meta.modes.async, false, 'juego: sin Tarea (§4c)');
   ok('contrato de plantilla (core/templateContract.js) sin incidencias');
 
-  // defaultContent() debe traer una figura válida (nunca nace vacía).
+  // defaultContent() debe traer una figura válida (nunca nace vacía): v2, con
+  // nombre y las 7 colocaciones, y esa figura se resuelve con sus propias piezas.
   const dc = T.meta.defaultContent();
   assert.ok(Array.isArray(dc.items) && dc.items.length === 1);
-  assert.ok(SILUETAS[dc.items[0].figura], 'la figura demo existe en el catálogo');
-  ok('defaultContent trae una figura jugable');
+  const demo = dc.items[0];
+  assert.ok(demo.nombre && demo.colocaciones.length === 7, 'el ítem demo es v2 (nombre + 7 colocaciones)');
+  assert.ok(estaResuelto(poligonosDe(demo.colocaciones), demo.colocaciones, PIEZAS), 'la figura demo se resuelve con sus propias colocaciones');
+  ok('defaultContent trae una figura jugable (v2)');
+}
+
+// ── (e) poligonosDe = LA derivación de la silueta (§21b). CONTRA-PRUEBA de que
+//     es correcta: para cuadrado y casa debe dar EXACTAMENTE los `poligonos` que
+//     el catálogo declara a mano (tolerancia 1e-6), en el mismo orden que la
+//     solución. Y la caja se DERIVA de esos puntos: coincide con la del catálogo.
+{
+  for (const n of ['cuadrado', 'casa']) {
+    const f = SILUETAS[n];
+    const derivados = poligonosDe(f.solucion, PIEZAS);
+    assert.strictEqual(derivados.length, f.poligonos.length, `${n}: un polígono por colocación`);
+    derivados.forEach((poly, i) => {
+      const esperado = f.poligonos[i];
+      assert.strictEqual(poly.length, esperado.length, `${n}[${i}]: mismo nº de vértices`);
+      poly.forEach(([x, y], j) => {
+        assert.ok(Math.abs(x - esperado[j][0]) < 1e-6 && Math.abs(y - esperado[j][1]) < 1e-6,
+          `${n}[${i}][${j}]: derivado (${x.toFixed(6)},${y.toFixed(6)}) ≠ catálogo (${esperado[j][0]},${esperado[j][1]})`);
+      });
+    });
+    const caja = bboxDe(derivados);
+    for (const k of /** @type {const} */ (['minx', 'miny', 'maxx', 'maxy'])) {
+      assert.ok(Math.abs(caja[k] - f.bbox[k]) < 1e-6, `${n}: bbox.${k} derivada ${caja[k]} ≠ catálogo ${f.bbox[k]}`);
+    }
+  }
+  // Sin `piezas` explícito usa PIEZAS; una colocación de pieza desconocida se omite, no se inventa.
+  assert.strictEqual(poligonosDe(SILUETAS.cuadrado.solucion).length, 7);
+  assert.strictEqual(poligonosDe([{ pieza: 'dragon', x: 0, y: 0, rot: 0, flip: false }]).length, 0);
+  assert.deepStrictEqual(bboxDe([]), { minx: 0, miny: 0, maxx: 1, maxy: 1 }, 'sin puntos: la caja del cuadrado unidad');
+  ok('poligonosDe(solucion) reproduce los polígonos del catálogo (cuadrado y casa, 1e-6) y bboxDe su caja');
+}
+
+// ── (f) MIGRACIÓN v1 → v2 (§24): `{id, figura}` sube a `{id, nombre, colocaciones}`.
+{
+  const M = (c) => TangramTemplate.migrateContent(JSON.parse(JSON.stringify(c)));
+  // Las colocaciones salen en el orden de ORDEN_PIEZAS (el catálogo tiene el
+  // suyo): se comparan por pieza.
+  const porPieza = (cs) => [...cs].sort((a, b) => a.pieza.localeCompare(b.pieza));
+  // Figura del catálogo → su nombre y su solución, sin `figura` residual.
+  const v1 = { items: [{ id: 'it_1', figura: 'casa' }] };
+  const v2 = M(v1);
+  assert.strictEqual(v2.items.length, 1);
+  assert.strictEqual(v2.items[0].id, 'it_1', 'conserva el id');
+  assert.strictEqual(v2.items[0].nombre, SILUETAS.casa.nombre);
+  assert.deepStrictEqual(porPieza(v2.items[0].colocaciones), porPieza(SILUETAS.casa.solucion));
+  assert.ok(!('figura' in v2.items[0]), 'el campo legado no viaja al v2');
+  ok('migrate v1→v2: una figura del catálogo lleva su nombre y su solución');
+
+  // Figura desconocida → la primera del catálogo (nunca un ítem sin piezas).
+  const raro = M({ items: [{ id: 'it_2', figura: 'dragon' }] });
+  assert.strictEqual(raro.items[0].nombre, SILUETAS[ORDEN_SILUETAS[0]].nombre);
+  assert.deepStrictEqual(porPieza(raro.items[0].colocaciones), porPieza(SILUETAS[ORDEN_SILUETAS[0]].solucion));
+  ok('migrate v1→v2: una figura desconocida cae a la primera del catálogo');
+
+  // Idempotente: migrar lo migrado no cambia nada.
+  assert.deepStrictEqual(M(v2), v2, 'migrar dos veces = una');
+  ok('migrate es idempotente');
+
+  // Un ítem v2 NO se toca: ni las colocaciones que el docente armó (aunque
+  // no sean ninguna del catálogo) ni su nombre; y se devuelve la MISMA
+  // referencia (§24: migrar no reescribe lo guardado).
+  const propio = { items: [{ id: 'it_3', nombre: 'Mi cohete', colocaciones: SILUETAS.cuadrado.solucion.map(c => ({ ...c, x: c.x + 3 })) }] };
+  const salida = TangramTemplate.migrateContent(propio);
+  assert.strictEqual(salida, propio, 'un contenido ya v2 vuelve tal cual (misma referencia)');
+  assert.deepStrictEqual(M(propio), propio);
+  ok('migrate: un ítem v2 no se toca');
+
+  // Otro contenido (de otra plantilla) pasa sin tocar.
+  const ajeno = { passages: [] };
+  assert.strictEqual(TangramTemplate.migrateContent(ajeno), ajeno);
+  ok('migrate: contenido de otro modelo se devuelve sin tocar');
+}
+
+// ── (g) ensureContent: vacío o roto → SIEMPRE un ítem con 7 colocaciones,
+//     una por pieza de ORDEN_PIEZAS; las válidas se conservan.
+{
+  const sietePiezas = (item) => {
+    assert.strictEqual(item.colocaciones.length, 7);
+    assert.deepStrictEqual(item.colocaciones.map(c => c.pieza), ORDEN_PIEZAS, 'una por pieza, en orden');
+    for (const c of item.colocaciones) {
+      assert.ok(Number.isFinite(c.x) && Number.isFinite(c.y) && Number.isFinite(c.rot) && typeof c.flip === 'boolean', `${c.pieza}: colocación válida`);
+    }
+    assert.ok(typeof item.nombre === 'string' && item.nombre, 'con nombre');
+    assert.ok(typeof item.id === 'string' && item.id, 'con id (el que traía, o uno nuevo de rid())');
+  };
+  for (const content of [undefined, null, {}, { items: [] }, { items: [null] }, { items: [{ id: 'x' }] }, 'basura']) {
+    const a = /** @type {any} */ ({ content });
+    ensureContent(a);
+    assert.strictEqual(a.content.items.length, 1);
+    sietePiezas(a.content.items[0]);
+  }
+  ok('ensureContent: contenido vacío/roto → un ítem con 7 colocaciones válidas');
+
+  // Roto A MEDIAS: 3 colocaciones buenas (una repetida, una de pieza inventada,
+  // una sin números) → se conservan las buenas y se rellenan las 4 que faltan.
+  const mezcla = normalizarItem({ id: 'it_9', nombre: 'Pez', colocaciones: [
+    { pieza: 'grande1', x: 2, y: 2, rot: 90, flip: 1 },
+    { pieza: 'grande1', x: 9, y: 9, rot: 0, flip: false },   // repetida: se ignora
+    { pieza: 'cuadrado', x: 1, y: 1, rot: 45, flip: false },
+    { pieza: 'dragon', x: 0, y: 0, rot: 0, flip: false },    // pieza inventada
+    { pieza: 'mediano', x: 'no', y: 0, rot: 0, flip: false }, // sin números
+    { pieza: 'pequeno2', x: 0.5, y: 0.5, rot: 0, flip: true },
+  ] });
+  sietePiezas(mezcla);
+  assert.strictEqual(mezcla.nombre, 'Pez');
+  assert.deepStrictEqual(mezcla.colocaciones.find(c => c.pieza === 'grande1'), { pieza: 'grande1', x: 2, y: 2, rot: 90, flip: true });
+  assert.deepStrictEqual(mezcla.colocaciones.find(c => c.pieza === 'cuadrado'), { pieza: 'cuadrado', x: 1, y: 1, rot: 45, flip: false });
+  assert.deepStrictEqual(mezcla.colocaciones.find(c => c.pieza === 'pequeno2'), { pieza: 'pequeno2', x: 0.5, y: 0.5, rot: 0, flip: true });
+  ok('ensureContent/normalizarItem: conserva las colocaciones válidas y rellena las que faltan');
+
+  // Un contenido v2 bueno se deja EN SU SITIO (misma referencia): el editor
+  // y el tablero comparten el array de colocaciones.
+  const bueno = { items: [normalizarItem({ figura: 'casa' })] };
+  const a = /** @type {any} */ ({ content: bueno });
+  ensureContent(a);
+  assert.strictEqual(a.content, bueno, 'contenido v2 válido: misma referencia');
+  ok('ensureContent no reescribe un contenido v2 válido');
 }
 
 console.log(`\n${passed} aserciones OK — tangram`);

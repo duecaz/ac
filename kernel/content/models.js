@@ -126,7 +126,7 @@ export const MODELS = {
     }
   },
   tangram: {
-    name: 'tangram',    // { items: [{ id, figura }] } — figura: nombre de la silueta
+    name: 'tangram',    // { items: [{ id, nombre, colocaciones: [{pieza,x,y,rot,flip}×7] }] } — la silueta la arma el docente (v2)
     newEmpty: () => ({ items: [] }),
     validate(content) {
       /** @type {string[]} */

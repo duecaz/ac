@@ -370,6 +370,39 @@ const dibujosZonasDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'ass
   ok(`los ${DIBUJOS_PUZZLE.length} legados y las ${DIBUJOS.length} láminas de OpenMoji no comparten nombre`);
 }
 
+// ── LA FIGURA SE COMPONE SOBRE SU ESCENA (2d: la imagen llena el marco) ─────
+// Medido en v1.51.710: con el aire recortado, 39 de 51 dibujos seguían dejando
+// piezas casi vacías en las esquinas — es la FORMA, no el aire. Con el
+// decorado detrás, cada pieza tiene algo que reconocer.
+{
+  const { componerEscena, CAJA_FIGURA } = await import('../templates/puzzle/game/imagen.js');
+  const { escenaColorDe, SUELO } = await import('../core/escenasDibujo.js');
+  const figura = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="10 20 50 50"><!-- crédito --><circle cx="35" cy="45" r="20" fill="#f00"/></svg>';
+  const escena = escenaColorDe('animales');
+  assert.ok(escena, 'el tema animales tiene escena coloreada');
+
+  const compuesto = componerEscena(figura, escena);
+  assert.match(compuesto, /^<svg [^>]*viewBox="0 0 100 100">/, 'el lienzo final es el de la escena (100×100)');
+  assert.ok(compuesto.includes(escena), 'la escena va dentro, tal cual');
+  assert.match(compuesto, /<svg x="14" y="6" width="72" height="72" viewBox="10 20 50 50" preserveAspectRatio="xMidYMax meet">/,
+    'la figura se ANIDA con su viewBox recortado intacto, apoyada por abajo');
+  assert.ok(compuesto.includes('<!-- crédito -->') && compuesto.includes('<circle'), 'el contenido (y el crédito) de la figura viajan enteros');
+  assert.strictEqual(CAJA_FIGURA.y + CAJA_FIGURA.h, SUELO, 'los pies de la figura tocan el SUELO de la escena (un solo dueño del 78)');
+  assert.ok(compuesto.indexOf(escena) < compuesto.indexOf('<svg x='), 'la escena se pinta DEBAJO de la figura');
+
+  // Contra-pruebas: sin escena no se toca nada; una figura sin <svg> tampoco.
+  assert.strictEqual(componerEscena(figura, ''), figura);
+  assert.strictEqual(componerEscena('<p>no es svg</p>', escena), '<p>no es svg</p>');
+
+  // Y el pipeline entero la enchufa: la data URL final lleva la escena.
+  const url = svgParaPuzzle(figura, { caja: { minX: 10, minY: 20, maxX: 60, maxY: 70 }, escena });
+  const svgFinal = decodeURIComponent(url.replace(/^data:image\/svg\+xml,/, ''));
+  assert.ok(svgFinal.startsWith('<svg') && svgFinal.includes(escena), 'svgParaPuzzle({escena}) compone');
+  assert.ok(!decodeURIComponent(svgParaPuzzle(figura, { caja: { minX: 10, minY: 20, maxX: 60, maxY: 70 } })).includes('<rect'),
+    'sin escena, la figura va sola (como antes)');
+  ok('componerEscena(): la figura anidada sobre el decorado, pies en el suelo, y sin escena nada cambia');
+}
+
 // ── NACE EN 3×3 Y «FÁCIL» SIGUE SIENDO 2×2 (dueño, 2026-09-18) ──────────────
 {
   const T = getTemplate('puzzle');
@@ -387,6 +420,177 @@ const dibujosZonasDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'ass
   assert.deepStrictEqual([b.content.items[0].filas, b.content.items[0].columnas], [2, 2], 'elegir Fácil da 2×2');
   assert.deepStrictEqual([a.content.items[0].filas, a.content.items[0].columnas], [3, 3], 'set es PURO: la actividad original no se toca (§24)');
   ok('nace en 3×3; «Fácil · 4 piezas» sigue dando 2×2 y set() es puro');
+}
+
+// ── CONTORNOS: piezas con LENGÜETA y HUECO (2a, handoff §8d) ─────────────────
+// Cada pieza era un cuadrado con las esquinas redondeadas («se lee como un
+// puzle deslizante»). Ahora el contorno es geometría pura (Bézier cúbicas,
+// cero assets) y se prueba en Node: la lengüeta de una pieza ES el hueco de la
+// vecina — la misma curva recorrida al revés.
+const {
+  contornos, invertir, TAB, fondoPieza, cajaEncajada, rectNucleo,
+} = await import('../templates/puzzle/game/contornos.js');
+const rndFijo = (semilla) => { let s = semilla >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; };
+const tieneCurva = (lado) => lado.some(seg => seg.tipo === 'C');
+
+// (a) 3×3 → 9 piezas; cada path arranca en M y cierra en Z; la caja es la
+// celda ampliada TAB por los cuatro lados, SIEMPRE (todas la misma caja relativa).
+{
+  const ps = contornos(3, 3, rndFijo(1));
+  assert.strictEqual(ps.length, 9, '3×3 → 9 contornos');
+  assert.deepStrictEqual(ps.map(p => p.i), [0, 1, 2, 3, 4, 5, 6, 7, 8], 'índices en orden fila-mayor');
+  for (const p of ps) {
+    assert.match(p.d, /^M/, `pieza ${p.i}: el path empieza en M`);
+    assert.match(p.d, /Z$/, `pieza ${p.i}: el path cierra en Z`);
+    assert.doesNotMatch(p.d, /[^MLCZ0-9.\s-]/, `pieza ${p.i}: solo M/L/C/Z y números`);
+    const c = p.caja;
+    assert.ok(Math.abs(c.w - (1 + 2 * TAB)) < 1e-9 && Math.abs(c.h - (1 + 2 * TAB)) < 1e-9, `pieza ${p.i}: la caja mide 1+2·TAB celdas`);
+    assert.ok(Math.abs(c.x - (p.col - TAB)) < 1e-9 && Math.abs(c.y - (p.fila - TAB)) < 1e-9, `pieza ${p.i}: la caja es la celda ampliada TAB`);
+    // Todo el path cabe en la caja normalizada (0..1): nada asoma fuera del recorte.
+    const nums = p.d.match(/-?\d*\.?\d+/g).map(Number);
+    assert.ok(nums.every(n => n >= -1e-9 && n <= 1 + 1e-9), `pieza ${p.i}: todas las coordenadas del path están en 0..1`);
+  }
+  assert.ok(TAB > 0.2 && TAB <= 0.35, `TAB (${TAB}) deja asomar la lengüeta ~un cuarto del lado`);
+  ok('contornos(3,3): 9 piezas, path M…Z normalizado a la caja = celda + TAB por los cuatro lados');
+}
+
+// (b) ARISTA COMPARTIDA: la curva del lado derecho de (r,c) es la INVERSA
+// exacta del lado izquierdo de (r,c+1), en coordenadas del TABLERO; ídem
+// abajo/arriba. Y la lengüeta de una es el hueco de la otra (curvan, no rectas).
+{
+  const filas = 3, columnas = 3;
+  const ps = contornos(filas, columnas, rndFijo(7));
+  const at = (r, c) => ps[r * columnas + c];
+  const mismo = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  let curvas = 0;
+  for (let r = 0; r < filas; r++) for (let c = 0; c < columnas; c++) {
+    if (c + 1 < columnas) {
+      assert.ok(mismo(at(r, c).lados.derecha, invertir(at(r, c + 1).lados.izquierda)),
+        `(${r},${c}) derecha = inversa de (${r},${c + 1}) izquierda`);
+      assert.ok(tieneCurva(at(r, c).lados.derecha), `(${r},${c})→(${r},${c + 1}): la arista interior curva`);
+      curvas++;
+    }
+    if (r + 1 < filas) {
+      assert.ok(mismo(at(r, c).lados.abajo, invertir(at(r + 1, c).lados.arriba)),
+        `(${r},${c}) abajo = inversa de (${r + 1},${c}) arriba`);
+      assert.ok(tieneCurva(at(r, c).lados.abajo), `(${r},${c})→(${r + 1},${c}): la arista interior curva`);
+      curvas++;
+    }
+  }
+  assert.strictEqual(curvas, 12, 'un 3×3 tiene 12 aristas interiores');
+  // GEOMETRÍA, no solo estructura: la vecina TRAZA la misma curva al revés. Se
+  // muestrean las Bézier (A(u) = B(1−u) tramo a tramo) sin pasar por
+  // `invertir` — así se ve si `invertir` olvidase intercambiar c1↔c2.
+  const bez = (s, u) => {
+    if (s.tipo === 'L') return { x: s.a.x + u * (s.p.x - s.a.x), y: s.a.y + u * (s.p.y - s.a.y) };
+    const k = 1 - u;
+    return { x: k ** 3 * s.a.x + 3 * k * k * u * s.c1.x + 3 * k * u * u * s.c2.x + u ** 3 * s.p.x,
+             y: k ** 3 * s.a.y + 3 * k * k * u * s.c1.y + 3 * k * u * u * s.c2.y + u ** 3 * s.p.y };
+  };
+  const trazaIgual = (A, B) => {
+    assert.strictEqual(A.length, B.length);
+    for (let k = 0; k < A.length; k++) for (const u of [0, .2, .35, .5, .8, 1]) {
+      const pa = bez(A[k], u), pb = bez(B[A.length - 1 - k], 1 - u);
+      assert.ok(Math.abs(pa.x - pb.x) < 1e-9 && Math.abs(pa.y - pb.y) < 1e-9, `las dos vecinas trazan el mismo punto (${pa.x},${pa.y}) vs (${pb.x},${pb.y})`);
+    }
+  };
+  trazaIgual(at(1, 1).lados.derecha, at(1, 2).lados.izquierda);
+  trazaIgual(at(0, 0).lados.abajo, at(1, 0).lados.arriba);
+  // Y la CABEZA (n = TAB) de esa arista cae dentro de UNA de las dos celdas
+  // (x = 2 ± TAB): sale de una y entra en la otra.
+  const xs = at(1, 1).lados.derecha.filter(s => s.tipo === 'C').flatMap(s => [s.c1.x, s.c2.x]);
+  assert.ok(xs.some(x => Math.abs(Math.abs(x - 2) - TAB) < 1e-9), 'la cabeza de la lengüeta llega a TAB de la arista');
+  // invertir() es una involución y, sobre un lado con lengüeta, cambia el lado
+  // del bulto: la cabeza (el punto más lejos de la arista) cae al otro lado.
+  const lado = at(1, 1).lados.derecha;
+  assert.ok(mismo(invertir(invertir(lado)), lado), 'invertir(invertir(x)) = x');
+  const ys = (segs) => segs.flatMap(s => s.tipo === 'C' ? [s.c1.x, s.c2.x, s.p.x] : [s.p.x]);
+  const maxL = Math.max(...ys(lado)), minL = Math.min(...ys(lado));
+  assert.ok(maxL > 2 + 1e-6 || minL < 2 - 1e-6, 'el lado derecho de (1,1) (x=2) tiene un bulto a un lado');
+  ok('arista compartida: la curva de una pieza es la inversa exacta de la vecina (en coordenadas del tablero)');
+}
+
+// (c) Las aristas del BORDE del tablero son rectas (sin C en ese lado).
+{
+  const filas = 3, columnas = 3;
+  const ps = contornos(filas, columnas, rndFijo(3));
+  for (const p of ps) {
+    if (p.fila === 0) assert.ok(!tieneCurva(p.lados.arriba), `pieza ${p.i}: borde superior recto`);
+    if (p.fila === filas - 1) assert.ok(!tieneCurva(p.lados.abajo), `pieza ${p.i}: borde inferior recto`);
+    if (p.col === 0) assert.ok(!tieneCurva(p.lados.izquierda), `pieza ${p.i}: borde izquierdo recto`);
+    if (p.col === columnas - 1) assert.ok(!tieneCurva(p.lados.derecha), `pieza ${p.i}: borde derecho recto`);
+  }
+  // Contra-prueba: en un 1×1 los cuatro lados son rectos y el path es un rectángulo.
+  const [solo] = contornos(1, 1, rndFijo(3));
+  assert.ok(!Object.values(solo.lados).some(tieneCurva), '1×1: ningún lado curva');
+  assert.strictEqual((solo.d.match(/C/g) || []).length, 0, '1×1: el path no lleva ninguna C');
+  ok('aristas de borde rectas (y un 1×1 es un rectángulo)');
+}
+
+// (d) Determinista con la misma rnd; distinto con otra.
+{
+  const a = contornos(3, 3, rndFijo(11)).map(p => p.d).join('|');
+  const b = contornos(3, 3, rndFijo(11)).map(p => p.d).join('|');
+  const c = contornos(3, 3, rndFijo(12)).map(p => p.d).join('|');
+  assert.strictEqual(a, b, 'misma fuente de azar → mismos contornos');
+  assert.notStrictEqual(a, c, 'otra fuente de azar → otros contornos');
+  // Y con rnd constante (siempre 0.9 → todas las lengüetas al mismo lado) sigue
+  // saliendo un tablero válido: 9 piezas, 12 aristas curvas.
+  const todasIgual = contornos(3, 3, () => 0.9);
+  assert.strictEqual(todasIgual.length, 9);
+  ok('contornos() es determinista por la rnd inyectada (nunca Math.random propio)');
+}
+
+// (e) LA ARITMÉTICA DEL FONDO para la caja ampliada, con números. Caja =
+// celda·(1+2·TAB); tablero = columnas celdas. Con TAB = 0.3:
+//   2×2 → size 125 %, posición-x −75 % (col 0) y 175 % (col 1)
+//   3×3 → size 187,5 %, posición-x −21,43 % · 50 % · 121,43 %
+{
+  assert.strictEqual(TAB, 0.3, 'los números de abajo están calculados con TAB = 0.3');
+  const cerca = (a, b) => Math.abs(a - b) < 1e-6;
+  const f22 = fondoPieza({ fila: 1, col: 0 }, 2, 2);
+  assert.ok(cerca(f22.sizeX, 125) && cerca(f22.sizeY, 125), `2×2: size 125 % (${f22.sizeX})`);
+  assert.ok(cerca(f22.posX, -75), `2×2 col 0: posición-x −75 % (${f22.posX})`);
+  assert.ok(cerca(f22.posY, 175), `2×2 fila 1: posición-y 175 % (${f22.posY})`);
+  assert.ok(cerca(fondoPieza({ fila: 0, col: 1 }, 2, 2).posX, 175), '2×2 col 1: posición-x 175 %');
+  const f33 = [0, 1, 2].map(col => fondoPieza({ fila: 0, col }, 3, 3));
+  assert.ok(cerca(f33[0].sizeX, 187.5), `3×3: size 187,5 % (${f33[0].sizeX})`);
+  assert.ok(cerca(f33[0].posX, -300 / 14) && cerca(f33[1].posX, 50) && cerca(f33[2].posX, 1700 / 14),
+    `3×3: posición-x −21,43 · 50 · 121,43 (${f33.map(f => f.posX.toFixed(2)).join(' · ')})`);
+  // Que el porcentaje es CORRECTO de verdad: aplicando la fórmula del CSS
+  // (offset = p·(caja − imagen)) el borde izquierdo de la imagen cae a
+  // −(col − TAB) celdas del borde de la caja, o sea, la celda queda centrada.
+  for (const [col, f] of f33.entries()) {
+    const caja = 1 + 2 * TAB, imagen = 3;
+    const offset = (f.posX / 100) * (caja - imagen);
+    assert.ok(cerca(offset, -(col - TAB)), `3×3 col ${col}: la imagen se desplaza −(col − TAB) celdas`);
+  }
+  // El estilo que se escribe en la pieza lleva esos mismos números.
+  assert.match(f33[1].css, /background-size:\s*187\.5% 187\.5%/, 'el css lleva el size');
+  assert.match(f33[1].css, /background-position:\s*50% -21\.4\d*%/, 'el css lleva la posición');
+  // Pieza encajada: su caja en % del tablero (izquierda/arriba pueden ser negativos).
+  const e = cajaEncajada({ fila: 0, col: 1 }, 3, 3);
+  assert.ok(cerca(e.left, (1 - TAB) * 100 / 3) && cerca(e.top, -TAB * 100 / 3), 'encajada: left/top = (col − TAB)·(100/columnas)');
+  assert.ok(cerca(e.width, (1 + 2 * TAB) * 100 / 3) && cerca(e.height, (1 + 2 * TAB) * 100 / 3), 'encajada: width/height = (1+2TAB)·(100/columnas)');
+  ok('fondoPieza()/cajaEncajada(): la aritmética del fondo y de la caja ampliada, comprobada con números (2×2 y 3×3)');
+}
+
+// (f) CONTRA-PRUEBA de encaja con el NÚCLEO: la caja ampliada, soltada
+// EXACTAMENTE sobre su celda, no llega al 50 % de solape (1/1.6² = 39 %) y NO
+// encajaría; su núcleo sí (100 %). Y el núcleo desplazado media celda sigue
+// sin encajar (25 %): el margen no regala encajes.
+{
+  const celda = { x: 0, y: 0, w: 100 / 3, h: 100 / 3 };
+  const caja = { x: -TAB * celda.w, y: -TAB * celda.h, w: (1 + 2 * TAB) * celda.w, h: (1 + 2 * TAB) * celda.h };
+  assert.ok(solape(caja, celda) < ENCAJA_MIN, `la caja entera sobre su celda solapa ${(solape(caja, celda) * 100).toFixed(0)} % < 50 %: no encajaría`);
+  const n = rectNucleo(caja);
+  assert.ok(Math.abs(n.x) < 1e-9 && Math.abs(n.y) < 1e-9 && Math.abs(n.w - celda.w) < 1e-9 && Math.abs(n.h - celda.h) < 1e-9, 'el núcleo de la caja es exactamente la celda');
+  assert.strictEqual(encaja(n, celda), true, 'el núcleo sobre su celda ENCAJA');
+  const medio = rectNucleo({ ...caja, x: caja.x + celda.w / 2, y: caja.y + celda.h / 2 });
+  assert.strictEqual(encaja(medio, celda), false, 'CONTRA-PRUEBA: núcleo a media celda en los dos ejes (25 %) NO encaja');
+  const casi = rectNucleo({ ...caja, x: caja.x + celda.w * 0.4 });
+  assert.strictEqual(encaja(casi, celda), true, 'núcleo desplazado 0,4 de celda en un eje (60 %) sí encaja');
+  ok('encaja() se juzga con el NÚCLEO de la pieza (la caja ampliada sola no encajaría ni sobre su celda)');
 }
 
 console.log(`\n✅ puzzle: ${passed} checks`);

@@ -3,10 +3,21 @@
 // Sin DOM, sin reloj: se prueba entera desde Node (docs/estilos-de-actividad.md
 // no aplica aquí, es kernel de datos, no de pintado).
 
+import { PIEZAS } from './piezas.js';
+
 /** Un polígono es un array de [x, y] en el CUADRADO UNIDAD del juego. */
 
 /**
  * @typedef {import('./piezas.js').Punto} Punto
+ * @typedef {import('./piezas.js').Pieza} Pieza
+ */
+/**
+ * La caja que envuelve unos puntos.
+ * @typedef {Object} Caja
+ * @property {number} minx
+ * @property {number} miny
+ * @property {number} maxx
+ * @property {number} maxy
  */
 /**
  * DÓNDE ESTÁ UNA PIEZA en el tablero: qué pieza es (id de `PIEZAS`), su
@@ -44,6 +55,43 @@ export function transformarPieza(pts, { x = 0, y = 0, rot = 0, flip = false } = 
     const ry = px * sin + fy * cos;
     return /** @type {Punto} */ ([rx + x, ry + y]);
   });
+}
+
+/**
+ * EL DUEÑO ÚNICO del polígono de una colocación (§21b): unas colocaciones
+ * (`{pieza,x,y,rot,flip}`) → sus polígonos ya en coordenadas del tablero. Lo
+ * usan el player (la silueta gris que juega el alumno ES `poligonosDe(item.
+ * colocaciones)`), el editor (la unión que ve el docente al soltar) y la
+ * máscara (lo que compara). Una colocación cuya pieza no está en el
+ * diccionario no es nada: se omite, no se inventa.
+ * @param {Colocacion[]} colocaciones
+ * @param {Record<string, Pieza>} [piezas]
+ * @returns {Punto[][]}
+ */
+export function poligonosDe(colocaciones, piezas = PIEZAS) {
+  /** @type {Punto[][]} */
+  const out = [];
+  for (const c of colocaciones) {
+    const pieza = piezas[c.pieza];
+    if (pieza) out.push(transformarPieza(pieza.puntos, c));
+  }
+  return out;
+}
+
+/** La caja que envuelve unos polígonos — se DERIVA de los puntos, nunca se
+ *  guarda (§21b: el catálogo la declaraba a mano al lado de los polígonos, dos
+ *  fuentes de la misma verdad). Sin puntos, la caja del cuadrado unidad.
+ *  @param {Punto[][]} poligonos @returns {Caja} */
+export function bboxDe(poligonos) {
+  let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
+  for (const p of poligonos) {
+    for (const [x, y] of p) {
+      if (x < minx) minx = x; if (x > maxx) maxx = x;
+      if (y < miny) miny = y; if (y > maxy) maxy = y;
+    }
+  }
+  if (!Number.isFinite(minx)) return { minx: 0, miny: 0, maxx: 1, maxy: 1 };
+  return { minx, miny, maxx, maxy };
 }
 
 /** Ajusta un ángulo (grados, cualquier signo) al múltiplo de 45° más cercano,

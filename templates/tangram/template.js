@@ -3,7 +3,7 @@ import { BaseTemplate } from '../../templates/base.js';
 import { renderTangramPlayer } from './player.js';
 import { renderTangramEditor } from './editor.js';
 import { scoreTangramSubmission } from './scorer.js';
-import { rid } from '../../core/ids.js';
+import { normalizarContenido, normalizarItem } from './content.js';
 import { ORDEN_SILUETAS } from './game/siluetas.js';
 
 export class TangramTemplate extends BaseTemplate {
@@ -18,17 +18,20 @@ export class TangramTemplate extends BaseTemplate {
     kind: 'juego',
     skill: 'Espacial',   // el eje del catálogo de juegos (norte §4c)
     contentModel: 'tangram',     // registrado en kernel/content/models.js
-    templateVersion: 1,
+    // v2 (§24): el ítem guarda `nombre` + las 7 `colocaciones` que armó el
+    // docente; la v1 guardaba solo `figura` del catálogo. Ver migrateContent.
+    templateVersion: 2,
     // OBLIGATORIO (contrato): frase corta de cómo se juega — la pantalla de inicio.
     instructions: 'Arrastra las piezas hasta cubrir la figura gris. Toca una pieza para girarla; tócala dos veces para voltearla.',
     // El EDITOR se declara (lo exige el contrato): `generado:true` dice que
-    // el profe NO añade elementos (norte §4c: el contenido lo trae el
-    // juego, solo se ELIGE la figura) — igual que Colorear y Rompecabezas.
-    // Sin este `generado`, la suite exige un revisor de contenido por
-    // modelo en core/activityCheck.js que aquí no aplica.
+    // el profe NO añade elementos (norte §4c: las 7 piezas las trae el
+    // juego; el docente ARMA la figura con ellas en el tablero, o parte de
+    // una del catálogo) — igual que Colorear y Rompecabezas. Sin este
+    // `generado`, la suite exige un revisor de contenido por modelo en
+    // core/activityCheck.js que aquí no aplica.
     editor: {
       generado: true,
-      primerPaso: 'Elige qué silueta jugará la clase en la rejilla de abajo.',
+      primerPaso: 'Carga una figura de partida y mueve las piezas en el tablero: lo que quede armado es la silueta que jugará la clase.',
     },
     panelFit: 'fill',             // panel VS: 'fill' (llena y escala) | 'block' | 'center'
     aspectRatio: '4/3',           // marco del player: '16/10' | '4/3' | '1/1' | 'auto'
@@ -53,13 +56,27 @@ export class TangramTemplate extends BaseTemplate {
     defaultLive:    () => ({}),
     // Contenido DEMO jugable (nunca nace vacía — igual que el resto).
     defaultContent: () => ({
-      items: [{ id: rid('it_'), figura: ORDEN_SILUETAS[0] }],
+      items: [normalizarItem({ figura: ORDEN_SILUETAS[0] })],
     }),
   };
 
   static renderPlayer = renderTangramPlayer;
   static renderEditor = renderTangramEditor;
   static scoreSubmission = scoreTangramSubmission;
+
+  // v1 → v2 (§24): `{id, figura}` pasa a `{id, nombre, colocaciones}` copiando
+  // la solución de esa figura del catálogo (desconocida → la primera). Un
+  // ítem ya v2 se devuelve TAL CUAL (idempotente: correr dos veces = una), y
+  // otro contenido cualquiera no es de esta plantilla: se devuelve sin tocar.
+  /**
+   * @template C
+   * @param {C} content
+   * @returns {C}
+   */
+  static migrateContent(content) {
+    if (!content || typeof content !== 'object' || !Array.isArray(/** @type {{items?: unknown}} */ (content).items)) return content;
+    return /** @type {C} */ (/** @type {unknown} */ (normalizarContenido(content)));
+  }
 
   // Preview de tarjeta (miniatura del home) — OBLIGATORIO (contrato). Markup
   // estático de la primera pantalla; reusa los builders del player cuando puedas.
