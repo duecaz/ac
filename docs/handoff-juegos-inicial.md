@@ -308,44 +308,44 @@ que falta es geometría que sabemos escribir—; **para el tangram no hay atajo
 libre**, las figuras clásicas son de dominio público como IDEA pero sus
 digitalizaciones no, y lo que necesitamos son coordenadas.
 
-### 8d · Mis recomendaciones, por orden de valor
+### 8d · El plan, en DOS tandas — ligero ahora, pesado de noche
 
-**1 · Recortar el aire antes de cortar** — medio día. *Lo que más rinde.*
-Calcular la caja real del dibujo (de sus trazos, no de `data-color`) y cortar la
-rejilla SOBRE ella. Arregla las piezas vacías de golpe **y desbloquea las 43
-láminas buenas de OpenMoji para el rompecabezas**, que hoy no puede usarlas —
-es la deuda que dejé escrita en §7e.1. Sin esto, cualquier otra mejora se monta
-sobre piezas que no se reconocen.
+Revisado (2026-09-18, Fable): lo de antes ordenaba por valor y escondía una
+dependencia. **El número de piezas (antes «3») sin recortar el aire (antes «1»)
+EMPEORA el juego**: más celdas sobre un dibujo con aire son más piezas vacías.
+Así que el orden no es por valor, es por lo que cada paso necesita del anterior
+y por lo que cuesta verificar: lo que se comprueba en minutos va ahora; lo que
+necesita el ritual entero y capturas antes/después, de noche.
 
-**2 · Piezas con lengüeta y hueco** — un día. *Lo que más se nota.*
-Generar el contorno con Bézier en vez de cortar cuadrados. Es lo que hace que un
-rompecabezas parezca un rompecabezas, y de paso resuelve el 8a.2 y el 8a.4: con
-piezas de verdad, las líneas discontinuas del tablero sobran.
+#### TANDA 1 · AHORA — ligera (~3 h en total, sin tocar contratos)
 
-**3 · El número de piezas, como opción de partida** — dos horas.
-Con el tope de R2 (máx. 2 opciones, ya elegidas): «Fácil · Normal». Hoy 2×2 es
-el suelo de lo que aguanta un niño de 3 años y se queda corto a los 5.
+| # | Qué | Coste | Cómo se verifica |
+|---|---|---|---|
+| **1a** | **Recortar el aire ANTES de cortar**, en el navegador: `getBBox()` de la figura ya montada, y la rejilla se tiende sobre esa caja. Sin tocar el `viewBoxAjustado` de Node ni el contrato de zonas. | 1,5 h | Sonda: ninguna pieza con menos del 15 % de tinta, medido por pieza sobre su recorte |
+| **1b** | **El fantasma y las piezas se ven IGUALES**: mismo dibujo, misma línea, el objetivo solo más apagado. Fuera la caja punteada y las líneas discontinuas del tablero. | 1 h | Captura antes/después (`tools/shots.mjs`) |
+| **1c** | **Nº de piezas como opción de partida**, con el tope de R2: «Fácil 2×2 · Normal 3×3». Depende de 1a: sin recorte, 3×3 son nueve piezas a medias. | 1 h | `tests/playOptions.test.mjs` ya cubre el mecanismo; matriz jugable |
 
-**4 · Que el fantasma y las piezas se vean iguales** — dos horas.
-Mismo dibujo, misma línea; el objetivo solo más apagado. Emparejar es la
-mecánica: no puede costar trabajo extra.
+Con la tanda 1 el rompecabezas pasa de «no se reconoce» a «jugable y honesto» en
+una sesión, y **desbloquea de paso las 43 láminas de OpenMoji para el puzzle**
+(la deuda de §7e.1), porque el recorte en el navegador no necesita zonas.
 
-**5 · El tangram: que las figuras las construya EL DOCENTE** — dos días.
-Es la idea que el propio dueño dejó escrita en §6.3, y sigue siendo la buena:
-arrastra las 7 piezas en el editor y **lo que queda ES la silueta**. Convierte
-el cuello de botella de contenido en una función del producto, y quita la
-dependencia de un dataset que hemos comprobado que no existe con licencia
-usable. Si se quieren figuras esta semana sin esperar a eso, la alternativa es
-transcribir a mano sobre la rejilla que ya existe (1/4 y √2/4): una tarde por
-figura, y el código las acepta tal cual.
+#### TANDA 2 · DE NOCHE — pesada (ritual entero, capturas y redes nuevas)
 
-**Lo que NO recomiendo**: buscar más bancos de tangram. Ya está mirado y no los
-hay con licencia limpia y coordenadas; seguir buscando es gastar el tiempo que
-cuesta transcribir dos figuras.
+| # | Qué | Coste | Por qué de noche |
+|---|---|---|---|
+| **2a** | **Piezas con lengüeta y hueco** (Bézier cúbicas, generadas por nosotros). Cada pieza pasa a ser un `clip-path` con su contorno; las lengüetas de una pieza son los huecos de la vecina. | 1 día | Toca geometría, CSS de recorte, el arrastre (la zona de agarre ya no es un cuadrado) y las capturas de las 16 pruebas de QA. Es lo que más se ve y lo que más cosas mueve |
+| **2b** | **Tangram por el EDITOR**: el docente arrastra las 7 piezas y lo que queda ES la silueta (idea del dueño, §6.3). | 2 días | Editor nuevo + formato de contenido (§24: migración versionada) + el scorer lee la silueta del contenido en vez de un catálogo |
+| **2c** | Transcribir a mano 4-6 figuras clásicas de tangram sobre la rejilla existente (gato · barco · pez · árbol…), como puente hasta 2b. | 1 tarde | No es de noche por peso sino porque hace falta una LÁMINA de referencia delante (una foto de un juego de cartas de tangram) — sin ella ya se intentó y no salió |
+
+**Orden dentro de la noche**: 2a primero (es independiente y es lo que más se
+nota), luego 2b. 2c solo si se quieren figuras antes de que exista 2b.
+
+**Lo que NO se hace**: buscar más bancos de tangram (§8c, ya mirado).
 
 ### 8e · Lo que decide el dueño
 
-1. ¿Se hace 1+2 (rompecabezas jugable y con aspecto de rompecabezas, ~1,5 días)?
-2. ¿El tangram va por el editor (2 días, estructural) o por transcripción a mano
-   (1 tarde por figura, inmediato)?
-3. ¿Cuántas piezas por defecto? Mi propuesta: 3×3 de base y «Fácil» 2×2.
+1. **¿Arranca la tanda 1 ahora?** (~3 h, verificable en la sesión).
+2. **¿La tanda 2 esta noche, y en qué orden?** Propuesta: 2a → 2b.
+3. **Piezas por defecto**: 3×3 de base y «Fácil» 2×2 (con 1a hecho, 3×3 ya no
+   deja piezas vacías).
+4. **Para 2c, si se quiere**: una foto de un juego de cartas de tangram.
