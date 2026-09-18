@@ -3,7 +3,7 @@
 // In live-student mode, opts handles network calls (submit). In solo, scoring is local.
 // Loop/timer/finish are handled by the SequentialShell (core/soloPlayer.js);
 // this core renders the de rejilla de opciones options grid and scores each click.
-import { html, escapeHtml, mount } from '../../core/html.js';
+import { html, escapeHtml } from '../../core/html.js';
 import { SHAPE_ICONS } from '../../core/roundRender.js';
 import { on } from '../../core/events.js';
 import { scoreQuizSubmission } from './scorer.js';
@@ -11,7 +11,6 @@ import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import * as Streaks from '../../core/streaks.js';
 import { shuffle } from '../../core/azar.js';
 import { runSequentialPlayer } from '../../core/soloPlayer.js';
-import { cabeceraHtml } from '../../core/playerHud.js';
 import { clock } from '../../core/clock.js';
 
 
@@ -42,42 +41,34 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
   const callbacks = {
     maxScore,
     onFinish() { Streaks.reset('solo', activity.id); },
-    renderItem({ rootSel, item, idx, total, timerSecs, submit, alAgotarse }) {
+    // El marco (cabecera · reloj · pantalla completa) lo monta el SHELL, una
+    // vez. Aquí no hay nada que declarar: el Quiz no tiene herramientas propias.
+    renderItem({ item, idx, timerSecs, submit, alAgotarse, ronda, pintar, indicador }) {
       const opts2 = (item.options || []).slice();
       if (activity.rules?.shuffleOptions) shuffle(opts2);
       const streak = Streaks.get('solo', activity.id);
-      mount(rootSel, html`
-        <div class="ww-player">
-          ${cabeceraHtml({
-            pagina: `${idx + 1} / ${total}`,
-            racha: streak >= 2 ? String(streak) : undefined,   // el 🔥 lo pone el chip (core/playerHud.js)
-          })}
-          <div class="edu-sec edu-sec--enunciado ww-prow">
-            <h3 class="ww-q">${escapeHtml(item.question)}</h3>
-          </div>
-          ${item.image ? `<div class="ww-q-media"><img src="${escapeHtml(item.image)}" alt=""></div>` : ''}
-          <div class="edu-sec edu-sec--tablero ww-opt-grid ww-options">
-            ${opts2.map((o, i) => `
-              <button class="btn btn-lg w-100 ww-opt ww-shape-${(i % 4) + 1}" data-value="${escapeHtml(o)}">
-                <i class="bi ${SHAPE_ICONS[i % 4]} me-2"></i>${escapeHtml(o)}
-              </button>`).join('')}
-          </div>
+      // La racha es un CHIP, no una cabecera: se pone por su dato (el 🔥 lo
+      // pone el chip, core/playerHud.js).
+      indicador('racha', streak >= 2 ? String(streak) : null);
+      pintar(html`
+        <div class="edu-sec edu-sec--enunciado ww-prow">
+          <h3 class="ww-q">${escapeHtml(item.question)}</h3>
+        </div>
+        ${item.image ? `<div class="ww-q-media"><img src="${escapeHtml(item.image)}" alt=""></div>` : ''}
+        <div class="edu-sec edu-sec--tablero ww-opt-grid ww-options">
+          ${opts2.map((o, i) => `
+            <button class="btn btn-lg w-100 ww-opt ww-shape-${(i % 4) + 1}" data-value="${escapeHtml(o)}">
+              <i class="bi ${SHAPE_ICONS[i % 4]} me-2"></i>${escapeHtml(o)}
+            </button>`).join('')}
         </div>
       `);
 
       const t0 = clock.now();
 
-      // Acotado al root del player (C7): '.ww-opt' a documento entero rompería
-      // con dos players montados (p.ej. una miniatura + el juego, o tests).
+      // Acotado a la RONDA (C7): '.ww-opt' a documento entero rompería con dos
+      // players montados (una miniatura + el juego, o el duelo).
       /** @returns {HTMLButtonElement[]} */
-      const opts$ = () => {
-        // `rootSel` puede llegar como ELEMENTO (lo declara el shell): interpolarlo
-        // en un selector daba «[object HTMLElement] .ww-opt», que no casa con nada.
-        const nodos = typeof rootSel === 'string'
-          ? document.querySelectorAll(`${rootSel} .ww-opt`)
-          : rootSel.querySelectorAll('.ww-opt');
-        return [...nodos].map(b => /** @type {HTMLButtonElement} */ (b));
-      };
+      const opts$ = () => [...ronda.querySelectorAll('.ww-opt')].map(b => /** @type {HTMLButtonElement} */ (b));
 
       function revealCorrect() {
         if (item.answer == null) return;
@@ -99,7 +90,7 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
         submit({ itemId: item.id, value: null, correct: false, points: 0, msTaken: timerSecs * 1000 });
       });
 
-      on(rootSel, 'click', '.ww-opt', (_, el) => {
+      on(ronda, 'click', '.ww-opt', (_, el) => {
         const btn = /** @type {HTMLButtonElement} */ (el);
         if (btn.disabled) return;
         const ms = clock.now() - t0;

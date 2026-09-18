@@ -19,7 +19,17 @@ import { runSequentialPlayer, runFreeformPlayer } from '../core/soloPlayer.js';
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
 
-const makeRoot = () => ({ innerHTML: '', querySelector: () => null, querySelectorAll: () => [] });
+// El shell secuencial monta su marco y pinta dentro del HUECO de la ronda
+// (v1.51.722), así que la raíz de mentira tiene que saber entregarlo.
+const makeRoot = () => {
+  const ronda = { innerHTML: '', querySelector: () => null, querySelectorAll: () => [] };
+  return {
+    innerHTML: '', ronda,
+    /** @param {string} sel */
+    querySelector: (sel) => (sel === '[data-round]' ? ronda : null),
+    querySelectorAll: () => [],
+  };
+};
 
 // Timers falsos en cola (mismo patrón que soloPlayer.test): el orden async real
 // se conserva y el zombi se dispara CUANDO queremos, no inline.

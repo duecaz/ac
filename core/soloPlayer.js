@@ -6,13 +6,13 @@
 //   const ctx = runFreeformPlayer(rootSel, activity, opts);
 //   // ... player-specific logic ...
 //   ctx.finish({ score, maxScore, lead, stats });  // call once when done
-import { mount, raizDe } from './html.js';
+import { html, mount, raizDe } from './html.js';
 import { resultScreenHtml } from './resultScreen.js';
 import { trySaveResult } from './results.js';
 import { FEEDBACK_DELAY } from './constants.js';
 import { GameEvents, emitGame } from './gameEvents.js';
 import { shuffle } from './azar.js';
-import { hudSet } from './playerHud.js';
+import { cabeceraHtml, hudSet } from './playerHud.js';
 import { montarReloj, relojDe } from './reloj.js';
 import { clock } from './clock.js';
 import { defaultMaxScore } from './scoring/index.js';
@@ -70,8 +70,28 @@ import { claimStage } from './stageClaim.js';
  */
 
 /**
+ * LO QUE LA PLANTILLA APORTA AL MARCO — se monta UNA vez, al empezar la
+ * partida, y no se vuelve a tocar. Es TODO lo que un core puede decir sobre el
+ * marco: una clase para su maquetación, sus herramientas en la cabecera y si
+ * quiere la barra de agotamiento. Lo demás (la cabecera, el reloj, el botón de
+ * pantalla completa) es de la PLATAFORMA.
+ * @typedef {Object} MarcoSecuencial
+ * @property {string} [clase]         clases de la raíz del juego (`ww-math`, `gl-play`…)
+ * @property {string} [herramientas]  HTML YA ESCAPADO de los mandos de la plantilla
+ * @property {boolean} [progreso]     barra de agotamiento bajo la cabecera
+ */
+
+/**
  * LO QUE EL SHELL SECUENCIAL LE ENTREGA A LA PLANTILLA en cada ítem. Es el
  * contrato que consumen los cores de Quiz, Operaciones y Globos.
+ *
+ * NO LLEVA `rootSel`, Y ESO ES EL CONTRATO. Lo llevó hasta v1.51.721 y las tres
+ * plantillas hacían lo mismo con él: `mount(rootSel, …)` con la cabecera
+ * dentro, así que cada pregunta DESTRUÍA el marco entero —el reloj incluido, que
+ * nacía vacío hasta el siguiente tic (el dueño lo vio en Abre Cajas: «parpadea
+ * el reloj»)—. No se arregla pidiendo a tres plantillas que se porten bien: se
+ * arregla quitándoles la herramienta. Un core recibe `ronda` (su hueco) y
+ * `pintar()` (cómo llenarlo), y no tiene forma de alcanzar el marco.
  *
  * `submit(record, {auto, delay})` registra la respuesta UNA vez (idempotente
  * dentro del ítem: un timeout y un clic registran una sola) y, con `auto`,
@@ -80,7 +100,11 @@ import { claimStage } from './stageClaim.js';
  *
  * @template [I=unknown]   la forma del ítem, que solo conoce la plantilla
  * @typedef {Object} SequentialCtx
- * @property {string|Element} rootSel
+ * @property {Element} ronda         EL HUECO de esta ronda: lo único que el core posee.
+ * @property {(htmlStr: string) => void} pintar   llena el hueco de la ronda.
+ * @property {(campo: string, valor: string|number|null|undefined) => void} indicador
+ *        pone un chip de la cabecera SIN rehacerla (`racha`, `extra`). Los del
+ *        shell (`pagina`, `tiempo`) se ignoran: los pone el shell.
  * @property {Activity} activity
  * @property {I} item
  * @property {number} idx
@@ -100,6 +124,7 @@ import { claimStage } from './stageClaim.js';
  * @template [I=unknown]
  * @typedef {Object} SequentialCallbacks
  * @property {(ctx: SequentialCtx<I>) => void} renderItem
+ * @property {MarcoSecuencial} [marco]  lo que la plantilla aporta al marco (una vez)
  * @property {(items: I[], activity: Activity) => number} [maxScore]
  * @property {number} [feedbackDelay]
  * @property {(o: {state: SequentialState, items: I[], maxScore: number, timeUsed: number}) => (PantallaFinExtra|null|undefined)} [resultScreen]
@@ -402,6 +427,27 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks) {
     ? montarReloj({ activity, alive, pintar: (t) => hudSet(rootSel, 'tiempo', t) })
     : { stop: () => {} };
 
+  // ── EL MARCO, UNA VEZ ──────────────────────────────────────────────────────
+  // El shell es el DUEÑO del marco: la cabecera (página · racha · RELOJ ·
+  // pantalla completa) se monta aquí y no se vuelve a crear en toda la partida.
+  // La plantilla solo declara lo suyo (`callbacks.marco`) y pinta DENTRO del
+  // hueco de la ronda. Hasta v1.51.721 esto lo montaba cada `renderItem` con un
+  // `mount(rootSel, …)`, y por eso avanzar de pregunta destruía el marco entero.
+  // (El orden respecto al reloj se mantiene tal cual estaba; moverlo es otro
+  // cambio, con su propia prueba — no se cuela aquí.)
+  const marco = callbacks.marco || {};
+  mount(rootSel, html`
+    <div class="ww-player${marco.clase ? ` ${marco.clase}` : ''}">
+      ${cabeceraHtml({
+        pagina: `${state.idx + 1} / ${items.length}`,
+        herramientas: marco.herramientas,
+        progreso: marco.progreso,
+      })}
+      <div class="ww-ronda" data-round></div>
+    </div>`);
+  const raiz = raizDe(rootSel);
+  const rondaOpt = raiz?.querySelector('[data-round]') ?? null;
+
   // Reanudar (F5): retoma el avance guardado si es de ESTA versión y va a medias.
   const progreso = crearProgreso(activity, opts);
   {
@@ -491,6 +537,21 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks) {
     return timerHandle;
   }
 
+  /** Llena el hueco de la ronda. Es la ÚNICA forma que tiene un core de pintar:
+   *  no recibe la raíz del player, así que no puede llevarse la cabecera por
+   *  delante ni por accidente. @param {string} htmlStr @returns {void} */
+  const pintar = (htmlStr) => { ronda.innerHTML = htmlStr; };
+
+  // Los chips que son del SHELL: los pone él y nadie más (la página avanza con
+  // el ítem, el tiempo con el reloj). Un core que los pidiera estaría
+  // reimplementando lo que ya tiene encima.
+  const CHIPS_DEL_SHELL = new Set(['pagina', 'tiempo']);
+  /** @param {string} campo @param {string|number|null|undefined} valor @returns {void} */
+  const indicador = (campo, valor) => {
+    if (CHIPS_DEL_SHELL.has(campo)) return;
+    hudSet(rootSel, campo, valor);
+  };
+
   function renderItem() {
     recorded = false;
     stepped = false;
@@ -498,8 +559,11 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks) {
     if (state.idx >= items.length) return finish();
     const item = items[state.idx];
     emitGame(GameEvents.QUESTION_SHOWN, { idx: state.idx, total: items.length, item });
+    // La página la lleva el shell, por su DATO: la cabecera no se rehace.
+    hudSet(rootSel, 'pagina', `${state.idx + 1} / ${items.length}`);
     callbacks.renderItem({
-      rootSel, activity, item,
+      ronda, pintar, indicador,
+      activity, item,
       idx: state.idx, total: items.length,
       score: state.score, state, timerSecs,
       submit, next, finish, alAgotarse,
@@ -536,6 +600,8 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks) {
     if (opts.onFinish) opts.onFinish({ ...state, maxScore: max, timeUsed });
   }
 
+  if (!rondaOpt) return { state };   // el marco no llegó a montarse: no hay ronda que pintar (§23)
+  const ronda = rondaOpt;
   renderItem();
   return { state };
 }

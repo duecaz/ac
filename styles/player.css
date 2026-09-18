@@ -558,12 +558,22 @@ body.bg-plated .ww-player .ww-q {
    opciones heredan su espacio y crecen a lo un concurso, en vez de dejar un hueco
    muerto del 70 % entre pregunta y respuestas (medido en piezas.mjs, D8). El
    selector es el hueco mismo: la rejilla PEGADA al enunciado. */
-.ww-play-page .ww-player-frame .ww-player > .ww-prow + .ww-opt-grid {
+/* EL HUECO DE LA RONDA no es una caja: es un hueco. El shell secuencial monta
+   el marco UNA vez (cabecera + este contenedor) y la plantilla pinta dentro,
+   así que avanzar de pregunta ya no destruye el reloj. Con `display: contents`
+   el contenedor no genera caja y sus hijos siguen siendo elementos flex de
+   `.ww-player` EXACTAMENTE como cuando los pintaba la plantilla: la
+   maquetación de las trece no cambia ni un píxel por haber cambiado el dueño
+   del marco. (Por eso el selector de abajo pasó de hijo a descendiente: en el
+   árbol —que `display: contents` no altera— el enunciado ya no es hijo directo
+   del juego.) */
+.ww-player > [data-round] { display: contents; }
+.ww-play-page .ww-player-frame .ww-player .ww-prow + .ww-opt-grid {
   flex: 1 1 auto;
   min-height: 0;
   grid-auto-rows: 1fr;
 }
-.ww-play-page .ww-player-frame .ww-player > .ww-prow + .ww-opt-grid .btn { height: 100%; }
+.ww-play-page .ww-player-frame .ww-player .ww-prow + .ww-opt-grid .btn { height: 100%; }
 .ww-play-page .ww-player-frame .ww-player .ww-opt-grid .btn {
   font-size: clamp(.9rem, 3.4cqmin, 1.9rem);
   padding: clamp(.45rem, 2.2cqh, 1.6rem);

@@ -2,14 +2,13 @@
 // El core pinta la pregunta + el campo de globos y registra la respuesta; el
 // shell maneja bucle, timer, finish y trySaveResult. El campo de globos
 // (balloonFieldHtml/wireBalloonField) lo REUTILIZA la ronda VS (template.js).
-import { html, escapeHtml, mount, raizDe } from '../../core/html.js';
+import { html, escapeHtml } from '../../core/html.js';
 import { runSequentialPlayer } from '../../core/soloPlayer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { clock } from '../../core/clock.js';
 import { shuffle } from '../../core/azar.js';
 import { scoreQuizSubmission } from '../quiz/scorer.js';
 import * as Streaks from '../../core/streaks.js';
-import { cabeceraHtml } from '../../core/playerHud.js';
 
 // Campo de globos: cada opción es un globo de color (tokens --ww-shape-1..4 →
 // los skins recolorean). La inclinación fija de cada globo la pone el CSS (`--gl-sway`).
@@ -63,32 +62,27 @@ export async function renderGlobosPlayer(rootSel, activity, opts = {}) {
   /** @type {import('../../core/soloPlayer.js').SequentialCallbacks<QaItem>} */
   const callbacks = {
     onFinish() { Streaks.reset('solo', activity.id); },
-    renderItem({ rootSel, item, idx, total, timerSecs, submit, alAgotarse }) {
+    // El campo de globos es una columna flex propia (`.gl-play`): se DECLARA, y
+    // el shell la pone en el marco una sola vez.
+    marco: { clase: 'gl-play' },
+    renderItem({ item, idx, timerSecs, submit, alAgotarse, ronda, pintar, indicador }) {
       const options = (item.options || []).slice();
       if (activity.rules?.shuffleOptions) shuffle(options);
       const streak = Streaks.get('solo', activity.id);
-      mount(rootSel, html`
-        <div class="ww-player gl-play">
-          ${cabeceraHtml({
-            pagina: `${idx + 1} / ${total}`,
-            racha: streak >= 2 ? String(streak) : undefined,   // el 🔥 lo pone el chip (core/playerHud.js)
-          })}
-          <div class="edu-sec edu-sec--enunciado ww-prow">
-            <h3 class="ww-q gl-q">${escapeHtml(item.question || '')}</h3>
-          </div>
-          ${item.image ? `<div class="ww-q-media gl-media"><img src="${escapeHtml(item.image)}" alt=""></div>` : ''}
-          ${balloonFieldHtml(options)}
+      // La racha es un CHIP (el 🔥 lo pone el chip, core/playerHud.js).
+      indicador('racha', streak >= 2 ? String(streak) : null);
+      pintar(html`
+        <div class="edu-sec edu-sec--enunciado ww-prow">
+          <h3 class="ww-q gl-q">${escapeHtml(item.question || '')}</h3>
         </div>
+        ${item.image ? `<div class="ww-q-media gl-media"><img src="${escapeHtml(item.image)}" alt=""></div>` : ''}
+        ${balloonFieldHtml(options)}
       `);
 
-      // `rootSel` puede llegar como selector o como elemento (lo declara el
-      // shell): antes solo se atendía la forma de cadena.
-      const root = raizDe(rootSel);
-      if (!root) return;
       const t0 = clock.now();
 
       /** @returns {HTMLButtonElement[]} */
-      const globos = () => [...root.querySelectorAll('.gl-balloon')].map(b => /** @type {HTMLButtonElement} */ (b));
+      const globos = () => [...ronda.querySelectorAll('.gl-balloon')].map(b => /** @type {HTMLButtonElement} */ (b));
 
       // Revela el globo correcto (verde) tras un fallo o timeout.
       const revealCorrect = () => {
@@ -109,7 +103,7 @@ export async function renderGlobosPlayer(rootSel, activity, opts = {}) {
         submit({ itemId: item.id, value: null, correct: false, points: 0, msTaken: timerSecs * 1000 });
       });
 
-      wireBalloonField(root, { onPick: (value, btn) => {
+      wireBalloonField(ronda, { onPick: (value, btn) => {
         const ms = clock.now() - t0;
         const r = scoreQuizSubmission({ value, item, msTaken: ms, activity });
         disableAll();

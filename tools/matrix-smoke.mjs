@@ -656,16 +656,17 @@ for (const t of seeded) {
       // NO comparten una causa, son TRES FAMILIAS (dicho aquí antes con una
       // sola, y era falso — un diagnóstico equivocado escrito al lado de la red
       // manda a arreglar el sitio que no es):
-      //   · quiz · math · globos → `runSequentialPlayer` (core/soloPlayer.js):
-      //     el contrato dice «renderItem pinta el ítem» y cada una pinta TODO.
+      //   · quiz · math · globos → `runSequentialPlayer` (core/soloPlayer.js).
+      //     ARREGLADA en v1.51.722 y por eso ya no están en la lista: el shell
+      //     monta el marco UNA vez y `renderItem` ya no recibe la raíz, solo su
+      //     ronda — no es que se porten bien, es que no tienen con qué.
       //   · tildes · comas      → `core/textCorrectionSolo.js`: su `shell()`
       //     interno hace `mount(rootSel, …)` en cada repintado (uno solo, para
       //     las dos).
       //   · memory              → su propio `paint()` con `mount()`, sin shell
       //     de por medio.
-      // Son TRES arreglos distintos, cada uno con su verificación; esta lista
-      // GRITA cada vez que alguien la mira y no deja entrar una séptima.
-      const REHACEN_EL_MARCO = new Set(['quiz', 'memory', 'tildes', 'comas', 'math', 'globos']);
+      // Esta lista solo ENCOGE, y no deja entrar a nadie nuevo.
+      const REHACEN_EL_MARCO = new Set(['memory', 'tildes', 'comas']);
       // LA PIEZA MIDE SU HUECO (rompecabezas). Medido antes de arreglarlo: 117
       // px de pieza contra 234 de hueco en escritorio, 64 contra 191 en móvil.
       // El dueño: «las piezas no están del mismo tamaño que donde encajan» —
@@ -1555,6 +1556,16 @@ if (hits.length) {
     console.log('\nCONTROLES QUE NO SE PUEDEN TOCAR:');
     for (const x of hitBad) console.log(`  ❌ ${x.label} · ${x.mode} · ${x.control} — ${x.estado}`);
   }
+}
+
+// ── EL MARCO SOBREVIVE AL GESTO (§23) · el DETALLE, que es la medida ────────
+// El resumen de arriba dice cuántas cumplen; esto dice CUÁNTO sobrevive en cada
+// una, que es el número con el que se compara un antes y un después. Sin él,
+// «mejoró» es una opinión.
+const marcoHits = hits.filter(x => x.control === 'jugar no rehace el marco');
+if (marcoHits.length) {
+  console.log('\nEL MARCO SOBREVIVE AL GESTO (nodos vivos tras un toque real)\n');
+  for (const x of marcoHits) console.log(`  ${x.mal ? '❌' : '✅'} ${String(x.label).padEnd(16)} ${x.estado}`);
 }
 
 // ── Rondas jugadas con un toque real ────────────────────────────────────────

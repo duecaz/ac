@@ -13,18 +13,18 @@ Andamio = la plantilla ya usa `styles/scaffold.css` (roles declarados, §3b).
 
 | Actividad | Proporción | Andamio | Piezas en **ancho** (1280×800) | Piezas en **alto** (520×900) |
 |---|---|---|---|---|
-| **Quiz** (`quiz`) | `16/10` | — | `header «1 / 3» (sin nombre)` 100%×6% → **barra**<br>`ww-prow` 100%×10% → **barra**<br>`ww-opt-grid` 100%×80% → **escenario** | `header «1 / 3» (sin nombre)` 100%×4% → **barra**<br>`ww-prow` 100%×12% → **barra**<br>`ww-opt-grid` 100%×82% → **escenario** |
+| **Quiz** (`quiz`) | `16/10` | — | `header «1 / 3» (sin nombre)` 100%×6% → **barra**<br>`ww-ronda` 0%×0% → **—** | `header «1 / 3» (sin nombre)` 100%×4% → **barra**<br>`ww-ronda` 0%×0% → **—** |
 | **Ruleta** (`wheel`) | `1/1` | — | `header (sin nombre)` 98%×6% → **barra**<br>`wh-flow` 98%×90% → **escenario** | `header (sin nombre)` 96%×3% → **barra**<br>`wh-flow` 96%×94% → **escenario** |
 | **Emparejar** (`match`) | `16/10` | ✅ | `header «0 / 4» (sin nombre)` 94%×6% → **barra**<br>`ww-field` 94%×77% → **escenario**<br>`ww-bar` 94%×5% → **barra** | `header «0 / 4» (sin nombre)` 89%×3% → **barra**<br>`ww-field` 89%×85% → **escenario**<br>`ww-bar` 89%×4% → **barra** |
 | **Memoria** (`memory`) | `1/1` | — | `header «0 / 6» (sin nombre)` 100%×6% → **barra**<br>`ww-memo-grid` 58%×94% → **—** | `header «0 / 6» (sin nombre)` 100%×4% → **barra**<br>`ww-memo-grid` 100%×96% → **escenario** |
 | **Tildes** (`tildes`) | `16/10` | — | `header «Lápiz» (sin nombre)` 100%×7% → **barra**<br>`div (sin nombre)` 100%×1% → **barra**<br>`tc-hoja` 100%×93% → **escenario** | `header «Lápiz» (sin nombre)` 100%×5% → **barra**<br>`div (sin nombre)` 100%×0% → **barra**<br>`tc-hoja` 100%×95% → **escenario** |
 | **Comas** (`comas`) | `16/10` | — | `header «Lápiz» (sin nombre)` 100%×7% → **barra**<br>`div (sin nombre)` 100%×1% → **barra**<br>`tc-hoja` 100%×93% → **escenario** | `header «Lápiz» (sin nombre)` 100%×5% → **barra**<br>`div (sin nombre)` 100%×0% → **barra**<br>`tc-hoja` 100%×95% → **escenario** |
-| **Operaciones** (`math`) | `16/10` | — | `header «1 / 4» (sin nombre)` 100%×6% → **barra**<br>`ww-math-round` 100%×92% → **escenario** | `header «1 / 4» (sin nombre)` 100%×4% → **barra**<br>`ww-math-round` 100%×95% → **escenario** |
+| **Operaciones** (`math`) | `16/10` | — | `header «1 / 4» (sin nombre)` 100%×6% → **barra**<br>`ww-ronda` 0%×0% → **—** | `header «1 / 4» (sin nombre)` 100%×4% → **barra**<br>`ww-ronda` 0%×0% → **—** |
 | **Sopa de Letras** (`wordsearch`) | `4/3` | — | `header «0 / 10» (sin nombre)` 100%×6% → **barra**<br>`ww-ws-body` 100%×93% → **escenario** | `header «0 / 10» (sin nombre)` 100%×4% → **barra**<br>`ww-ws-body` 100%×95% → **escenario** |
 | **Abre Cajas** (`question-live`) | `4/3` | — | `header «0 / 6» (sin nombre)` 99%×6% → **barra**<br>`ab-board` 37%×18% → **—**<br>`div «Toca una caja para» (sin nombre)` 24%×8% → **—** | `header «0 / 6» (sin nombre)` 97%×3% → **barra**<br>`ab-board` 94%×16% → **barra**<br>`div «Toca una caja para» (sin nombre)` 61%×7% → **—** |
 | **Ordena las Pelotas** (`ballsort`) | `4/3` | — | `header «Aa» (sin nombre)` 100%×7% → **barra**<br>`tubes` 100%×41% → **—** | `header «Aa» (sin nombre)` 100%×6% → **barra**<br>`tubes` 100%×36% → **—** |
 | **Etiqueta el diagrama** (`diagram`) | `16/10` | ✅ | `header «0 / 4» (sin nombre)` 94%×6% → **barra**<br>`ww-field` 94%×75% → **escenario**<br>`ww-bar` 94%×6% → **barra** | `header «0 / 4» (sin nombre)` 89%×3% → **barra**<br>`ww-field` 89%×85% → **escenario**<br>`ww-bar` 89%×4% → **barra** |
-| **Explota Globos** (`globos`) | `16/10` | — | `header «1 / 3» (sin nombre)` 100%×6% → **barra**<br>`ww-prow` 100%×10% → **barra**<br>`gl-field` 100%×80% → **escenario** | `header «1 / 3» (sin nombre)` 100%×4% → **barra**<br>`ww-prow` 100%×12% → **barra**<br>`gl-field` 100%×82% → **escenario** |
+| **Explota Globos** (`globos`) | `16/10` | — | `header «1 / 3» (sin nombre)` 100%×6% → **barra**<br>`ww-ronda` 0%×0% → **—** | `header «1 / 3» (sin nombre)` 100%×4% → **barra**<br>`ww-ronda` 0%×0% → **—** |
 | **Colorear** (`colorear`) | `4/3` | — | `div (sin nombre)` 100%×70% → **escenario**<br>`div (sin nombre)` 100%×15% → **barra**<br>`div «Listo» (sin nombre)` 100%×11% → **barra** | `div (sin nombre)` 100%×73% → **escenario**<br>`div (sin nombre)` 76%×17% → **barra**<br>`div «Listo» (sin nombre)` 100%×7% → **barra** |
 | **Tangram** (`tangram`) | `4/3` | — | `ta-silueta` 32%×52% → **—**<br>`ta-piezas` 47%×87% → **—** | `ta-silueta` 45%×25% → **—**<br>`ta-piezas` 90%×28% → **—** |
 | **Rompecabezas** (`puzzle`) | `4/3` | — | `pu-board` 29%×46% → **—**<br>`pu-pieces` 100%×52% → **escenario** | `pu-board` 61%×5% → **—**<br>`pu-pieces` 100%×94% → **escenario** |
@@ -33,7 +33,7 @@ Andamio = la plantilla ya usa `styles/scaffold.css` (roles declarados, §3b).
 
 Piezas que cambian de rol entre ancho y alto (misma pieza, otra función):
 
-- **Quiz**: 0 de 3
+- **Quiz**: 0 de 2
 - **Ruleta**: 0 de 2
 - **Emparejar**: 0 de 3
 - **Memoria**: 1 de 2
@@ -44,7 +44,7 @@ Piezas que cambian de rol entre ancho y alto (misma pieza, otra función):
 - **Abre Cajas**: 1 de 3
 - **Ordena las Pelotas**: 0 de 2
 - **Etiqueta el diagrama**: 0 de 3
-- **Explota Globos**: 0 de 3
+- **Explota Globos**: 0 de 2
 - **Colorear**: 1 de 3
 - **Tangram**: 0 de 2
 - **Rompecabezas**: 0 de 2

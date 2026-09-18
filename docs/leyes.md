@@ -940,6 +940,7 @@ un handler, un observer, un modal) sigue vivo pintando encima del presente.
 | **RELOJES** | `createCountdown` (duración) · `startDeadlineTicker` (hasta instante del servidor) · `startElapsedTicker` (ascendente) · `ctx.setInterval` (polling con limpieza) | `setInterval` a pelo (regla `reloj-primitivo`) · `Date.now()` en dominio (→ `clock.now()`) |
 | **AZAR** | `azar.random()` de `core/azar.js` (y `shuffle()`, que es su dueño) · inyectable pasando una fuente sembrada | nombrar `Math.random` en NINGÚN sitio del repo salvo lo declarado en `ALLOW` con su motivo —IDs, confeti, partículas, jitter y los PIN, que deben ser impredecibles— (regla `azar-primitivo`) · Fisher–Yates escrito a mano |
 | **ICONOS** | `lucide()` de `core/lucide.js` — SVG en línea, `1em`, `currentColor` | pegar un icono a mano (`viewBox="0 0 24 24"` + `stroke="currentColor"`) fuera de ese fichero (regla `icono-primitivo`) · un EMOJI haciendo de icono dentro del dueño del dato: el «⏱» viajaba pegado al valor en `core/reloj.js` y decidía el aspecto de dos superficies a la vez · una librería de iconos por CDN (la app no depende de la red). Las ILUSTRACIONES con geometría propia —ruleta, animaciones del duelo, previos de la portada— no son iconos |
+| **EL MARCO DEL JUEGO** (`.ww-player` + `edu-cabecera` + el hueco `[data-round]`) | el SHELL (`runSequentialPlayer`): lo monta una vez y lleva `pagina`/`tiempo` por `hudSet` | que la plantilla lo alcance — `renderItem` recibe `ronda`/`pintar`/`indicador` y **no** la raíz; montar el player o una cabecera propia rompe CI (regla `marco-del-shell`) |
 | **CALLBACKS DIFERIDOS** (`setTimeout` que repinta) | guard de vida: `if (!rootEl()) return` / `host.isConnected` / `ctx.setTimeout` | repintar sin comprobar que la ruta sigue viva (el patrón wheel es el ejemplar) |
 | **OVERLAYS en `<body>`** (toast, modales, banner) | cierre propio + **cierre en `hashchange`** si sobrevive a la ruta (loginModal) | quedar huérfanos encima de la vista siguiente |
 
@@ -967,7 +968,19 @@ un handler, un observer, un modal) sigue vivo pintando encima del presente.
   verdad, dos veces igual. Lo que la ley NO toca, porque no es contenido jugable:
   el confeti, las partículas, los IDs, el jitter de reconexión y —sobre todo—
   los PIN de sala y de tarea, que deben ser impredecibles.
-- **Tests que lo vigilan**: `reloj-primitivo` + `azar-primitivo` + `icono-primitivo` + `resize-observer` en
+- **UN GESTO DEL JUEGO NO DESTRUYE EL MARCO** (v1.51.722). El dueño lo vio en
+  Abre Cajas: «parpadea el reloj cada que escojo una caja». No parpadeaba el
+  reloj: el player entero se volvía a montar en cada clic y el chip del reloj
+  nacía VACÍO hasta el siguiente tic. Medido con la matriz, la enfermedad era
+  general — de seis plantillas no sobrevivía **ni un nodo** a un toque. Y no
+  bastaba con pedirles que se portaran bien: mientras `renderItem` recibiera la
+  raíz del player, la herramienta para borrar la cabecera seguía en la mesa. El
+  shell secuencial pasó a ser el DUEÑO del marco y su contexto dejó de llevar
+  `rootSel` — Quiz, Operaciones y Globos pasaron de 0 % a 56-71 % de nodos
+  vivos por gesto, con la MISMA cabecera de antes del toque. Quedan `memory` y
+  `textCorrectionSolo` (Tildes/Comas), declarados en `REHACEN_EL_MARCO`
+  (`tools/matrix-smoke.mjs`), una lista que solo encoge.
+- **Tests que lo vigilan**: `reloj-primitivo` + `azar-primitivo` + `icono-primitivo` + `resize-observer` + `marco-del-shell` en
   `core/normsCheck.js`/`tests/norms.test.mjs` · `tests/events.test.mjs`
   (delegación + clearListeners) · `tests/deadlineTicker.test.mjs` (guard
   anti-zombi).

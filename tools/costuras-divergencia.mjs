@@ -254,7 +254,12 @@ function sinCabecera() {
     const ficheros = ficherosDe(p);
     if (!ficheros.length) continue;
     const llama = ficheros.some(f => /\bcabeceraHtml\s*\(/.test(leerSinComentarios(f)));
-    if (!llama) faltan.push({ plantilla: p, ficheros });
+    // …o la pone el SHELL por ella (v1.51.722): quien corre sobre
+    // `runSequentialPlayer` NO construye cabecera —tiene PROHIBIDO hacerlo, y
+    // lo vigila la regla `marco-del-shell`—, porque el marco se monta una vez y
+    // no se rehace en cada pregunta. Tiene cabecera: no la teclea.
+    const delShell = ficheros.some(f => /\brunSequentialPlayer\s*\(/.test(leerSinComentarios(f)));
+    if (!llama && !delShell) faltan.push({ plantilla: p, ficheros });
   }
   return faltan;
 }

@@ -36,6 +36,13 @@ import { sinComentarios } from './sinComentarios.js';
 //                       alumno AFIRMA, nunca liquida ni controla la sala. Para
 //                       pedir la palabra tiene `claimQuestion`, que escribe
 //                       SOLO el campo `ql` (fuera del blob de control).
+//   · marco-del-shell : LEY DE VISTA (docs/leyes.md §23) — quien corre sobre
+//                       `runSequentialPlayer` NO monta la raíz del player ni se
+//                       construye una cabecera: el marco es del shell y la
+//                       plantilla solo llena el hueco de su ronda. Las tres de
+//                       esa familia rehacían el player entero en cada pregunta
+//                       (0 % de nodos supervivientes, medido) y por eso el reloj
+//                       parpadeaba.
 //   · imagen-buscable : toda puerta de imagen de CONTENIDO ofrece las DOS vías —
 //                       subir un archivo Y buscar una libre (core/imageSearchModal.js).
 //                       «Etiqueta el diagrama» solo dejaba subir: quien quería un
@@ -300,6 +307,35 @@ export function scanNormsSource(path, source) {
       && !allowed('imagen-buscable')) {
     out.push({ path, line: 1, rule: 'imagen-buscable',
                text: 'pide una imagen pero no ofrece buscarla (core/imageSearchModal.js)' });
+  }
+
+  // marco-del-shell · EL MARCO ES DEL SHELL, Y LA PLANTILLA NO PUEDE ALCANZARLO.
+  // Quien corre sobre `runSequentialPlayer` pinta su ronda con `pintar()` dentro
+  // del hueco que recibe: no monta la raíz del player (`mount`) ni construye su
+  // propia cabecera (`cabeceraHtml`). Nació medido (v1.51.721): las tres
+  // plantillas de esta familia rehacían el player ENTERO en cada pregunta —0 %
+  // de los nodos sobrevivía a un toque— y el reloj parpadeaba porque su chip se
+  // destruía y volvía a nacer vacío hasta el siguiente tic.
+  // La API ya hace difícil el error (el contexto no lleva la raíz, así que no
+  // hay qué montar); esta regla cierra el atajo de volver a importarla, que es
+  // como se recae. El indicador que la plantilla sí posee (`racha`) va por
+  // `ctx.indicador`, que escribe el chip sin rehacer nada.
+  // (los nombres van con clase de caracteres a propósito: escritos enteros, el
+  //  escáner de imports de moduleRefs los leería como usos REALES de este fichero)
+  // (el shell queda fuera: ES el dueño del marco — montarlo es su trabajo)
+  if (!path.endsWith('core/soloPlayer.js')
+      && /\br[u]nSequentialPlayer\s*\(/.test(blank(String(source || '')))) {
+    const src = String(source || '').split(/\r?\n/);
+    const sinCom = blank(String(source || '')).split(/\r?\n/);
+    sinCom.forEach((ln, i) => {
+      const culpa = /\bm[o]unt\s*\(/.test(ln) ? 'monta la raíz del player (`mount`)'
+        : /\bc[a]beceraHtml\s*\(/.test(ln) ? 'construye su propia cabecera (`cabeceraHtml`)'
+        : '';
+      if (culpa && !allowed('marco-del-shell')) {
+        out.push({ path, line: i + 1, rule: 'marco-del-shell',
+                   text: `${culpa}: el marco es del shell; pinta la ronda con ctx.pintar() — ${(src[i] || '').trim().slice(0, 90)}` });
+      }
+    });
   }
 
   // chrome-boton · UNA gramática de botón en el panel del profe. Las vistas de

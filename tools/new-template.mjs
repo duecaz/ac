@@ -200,12 +200,11 @@ ${wantVs || wantLive ? `
 const playerSequential = `// ${label} — player SOLO sobre el SHELL SECUENCIAL (core/soloPlayer.js): el shell
 // maneja bucle de ítems, timer, finish, trySaveResult y emite QUESTION_SHOWN/PODIUM.
 // Este core solo pinta UN ítem y registra la respuesta con submit().
-import { html, escapeHtml, mount } from '${REL}/core/html.js';
+import { html, escapeHtml } from '${REL}/core/html.js';
 import { on } from '${REL}/core/events.js';
 import { runSequentialPlayer } from '${REL}/core/soloPlayer.js';
 import { GameEvents, emitGame } from '${REL}/core/gameEvents.js';
 import { clock } from '${REL}/core/clock.js';
-import { cabeceraHtml } from '${REL}/core/playerHud.js';
 import { score${fn}Submission } from './scorer.js';
 
 /** @typedef {import('${REL}/kernel/contracts/activity.js').Activity} Activity */
@@ -218,19 +217,21 @@ import { score${fn}Submission } from './scorer.js';
  */
 export async function render${fn}Player(rootSel, activity, opts = {}) {
   runSequentialPlayer(rootSel, activity, opts, {
-    renderItem({ rootSel, item, idx, total, timerSecs, submit, alAgotarse }) {
+    // EL MARCO ES DEL SHELL: cabecera, reloj y pantalla completa se montan UNA
+    // vez y no se vuelven a crear al avanzar de ítem. Aquí solo se declara lo
+    // propio (la clase de maquetación) — el contexto NO trae la raíz del
+    // player, así que no hay forma de llevarse la cabecera por delante.
+    marco: { clase: '${prefix}-play' },
+    renderItem({ item, idx, timerSecs, submit, alAgotarse, ronda, pintar }) {
       // El ítem llega como lo que el modelo guarda; se lee por FORMA (§24).
       const it = /** @type {Record<string, unknown>} */ (typeof item === 'object' && item ? item : {});
       // El RELOJ lo pinta el shell (cabecera → chip «tiempo»); aquí solo se
       // declara qué pasa al agotarse.
-      mount(rootSel, html\`
-        <div class="ww-player ${prefix}-play">
-          \${cabeceraHtml({ pagina: \`\${idx + 1} / \${total}\` })}
-          <div class="edu-sec edu-sec--${prefix} ${prefix}-item">
-            <p class="${prefix}-q">\${escapeHtml(String(it.question ?? it.q ?? it.left ?? ''))}</p>
-            <!-- TODO: tu mecanica. El boton de ejemplo registra un acierto. -->
-            <button type="button" class="btn btn-success ${prefix}-ok">¡Lo tengo!</button>
-          </div>
+      pintar(html\`
+        <div class="edu-sec edu-sec--${prefix} ${prefix}-item">
+          <p class="${prefix}-q">\${escapeHtml(String(it.question ?? it.q ?? it.left ?? ''))}</p>
+          <!-- TODO: tu mecanica. El boton de ejemplo registra un acierto. -->
+          <button type="button" class="btn btn-success ${prefix}-ok">¡Lo tengo!</button>
         </div>\`);
 
       const t0 = clock.now();
@@ -239,7 +240,7 @@ export async function render${fn}Player(rootSel, activity, opts = {}) {
         submit({ itemId: String(it.id ?? idx), value: null, correct: false, points: 0, msTaken: timerSecs * 1000 });
       });
 
-      on(rootSel, 'click', '.${prefix}-ok', () => {
+      on(ronda, 'click', '.${prefix}-ok', () => {
         const ms = clock.now() - t0;
         const r = score${fn}Submission({ value: 'TODO-valor', item, msTaken: ms, activity });
         if (r.correct) emitGame(GameEvents.ANSWER_CORRECT, { idx, points: r.points });

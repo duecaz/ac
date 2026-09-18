@@ -542,11 +542,11 @@ CORES     (templates/*/player.js)  — cómo: drag, click, tipo, animación (ún
 
 **Shell Secuencial** `runSequentialPlayer(rootSel, activity, opts, callbacks)` ✅:
 - Maneja: `state` (`idx`/`score`/`startedAt`/`answers`), timer opcional, `idx++`, `finish()`, `trySaveResult()`, `onFinish()`, emits `QUESTION_SHOWN`/`PODIUM`, `maxScore`.
-- El core provee `renderItem(ctx)` y, opcionalmente, `maxScore`, `onFinish` (teardown), `resultScreen`.
-- `ctx`: `{ item, idx, total, score, state, timerSecs, submit, next, finish, startTimer }`.
+- **EL MARCO ES DEL SHELL** (v1.51.722): monta UNA vez `.ww-player` + `edu-cabecera` + el hueco `[data-round]` y lleva `pagina`/`tiempo` por `hudSet`. `renderItem` **ya no recibe `rootSel`** — recibe `ronda` (su hueco), `pintar(html)` e `indicador(campo, valor)`: sin la raíz no hay con qué destruir la cabecera, que es como el reloj parpadeaba (los tres cores —Math · Quiz · Globos— pasaron de 0 % a 56-71 % de nodos vivos por gesto). La plantilla DECLARA lo suyo en `marco` (`clase`/`herramientas`/`progreso`). Lo vigilan la regla `marco-del-shell` (`norms`) y la red «jugar no rehace el marco» de `matrix-smoke`.
+- El core provee `renderItem(ctx)` y, opcionalmente, `marco`, `maxScore`, `onFinish` (teardown), `resultScreen`.
+- `ctx`: `{ ronda, pintar, indicador, item, idx, total, score, state, timerSecs, submit, next, finish, alAgotarse }`.
   - `submit(record, { auto=true, delay })` — registra la respuesta UNA vez (idempotente: timeout+clic registran una). `auto:true` avanza tras `delay`; `auto:false` para pacing propio.
   - `next()` / `finish()` — para cores con avance dirigido por animación (Globos avanza al explotar, o termina al agotar los ítems).
-- Callers (medido 2026-09-04): Math, Quiz, Globos.
 
 **Shell Libre** `runFreeformPlayer(rootSel, activity, opts)` → devuelve `ctx` ✅:
 - El player llama `ctx.finish({score, maxScore, title, stats, after})` al terminar — AÑADE sobre la estándar, nunca la sustituye (`skipResultScreen` no existe: lo caza B8).

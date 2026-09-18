@@ -246,6 +246,24 @@ assert.strictEqual(scanNormsSource('adapters/local/remoteStore.js', `const kv = 
 assert.strictEqual(scanNormsSource('qa/hoja.js', `localStorage.setItem(KEY, v);`).length, 0,
   'y el arnés de pruebas manual, que no es producto');
 
-ok('el escáner caza cada norma (pb-dueno · ls-dueno · almacen-crudo · fallo-mudo · confianza-alumno · reloj-primitivo · reloj-sala · id-rid · imagen-buscable · chrome-boton · comilla-en-comentario) y respeta comentarios + allowlist');
+// marco-del-shell: el marco (cabecera · RELOJ · pantalla completa) es del shell
+// secuencial, y la plantilla solo llena el hueco de su ronda. Las tres de esa
+// familia montaban el player entero en cada pregunta —0 % de nodos vivos tras
+// un toque, medido en la matriz— y por eso el reloj parpadeaba: su chip se
+// destruía y volvía a nacer vacío hasta el siguiente tic.
+assert.strictEqual(scanNormsSource('templates/x/player.js',
+  `runSequentialPlayer(rootSel, activity, opts, { renderItem({ rootSel }) { mount(rootSel, '<div></div>'); } });`).length, 1,
+  'caza la plantilla del shell secuencial que vuelve a montar la raíz del player');
+assert.strictEqual(scanNormsSource('templates/x/player.js',
+  `runSequentialPlayer(rootSel, activity, opts, { renderItem({ pintar }) { pintar(cabeceraHtml({})); } });`).length, 1,
+  'y la que se construye su propia cabecera');
+assert.strictEqual(scanNormsSource('templates/x/player.js',
+  `runSequentialPlayer(rootSel, activity, opts, { marco: { clase: 'x' }, renderItem({ ronda, pintar, indicador }) { pintar('<b>1</b>'); indicador('racha', '3'); } });`).length, 0,
+  'CONTRA-PRUEBA: pintar la ronda y poner un chip —el camino legítimo— pasa limpio');
+assert.strictEqual(scanNormsSource('templates/memory/player.js',
+  `const shell = runFreeformPlayer(rootSel, activity, opts);\nmount(rootSel, cabeceraHtml({}));`).length, 0,
+  'y el shell LIBRE queda fuera: ahí el marco es de la plantilla (su deuda se vigila en la matriz, no aquí)');
+
+ok('el escáner caza cada norma (pb-dueno · ls-dueno · almacen-crudo · fallo-mudo · confianza-alumno · reloj-primitivo · reloj-sala · id-rid · imagen-buscable · chrome-boton · marco-del-shell · comilla-en-comentario) y respeta comentarios + allowlist');
 
 console.log(`\nnorms.test: ${passed} checks passed`);

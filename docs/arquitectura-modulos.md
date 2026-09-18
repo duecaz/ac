@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **370 módulos · 1484 imports internos.**
+> **370 módulos · 1481 imports internos.**
 
 ### Ir a otro documento
 
@@ -31,11 +31,11 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 2148 | 7 · 1033 | 0.48 |
-| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 15 · 3700 | 13 · 1724 | 0.47 |
+| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 15 · 3766 | 13 · 1811 | 0.48 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 42 · 5840 | 19 · 3180 | 0.54 |
 | **informes/tareas** | después de clase | 10 · 1388 | 5 · 619 | 0.45 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 94 · 8520 | 13 · 1945 | 0.23 |
-| **infra/común** | todo lo anterior | 195 · 26787 | 79 · 11114 | 0.41 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 94 · 8504 | 13 · 1945 | 0.23 |
+| **infra/común** | todo lo anterior | 195 · 26823 | 79 · 11142 | 0.42 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -64,7 +64,7 @@ graph TD
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>6 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
   V -->|451| C
-  T -->|243| C
+  T -->|240| C
   AD -->|29| C
   A -->|24| C
   A -->|18| V
@@ -106,7 +106,7 @@ graph TD
 | **arranque** | `pb_hooks/aulareto-lib.js` (364) · `pb_hooks/aulareto.pb.js` (354) · `qa/hoja.js` (330) · `main.teacher.js` (166) · `main.embed.js` (69) |
 | **vistas** | `views/hostLive.js` (377) · `views/teamsView.js` (361) · `views/playerView.js` (350) · `views/vs/arena.js` (343) · `views/live/hostRondas.js` (325) |
 | **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (575) · `adapters/pocketbase/realtimeAnswers.js` (484) · `adapters/local/realtime.js` (389) · `adapters/pocketbase/remoteStore.js` (308) · `adapters/pocketbase/realtimeStream.js` (218) |
-| **core** | `core/soloPlayer.js` (542) · `core/auth.js` (490) · `core/vsAnimations.js` (444) · `core/aiContent.js` (413) · `core/storage.js` (380) |
+| **core** | `core/soloPlayer.js` (608) · `core/auth.js` (490) · `core/vsAnimations.js` (444) · `core/normsCheck.js` (415) · `core/aiContent.js` (413) |
 | **kernel** | `kernel/contracts/activity.js` (449) · `kernel/contracts/session.js` (354) · `kernel/contracts/template.js` (342) · `kernel/session/vsMachine.js` (286) · `kernel/session/teamsMachine.js` (251) |
 | **plantillas** | `templates/match/player.js` (351) · `templates/diagram/player.js` (306) · `templates/colorear/player.js` (300) · `templates/puzzle/game/imagen.js` (254) · `templates/question-live/player.js` (254) |
 | **contenido** | `kernel/content/qaAdapt.js` (169) · `kernel/content/models.js` (155) · `kernel/content/switch.js` (131) · `kernel/content/convert.js` (123) · `kernel/content/sessionItems.js` (37) |
@@ -136,14 +136,14 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 
 | Módulo | Líneas | Lo importan |
 |---|---|---|
+| `core/soloPlayer.js` | 608 | 15 |
 | `adapters/pocketbase/realtimeRooms.js` | 575 | 1 |
-| `core/soloPlayer.js` | 542 | 15 |
 | `core/auth.js` | 490 | 22 |
 | `adapters/pocketbase/realtimeAnswers.js` | 484 | 1 |
 | `kernel/contracts/activity.js` | 449 | 0 |
 | `core/vsAnimations.js` | 444 | 4 |
+| `core/normsCheck.js` | 415 | 1 |
 | `core/aiContent.js` | 413 | 3 |
-| `adapters/local/realtime.js` | 389 | 0 |
 
 ## El mapa de DATOS: quién escribe cada colección
 

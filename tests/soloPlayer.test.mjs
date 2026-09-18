@@ -10,8 +10,19 @@ import { GameEvents, onGame } from '../core/gameEvents.js';
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
 
-// Minimal element for mount(): just captures innerHTML.
-const makeRoot = () => ({ innerHTML: '', querySelector: () => null, querySelectorAll: () => [] });
+// Elemento mínimo para mount(): captura el innerHTML y, desde v1.51.722,
+// entrega el HUECO DE LA RONDA — el shell secuencial monta el marco una vez y
+// la plantilla pinta dentro de ese hueco, así que sin él no hay partida.
+const makeRonda = () => ({ innerHTML: '', querySelector: () => null, querySelectorAll: () => [] });
+const makeRoot = () => {
+  const ronda = makeRonda();
+  return {
+    innerHTML: '', ronda,
+    /** @param {string} sel */
+    querySelector: (sel) => (sel === '[data-round]' ? ronda : null),
+    querySelectorAll: () => [],
+  };
+};
 
 // Fake timer that DEFERS (queues) callbacks rather than running them inline —
 // this preserves real async ordering: each renderItem call fully returns (both
@@ -52,6 +63,77 @@ try {
     assert.strictEqual(finishState.answers.length, 3, 'un answer por ítem');
     assert.ok(root.innerHTML.includes('/ 3'), 'pantalla final muestra max = sum(ppc·items)');
     ok('runSequentialPlayer: itera ítems, submit idempotente, suma puntos');
+  }
+
+  // ── EL MARCO ES DEL SHELL: se monta UNA vez y la plantilla no lo alcanza ───
+  // El dueño lo vio en Abre Cajas («parpadea el reloj cada que escojo una
+  // caja») y la matriz lo midió en estas tres: de 37-47 nodos no sobrevivía
+  // NINGUNO a un toque, porque cada `renderItem` volvía a montar el player
+  // entero —cabecera y reloj incluidos—. El arreglo no es pedirles que se
+  // porten bien: es que el contexto ya no lleve la raíz.
+  {
+    let escrituras = 0;
+    const ronda = makeRonda();
+    const root = {
+      _html: '',
+      get innerHTML() { return this._html; },
+      set innerHTML(v) { escrituras++; this._html = v; },
+      /** @param {string} sel */
+      querySelector: (sel) => (sel === '[data-round]' ? ronda : null),
+      querySelectorAll: () => [],
+    };
+    /** @type {string[]} */
+    let claves = [];
+    runSequentialPlayer(root, baseActivity, { mode: 'async-tracked', onFinish: () => {} }, {
+      renderItem(ctx) {
+        claves = Object.keys(ctx);
+        ctx.pintar(`<b>${ctx.idx}</b>`);
+        ctx.submit({ itemId: ctx.item.id, correct: true, points: 1, msTaken: 0 });
+      },
+    });
+    drain();
+    assert.ok(!claves.includes('rootSel'),
+      'el contexto NO lleva la raíz del player: sin ella no hay con qué destruir la cabecera');
+    assert.ok(claves.includes('ronda') && claves.includes('pintar') && claves.includes('indicador'),
+      'lleva el hueco de la ronda, cómo llenarlo y cómo poner un chip');
+    assert.strictEqual(escrituras, 2,
+      'la raíz se escribe DOS veces en toda la partida: el marco al empezar y la pantalla de fin');
+    assert.ok(root.innerHTML.includes('/ 3'), 'la segunda escritura es la pantalla de fin');
+    assert.strictEqual(ronda.innerHTML, '<b>2</b>',
+      'lo que cambia en cada ítem es el HUECO de la ronda, no el marco');
+    ok('runSequentialPlayer: el marco se monta una vez y la plantilla solo llena su ronda');
+  }
+
+  // ── El chip que la plantilla SÍ posee, y los que no ────────────────────────
+  // `indicador` escribe un chip sin rehacer la cabecera (la racha de Quiz y
+  // Globos). `pagina` y `tiempo` son del shell: un core que los pidiera estaría
+  // reimplementando lo que ya tiene encima, así que se ignoran.
+  {
+    const root = makeRoot();
+    /** @type {string[]} */
+    const pedidos = [];
+    // El chip se busca en la raíz; este DOM de mentira no tiene ninguno, así
+    // que lo que se comprueba es QUÉ campos llegan a pedirse.
+    root.querySelector = (sel) => {
+      if (sel === '[data-round]') return root.ronda;
+      const m = /\[data-hud="([^"]+)"\]/.exec(sel);
+      if (m) pedidos.push(m[1]);
+      return null;
+    };
+    runSequentialPlayer(root, baseActivity, { mode: 'async-tracked', onFinish: () => {} }, {
+      renderItem(ctx) {
+        ctx.indicador('racha', '3');
+        ctx.indicador('tiempo', '99');   // del shell: se ignora
+        ctx.indicador('pagina', 'X');    // del shell: se ignora
+        ctx.submit({ itemId: ctx.item.id, correct: true, points: 1, msTaken: 0 });
+      },
+    });
+    drain();
+    assert.ok(pedidos.includes('racha'), 'la plantilla pone su chip (racha) sin rehacer nada');
+    assert.ok(pedidos.includes('pagina'), 'y la página la lleva el SHELL, por su dato');
+    assert.strictEqual(pedidos.filter(p => p === 'pagina').length, 3,
+      'una vez por ítem, y ninguna de la plantilla: sus intentos se ignoran');
+    ok('runSequentialPlayer: los chips del shell no se los puede pisar la plantilla');
   }
 
   // ── maxScore override is honoured ──────────────────────────────────────────
@@ -253,13 +335,18 @@ try {
     assert.deepStrictEqual(orden, ['pintar', 'onFinish'], 'pinta y luego avisa al caller');
 
     const orden2 = [];
-    const root2 = { querySelector: () => null, querySelectorAll: () => [],
+    const ronda2 = makeRonda();
+    const root2 = { querySelector: (/** @type {string} */ s) => (s === '[data-round]' ? ronda2 : null),
+      querySelectorAll: () => [],
       set innerHTML(_v) { orden2.push('pintar'); }, get innerHTML() { return ''; } };
     runSequentialPlayer(root2, { id: 'ord2', rules: {}, scoring: {}, content: { items: [] } },
       { mode: 'async-tracked', onFinish: () => { orden2.push('onFinish'); } },
       { renderItem() {} });
     drain();
-    assert.deepStrictEqual(orden2, ['pintar', 'onFinish'], 'el secuencial cierra en el mismo orden que el libre');
+    // El primer «pintar» es el MARCO (el shell lo monta una vez al empezar); el
+    // segundo, la pantalla de fin. Lo que se vigila es lo de siempre: pintar
+    // antes de avisar al caller, igual que el shell libre.
+    assert.deepStrictEqual(orden2, ['pintar', 'pintar', 'onFinish'], 'el secuencial cierra en el mismo orden que el libre');
     ok('cerrarPartida: los dos shells cierran con el mismo orden');
   }
   delete global.localStorage;
