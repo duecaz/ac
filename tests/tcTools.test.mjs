@@ -153,12 +153,15 @@ const css = leer('styles/textCorrection.css');
   // tocable»): ya no se cablea aquí, lo hace el MARCO por delegación
   // (core/fullscreen.js), así que un botón pintado después —esta ronda se
   // repinta en cada frase— responde igual. Antes cada montaje ataba el suyo.
-  // Y TAMBIÉN EN LA CORRECCIÓN: esa pantalla no pintaba cabecera, así que el
-  // botón se iba a la esquina flotante y volvía en la frase siguiente. Un mando
-  // que salta de sitio según la mitad del ejercicio en la que estás no es un mando.
-  const corr = solo.slice(solo.indexOf('function reveal('), solo.indexOf('function finish('));
-  citaDeFuente(corr, /cabeceraHtml\(/,
-    'la pantalla de corrección también pinta la cabecera', 'textCorrectionSolo.js');
+  // Y EN LA CORRECCIÓN ES LA MISMA CABECERA, no otra igual. Hubo tres etapas:
+  // esa pantalla no pintaba ninguna (el botón se iba a la esquina flotante y
+  // volvía en la frase siguiente), luego pintaba la suya, y desde v1.51.724 la
+  // hoja monta UNA para toda la partida y cada fase solo cambia el cuerpo — así
+  // el mando no puede saltar de sitio ni el reloj renacer vacío. Que sea el
+  // MISMO nodo de la primera frase a la corrección final lo mide el navegador
+  // (`matrix-smoke`, «la hoja entera conserva el marco», probada en rojo).
+  citaDeFuente(solo, /data-tc-body/,
+    'la hoja tiene UN cuerpo, y es lo único que cambia entre fases', 'textCorrectionSolo.js');
   ok('pantalla completa vive en la cabecera —la misma de las trece— también en la corrección');
 }
 
@@ -170,9 +173,9 @@ const css = leer('styles/textCorrection.css');
   // clase. El rol cambió de nombre al unificar la franja (2026-09-03): la barra
   // de herramientas ya no es un elemento aparte (`edu-topbar`) sino la ZONA DE
   // MANDOS de la cabecera común — `edu-cab__mandos`, la primera de la fila.
-  const zona = ronda.slice(ronda.indexOf('const herramientas ='), ronda.indexOf('tc-done-wrap'));
+  const zona = ronda.slice(ronda.indexOf('herramientasTcHtml = ()'), ronda.indexOf('function cablearSwitch'));
   assert.ok(zona.length > 40, 'las herramientas se localizan por su rol en la cabecera');
-  citaDeFuente(ronda, /herramientas,/,
+  citaDeFuente(ronda, /herramientas: herramientasTcHtml\(\)/,
     'la ronda ENTREGA sus herramientas a la cabecera común, no pinta su propia barra', 'textCorrectionRonda.js');
   for (const prohibido of ['Borrar todo', 'Eliminar', 'Editar', 'Cerrar sesión', 'href=']) {
     assert.ok(!zona.includes(prohibido), `la barra de herramientas no puede llevar «${prohibido}»`);

@@ -11,6 +11,7 @@ import { escapeHtml } from './html.js';
 import { passageHtml, fitPassage } from './textCorrectionPasaje.js';
 import { mountTcDraw } from './textCorrectionDraw.js';
 import { lucide } from './lucide.js';
+import { on } from './events.js';
 import { cabeceraHtml, relojSet } from './playerHud.js';
 
 /** @typedef {import('../kernel/contracts/activity.js').Passage} Passage */
@@ -32,6 +33,81 @@ export const desdeToque = (t) => {
     : null) };
 };
 
+// LÁPIZ / BORRADOR: UN interruptor, no dos botones. Vive AQUÍ —con el que lo
+// cablea (§21b)— porque hay dos sitios donde puede colgarse y solo una manera
+// de que se vea y se comporte: dentro de la cabecera que pinta esta misma
+// ronda (VS · Equipos · Live), o dentro de la cabecera ESTABLE que monta el
+// runner Solo (v1.51.724). El markup y el cableado no se duplican: cambia el
+// anfitrión, no la herramienta.
+//
+// Por qué es un interruptor y no dos pastillas: la detección por tamaño de
+// contacto (core/penDetector.js) acierta casi siempre —punta dibuja, palma
+// borra—, pero «casi siempre» con 33 críos delante no basta: en una pizarra sin
+// calibrar, o con un lápiz que no reporta el área de contacto, borrar era
+// imposible y el alumno se quedaba con una marca de más (que en Tildes/Comas
+// RESTA: el puntaje es neto). Este mando es el manual — el detector sigue
+// mandando mientras nadie lo toque.
+// FORMA (dueño, 2026-08-15): «lápiz con el borrador es un botón al estilo de
+// switch de apagar/prender luz». Dos pastillas separadas obligaban a leer cuál
+// estaba rellena; un interruptor SE VE de un vistazo a 3 m y dice a la vez en
+// qué está y qué pasa si lo tocas. Y es un solo blanco táctil en vez de dos.
+// NO añade toques a responder (§29): arranca en LÁPIZ, que es lo que el alumno
+// va a hacer; el borrador es para el que se equivoca.
+/** @returns {string} */
+export const herramientasTcHtml = () => `
+        <button type="button" class="tc-switch" data-tool="pen" aria-pressed="false"
+                title="Lápiz — toca para borrar" aria-label="Lápiz activo. Tocar para pasar al borrador">
+          <span class="tc-switch__side tc-switch__side--pen" data-side="pen">
+            ${lucide('pencil', { clase: 'tc-ico' })}<span class="tc-switch__word">Lápiz</span>
+          </span>
+          <span class="tc-switch__side tc-switch__side--er" data-side="eraser">
+            ${lucide('eraser', { clase: 'tc-ico' })}<span class="tc-switch__word">Borrador</span>
+          </span>
+        </button>`;
+
+/** Deja el interruptor en LÁPIZ y lo ata al lienzo de ESTA frase. Se llama en
+ *  cada frase: cuando el mando es estable (Solo) hay que devolverlo a lápiz —el
+ *  lienzo nuevo nace escribiendo— y reapuntarlo al lienzo nuevo. El cableado va
+ *  por DELEGACIÓN idempotente (`on`, core/events.js), así que volver a llamarlo
+ *  sustituye el handler anterior en vez de apilarlo.
+ *
+ *  OJO con el gesto: al pasar de bolita a DOS PASTILLAS ETIQUETADAS, el mando
+ *  dejó de parecer un interruptor y pasó a parecer un selector — y con un
+ *  conmutador ciego, tocar la pastilla que YA estaba activa te cambiaba a la
+ *  otra. El alumno que está en «Lápiz» y toca «Lápiz» se llevaba el borrador, y
+ *  su siguiente trazo BORRABA una marca: en Tildes/Comas el puntaje es neto, así
+ *  que eso cuesta puntos sin decir nada. Manda el lado tocado; solo el hueco
+ *  entre pastillas conmuta.
+ *  @param {Element} mandos  quien aloja el interruptor (cabecera propia o estable)
+ *  @param {{setEraser: (on: boolean) => void}} draw
+ *  @param {() => boolean} entregada  ¿ya se entregó esta frase? (el mando se apaga)
+ *  @returns {void} */
+function cablearSwitch(mandos, draw, entregada) {
+  const sw = /** @type {HTMLElement|null} */ (mandos.querySelector('.tc-switch'));
+  if (!sw) return;
+  pintarSwitch(sw, false);
+  draw.setEraser(false);
+  on(mandos, 'click', '.tc-switch', (e) => {
+    if (entregada()) return;
+    const lado = desdeToque(e.target).closest('.tc-switch__side')?.dataset.side;
+    const borrar = lado ? lado === 'eraser' : !sw.classList.contains('is-on');
+    if (borrar === sw.classList.contains('is-on')) return;   // ya estaba en ese
+    pintarSwitch(sw, borrar);
+    draw.setEraser(borrar);
+  });
+}
+
+/** El aspecto del interruptor según en qué está. @param {HTMLElement} sw @param {boolean} borrar */
+function pintarSwitch(sw, borrar) {
+  sw.classList.toggle('is-on', borrar);
+  sw.dataset.tool = borrar ? 'eraser' : 'pen';
+  sw.setAttribute('aria-pressed', String(borrar));
+  sw.title = borrar ? 'Borrador — toca para escribir' : 'Lápiz — toca para borrar';
+  sw.setAttribute('aria-label', borrar
+    ? 'Borrador activo. Tocar para volver al lápiz'
+    : 'Lápiz activo. Tocar para pasar al borrador');
+}
+
 /** @type {Record<string, string>} */
 const HINTS = {
   tilde: 'Toca las vocales que llevan tilde.',
@@ -46,29 +122,16 @@ const HINTS = {
  * @param {{id?: string, text?: string}|null} payload
  * @param {{kind?: Marca, onSubmit?: (value: number[]) => void,
  *   chips?: {left?: string, right?: string}, reloj?: boolean,
- *   progreso?: boolean|null}} [opts]
+ *   progreso?: boolean|null, cabecera?: boolean, mandos?: Element|null}} [opts]
  * @returns {{flush: () => void, chromePropio: boolean,
  *   setReloj: (texto: string, pct: number|null) => void}}
  */
-export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSubmit, chips = {}, reloj = false, progreso = null } = {}) {
+export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSubmit, chips = {}, reloj = false, progreso = null, cabecera = true, mandos = null } = {}) {
   const text = payload?.text || '';
   // El botón "Calibrar pizarra" NO va aquí (en el juego): vive en la pantalla de
   // inicio (views/antesala.js), que es donde van los ajustes previos. En modo
   // tarea (alumno) no hay pizarra que calibrar, así que no debe aparecer nunca
   // durante el ejercicio.
-  // LÁPIZ / BORRADOR: UN interruptor, no dos botones. La detección por tamaño de
-  // contacto (core/penDetector.js) acierta casi siempre —punta dibuja, palma
-  // borra—, pero "casi siempre" con 33 críos delante no basta: en una pizarra sin
-  // calibrar, o con un lápiz que no reporta el área de contacto, borrar era
-  // imposible y el alumno se quedaba con una marca de más (que en Tildes/Comas
-  // RESTA: el puntaje es neto). Este mando es el manual — el detector sigue
-  // mandando mientras nadie lo toque.
-  // FORMA (dueño, 2026-08-15): «lápiz con el borrador es un botón al estilo de
-  // switch de apagar/prender luz». Dos pastillas separadas obligaban a leer cuál
-  // estaba rellena; un interruptor SE VE de un vistazo a 3 m y dice a la vez en
-  // qué está y qué pasa si lo tocas. Y es un solo blanco táctil en vez de dos.
-  // NO añade toques a responder (§29): arranca en LÁPIZ, que es lo que el alumno
-  // va a hacer; el borrador es para el que se equivoca.
   // MAQUETA (dueño, 2026-08-14): las herramientas ARRIBA —como cualquier app de
   // dibujo—, el texto con aire a los costados y el botón ABAJO. Antes las
   // herramientas flotaban en mitad de la pantalla, pegadas al texto. `chips` lo
@@ -88,25 +151,26 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   // la pantalla entera (la que trae chips: solo, carrera, tarea). En el duelo se
   // montan DOS rondas, una por jugador: ahí serían dos mandos para el mismo
   // marco, y la esquina —que es UNA— sigue siendo el sitio correcto.
-  const herramientas = `
-        <button type="button" class="tc-switch" data-tool="pen" aria-pressed="false"
-                title="Lápiz — toca para borrar" aria-label="Lápiz activo. Tocar para pasar al borrador">
-          <span class="tc-switch__side tc-switch__side--pen" data-side="pen">
-            ${lucide('pencil', { clase: 'tc-ico' })}<span class="tc-switch__word">Lápiz</span>
-          </span>
-          <span class="tc-switch__side tc-switch__side--er" data-side="eraser">
-            ${lucide('eraser', { clase: 'tc-ico' })}<span class="tc-switch__word">Borrador</span>
-          </span>
-        </button>`;
-  root.innerHTML = `
-    <div class="tc-round">
-      ${cabeceraHtml({ herramientas, pagina: chips.left || undefined, tiempo: reloj ? '' : undefined,
-                       fullscreen: propio, progreso: !!(progreso ?? reloj) })}
+  //
+  // …SALVO QUE YA HAYA UNA, y entonces esta ronda NO la pinta (`cabecera:false`).
+  // Es lo que hace el runner Solo desde v1.51.724: la hoja de papel y su banda
+  // se montan UNA vez para toda la partida y aquí solo se repinta el área de
+  // escritura, así que pasar de frase ya no destruye el reloj ni el mando de
+  // pantalla completa. El interruptor vive entonces en esa cabecera (`mandos`)
+  // y lo cablea la MISMA función: cambia el anfitrión, no la herramienta.
+  const anfitrion = mandos || root;
+  const hoja = `
       <div class="tc-hoja">
         <div class="edu-sec edu-sec--texto tc-passage-area"><div class="tc-passage">${passageHtml(text, kind)}</div></div>
         <div class="tc-done-wrap edu-send"><button type="button" class="btn btn-success btn-lg tc-done" data-ww-submit><i class="bi bi-check2-circle"></i> Listo</button></div>
-      </div>
-    </div>`;
+      </div>`;
+  root.innerHTML = cabecera
+    ? `<div class="tc-round">
+      ${cabeceraHtml({ herramientas: herramientasTcHtml(), pagina: chips.left || undefined,
+                       tiempo: reloj ? '' : undefined,
+                       fullscreen: propio, progreso: !!(progreso ?? reloj) })}${hoja}
+    </div>`
+    : hoja;
 
   const areaEl = /** @type {HTMLElement} */ (root.querySelector('.tc-passage-area'));
   const passageEl = /** @type {HTMLElement} */ (root.querySelector('.tc-passage'));
@@ -129,31 +193,12 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
     onSubmit?.(draw.getMarked());
   };
   root.querySelector('.tc-done')?.addEventListener('click', submit);
-  // EL MANDO: apagado = lápiz, encendido = borrador. Lo que diga se lo lleva el
-  // canvas (`setEraser`).
-  //
-  // OJO con el gesto: al pasar de bolita a DOS PASTILLAS ETIQUETADAS, el mando
-  // dejó de parecer un interruptor y pasó a parecer un selector — y con un
-  // conmutador ciego, tocar la pastilla que YA estaba activa te cambiaba a la
-  // otra. El alumno que está en «Lápiz» y toca «Lápiz» se llevaba el borrador, y
-  // su siguiente trazo BORRABA una marca: en Tildes/Comas el puntaje es neto, así
-  // que eso cuesta puntos sin decir nada. Manda el lado tocado; solo el hueco
-  // entre pastillas conmuta.
-  const sw = /** @type {HTMLElement|null} */ (root.querySelector('.tc-switch'));
-  sw?.addEventListener('click', (e) => {
-    if (done) return;
-    const lado = desdeToque(e.target).closest('.tc-switch__side')?.dataset.side;
-    const borrar = lado ? lado === 'eraser' : !sw.classList.contains('is-on');
-    if (borrar === sw.classList.contains('is-on')) return;   // ya estaba en ese
-    sw.classList.toggle('is-on', borrar);
-    sw.dataset.tool = borrar ? 'eraser' : 'pen';
-    sw.setAttribute('aria-pressed', String(borrar));
-    sw.title = borrar ? 'Borrador — toca para escribir' : 'Lápiz — toca para borrar';
-    sw.setAttribute('aria-label', borrar
-      ? 'Borrador activo. Tocar para volver al lápiz'
-      : 'Lápiz activo. Tocar para pasar al borrador');
-    draw.setEraser(borrar);
-  });
+  // EL MANDO: apagado = lápiz, encendido = borrador. Lo cablea la función
+  // compartida, que también lo devuelve a LÁPIZ — importa cuando el mando es
+  // estable (Solo): el lienzo de la frase nueva nace escribiendo, y un
+  // interruptor que se quedara en «Borrador» borraría la primera marca.
+  cablearSwitch(anfitrion, draw, () => done);
+
   // Contrato opcional de renderRound: `{ flush }` entrega lo dibujado hasta ahora
   // (mismo efecto que pulsar "Listo"). Lo usa studentLive para RESCATAR el trazo
   // en curso cuando el profe avanza antes de que el alumno termine — capacidad
@@ -168,7 +213,7 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
      *  solo lo PINTA. Quién lo cuenta —y con qué primitivo— es del caller (§0:
      *  una plantilla no sabe en qué modo corre). En Individual lo lleva
      *  `runTextCorrectionSolo` con `core/reloj.js`; en vivo, la sala. */
-    setReloj(texto, pct) { relojSet(root, texto, pct); },
+    setReloj(texto, pct) { relojSet(anfitrion, texto, pct); },
   };
 }
 

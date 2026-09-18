@@ -660,13 +660,13 @@ for (const t of seeded) {
       //     ARREGLADA en v1.51.722 y por eso ya no están en la lista: el shell
       //     monta el marco UNA vez y `renderItem` ya no recibe la raíz, solo su
       //     ronda — no es que se porten bien, es que no tienen con qué.
-      //   · tildes · comas      → `core/textCorrectionSolo.js`: su `shell()`
-      //     interno hace `mount(rootSel, …)` en cada repintado (uno solo, para
-      //     las dos).
+      //   · tildes · comas      → `core/textCorrectionSolo.js`. ARREGLADA en
+      //     v1.51.724: la hoja de papel y su banda se montan una vez y cada fase
+      //     —frase · corrección · frase siguiente— pinta solo el cuerpo.
       //   · memory              → su propio `paint()` con `mount()`, sin shell
       //     de por medio.
       // Esta lista solo ENCOGE, y no deja entrar a nadie nuevo.
-      const REHACEN_EL_MARCO = new Set(['memory', 'tildes', 'comas']);
+      const REHACEN_EL_MARCO = new Set(['memory']);
       // LA PIEZA MIDE SU HUECO (rompecabezas). Medido antes de arreglarlo: 117
       // px de pieza contra 234 de hueco en escritorio, 64 contra 191 en móvil.
       // El dueño: «las piezas no están del mismo tamaño que donde encajan» —
@@ -1433,6 +1433,61 @@ try {
   hits.push({ label: 'Ruleta preguntas', mode: 'solo', control: 'jugar no rehace el marco', estado: String(e.message).split('\n')[0], mal: true });
 }
 
+// ── LA HOJA ENTERA SIN PERDER EL MARCO (Tildes · Comas) ─────────────────────
+// Una sola medida al primer gesto no basta aquí: el runner de corrección tiene
+// VARIAS transiciones —marcar, entregar, pasar de frase, corregir— y un
+// remontado puede esconderse en cualquiera de ellas (o simplemente moverse de
+// fase, que sería arreglar nada). Así que se juega la hoja COMPLETA, frase a
+// frase hasta la corrección final, con el marco marcado desde el principio: si
+// la cabecera que hay al final no es EL MISMO nodo que al empezar, algo la
+// destruyó por el camino. Corre una vez por plantilla y fuera del bucle.
+for (const n of ['tildes', 'comas']) {
+  const sem = seeded.find(s => s.name === n);
+  if (!sem) continue;
+  try {
+    // DESDE LA PRIMERA FRASE. El bucle de arriba ya jugó una ronda de esta
+    // misma actividad y el shell GUARDA el avance para reanudar tras un F5: sin
+    // borrarlo, esta red empezaría por la mitad de la hoja y mediría media
+    // transición (pasó: Tildes entraba ya en la última frase).
+    await page.evaluate(async (id) => {
+      const { clearSoloProgress } = await import('/core/soloPlayer.js');
+      clearSoloProgress(id);
+    }, sem.id);
+    await page.evaluate((id) => { location.hash = `#/play/${id}`; }, sem.id);
+    await page.waitForSelector('[data-ww-start]', { timeout: 9000 });
+    await page.click('[data-ww-start]');
+    await page.waitForSelector('#ww-player-widget .tc-done', { timeout: 9000 });
+    await page.evaluate(() => {
+      const c = document.querySelector('#ww-player-widget .edu-cabecera');
+      if (c) c.dataset.wwMarca = '1';
+    });
+    // Frase a frase hasta que no quede hoja que entregar (tope: no se cuelga).
+    let frases = 0;
+    for (let i = 0; i < 8; i++) {
+      if (!await page.locator('#ww-player-widget .tc-done').count()) break;
+      await playRound(page, '#ww-player-widget', {});
+      frases++;
+      await page.waitForTimeout(250);
+    }
+    const fin = await page.evaluate(() => {
+      const c = /** @type {HTMLElement|null} */ (document.querySelector('#ww-player-widget .edu-cabecera'));
+      return {
+        hay: !!c, marca: c ? c.dataset.wwMarca === '1' : null,
+        corrigiendo: !!document.querySelector('.tc-final'),
+      };
+    });
+    const mal = !frases ? 'no se pudo entregar ninguna frase'
+      : !fin.hay ? 'la hoja se queda sin cabecera al llegar a la corrección'
+      : !fin.marca ? 'alguna fase rehace la cabecera (el reloj y el maximizar renacen a mitad de hoja)'
+      : !fin.corrigiendo ? 'la hoja no llegó a la corrección final' : '';
+    hits.push({ label: sem.label, mode: 'solo', control: 'la hoja entera conserva el marco',
+                estado: mal || `ok (${frases} frase(s) → corrección)`, mal: !!mal });
+  } catch (e) {
+    hits.push({ label: sem.label, mode: 'solo', control: 'la hoja entera conserva el marco',
+                estado: String(e.message).split('\n')[0], mal: true });
+  }
+}
+
 // Deja el DOM como estaba para lo que venga detrás (el informe no navega más).
 await page.evaluate(() => { location.hash = '#/mine'; });
 await page.waitForTimeout(150);
@@ -1562,7 +1617,8 @@ if (hits.length) {
 // El resumen de arriba dice cuántas cumplen; esto dice CUÁNTO sobrevive en cada
 // una, que es el número con el que se compara un antes y un después. Sin él,
 // «mejoró» es una opinión.
-const marcoHits = hits.filter(x => x.control === 'jugar no rehace el marco');
+const marcoHits = hits.filter(x => x.control === 'jugar no rehace el marco'
+  || x.control === 'la hoja entera conserva el marco');
 if (marcoHits.length) {
   console.log('\nEL MARCO SOBREVIVE AL GESTO (nodos vivos tras un toque real)\n');
   for (const x of marcoHits) console.log(`  ${x.mal ? '❌' : '✅'} ${String(x.label).padEnd(16)} ${x.estado}`);

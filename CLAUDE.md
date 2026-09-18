@@ -551,7 +551,7 @@ CORES     (templates/*/player.js)  — cómo: drag, click, tipo, animación (ún
 **Shell Libre** `runFreeformPlayer(rootSel, activity, opts)` → devuelve `ctx` ✅:
 - El player llama `ctx.finish({score, maxScore, title, stats, after})` al terminar — AÑADE sobre la estándar, nunca la sustituye (`skipResultScreen` no existe: lo caza B8).
 - Shell garantiza: `resultScreenHtml()` SIEMPRE, `trySaveResult()`, `onFinish()`.
-- Callers (medido 2026-09-04): Wheel, Question-Live, Memory, Match, Wordsearch, Diagram, Ballsort; Tildes y Comas vía `runTextCorrectionSolo` (que corre sobre este shell). **Las 13 sobre un shell** — la migración terminó; este cuadro dijo «pendientes» versiones después de estarlo.
+- Callers (medido 2026-09-04): Wheel, Question-Live, Memory, Match, Wordsearch, Diagram, Ballsort; Tildes y Comas vía `runTextCorrectionSolo` (que corre sobre este shell). **Las 13 sobre un shell** — la migración terminó; este cuadro dijo «pendientes» versiones después de estarlo. **Aquí el marco es de CADA player** (el shell libre no lo posee) y por eso la deuda de §23 vivía aquí: `runTextCorrectionSolo` monta desde v1.51.724 la hoja (`.tc-round` + `edu-cabecera`) UNA vez y cada fase —frase · corrección · frase siguiente— pinta solo `.tc-body`; el interruptor lápiz/borrador es de `textCorrectionRonda.js` (markup **y** cableado) y solo cambia de anfitrión (`cabecera:false` + `mandos`). Queda `memory`.
 
 **Timer único** `core/soloTimer.js` — `createCountdown(secs, {onTick, onTimeout, setIntervalFn?, clearIntervalFn?})` ✅:
 - Cerró 3 implementaciones divergentes (Quiz, Globos, Wordsearch). Scheduler inyectable → tests deterministas.

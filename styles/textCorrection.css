@@ -44,24 +44,12 @@
   padding: max(8px, 2.2cqmin);
 }
 
-/* "Frase X/Y" en una esquina, fuera del flujo, para no robar espacio al texto.
-   Escala con el marco (cqmin) para no verse minúsculo en pantalla completa. */
-.tc-frase {
-  position: absolute; top: 1.4cqmin; left: 1.6cqmin; z-index: 5;
-  font-size: clamp(.7rem, 2.3cqmin, 1.4rem); font-weight: 600; line-height: 1;
-  padding: .3em .6em; border-radius: 999px;
-  background: rgba(0,0,0,.55); color: #fff;
-}
-
-/* "Calibrar pizarra" en la esquina superior derecha (no roba espacio al texto). */
-.tc-calib {
-  position: absolute; top: 1.4cqmin; right: 1.6cqmin; z-index: 6;
-  border: 0; border-radius: 999px; cursor: pointer;
-  font-size: clamp(.68rem, 2.1cqmin, 1.05rem); line-height: 1;
-  padding: .42em .8em; display: inline-flex; align-items: center; gap: .35em;
-  background: rgba(0,0,0,.5); color: #fff;
-}
-.tc-calib:hover { background: rgba(0,0,0,.72); }
+/* NO HAY CHIP DE «Frase X/Y» SUELTO ni botón de calibrar flotando (v1.51.724).
+   Los dos vivían aquí, en posición absoluta sobre la hoja: el chip porque la
+   corrección no tenía barra donde poner la página —hoy la cabecera es ESTABLE y
+   la lleva siempre— y el botón porque en su día se calibraba dentro del juego
+   (hoy se hace en la antesala, que es donde van los ajustes previos). Sin
+   lector en el JS, las dos reglas eran CSS que nadie cargaba: §30. */
 
 .tc-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 /* MAQUETA (dueño, 2026-08-14): barra arriba · texto ARRIBA con aire a los

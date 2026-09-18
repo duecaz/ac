@@ -115,6 +115,21 @@ export function hudSet(scope, campo, texto) {
   (el.querySelector('[data-hud-val]') || el).textContent = String(texto);
 }
 
+/** ENSEÑA O ESCONDE LAS HERRAMIENTAS de la cabecera, sin rehacerla. Lo pide una
+ *  cabecera ESTABLE que vive toda la partida (el runner de Tildes/Comas): en la
+ *  hoja se escribe y el lápiz tiene que estar; en la corrección no se dibuja
+ *  nada y un mando que no hace nada invita a tocarlo. Antes esto se resolvía
+ *  pintando otra cabecera sin herramientas — que es justo lo que destruía el
+ *  marco. Vive AQUÍ porque el interior de la cabecera es de este módulo (§21b):
+ *  quien la usa no tiene por qué conocer el nombre de sus cajas.
+ * @param {Element|string|null|undefined} scope
+ * @param {boolean} visibles
+ * @returns {void} */
+export function hudMandos(scope, visibles) {
+  const el = /** @type {HTMLElement|null} */ (raizDe(scope)?.querySelector('.edu-cab__mandos') ?? null);
+  if (el) el.hidden = !visibles;
+}
+
 /** El reloj y su barra, que son el MISMO dato: el número dice cuánto queda y la
  *  barra dice cuánto se ha ido, que es lo que se capta sin leer. Se pintan
  *  juntos porque `core/reloj.js` los entrega juntos (`pintar(valor, pct)`) y

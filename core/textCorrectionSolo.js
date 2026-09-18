@@ -9,15 +9,15 @@
 // shell pone timeUsed, la pantalla estándar (+ apéndice de revisión), el guardado
 // (trySaveResult según persistPolicy) y la REANUDACIÓN F5, que este runner no
 // tenía cuando era el "3er shell" con su copia manual de todo eso.
-import { html, mount } from './html.js';
+import { html, mount, raizDe } from './html.js';
 import { scoreMarksPerHit } from './textMarks.js';
 import { frasesDe } from './contentModels/textCorrection.js';
 import { GameEvents, emitGame } from './gameEvents.js';
 import { runFreeformPlayer } from './soloPlayer.js';
 import { passageHtml, fitPassage } from './textCorrectionPasaje.js';
 import { filasRevision, panelRevisionHtml, valorAnulado } from './textCorrectionRevision.js';
-import { renderTextCorrectionRound, desdeToque } from './textCorrectionRonda.js';
-import { cabeceraHtml } from './playerHud.js';
+import { renderTextCorrectionRound, desdeToque, herramientasTcHtml } from './textCorrectionRonda.js';
+import { cabeceraHtml, hudSet, hudMandos, relojSet } from './playerHud.js';
 import { corrigeAlFinal } from './constants.js';
 import { montarReloj, relojDe } from './reloj.js';
 import { serverNow } from './serverNow.js';
@@ -85,15 +85,6 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     results: passageResults.map((r, i) => ({ i, got: [...r.got], hits: r.hits, misses: r.misses, over: r.over, total: r.total, correct: r.correct, points: r.points })),
   });
 
-  // `conFrase`: el chip «N / M» absoluto solo en las pantallas SIN barra (la
-  // corrección); en la ronda el progreso viaja en la barra y duplicarlo estorba.
-  /** @param {string} bodyHtml @param {{conFrase?: boolean}} [o] */
-  const shell = (bodyHtml, { conFrase = true } = {}) => mount(rootSel, html`
-    <div class="tc-solo">
-      ${conFrase ? `<span class="tc-frase">${idx + 1} / ${passages.length}</span>` : ''}
-      <div id="tc-body" class="tc-body">${bodyHtml}</div>
-    </div>`);
-
   // EL TIEMPO ES POR HOJA (decisión del dueño, 2026-08-27). El campo ya existía
   // y nadie lo leía en Individual: `rules.timer` son «segundos por ítem», y en
   // Tildes/Comas un ítem ES una frase. No se inventa un campo nuevo — hacerlo
@@ -110,28 +101,58 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
   let reloj = null;
   const pararReloj = () => { if (reloj) { reloj.stop(); reloj = null; } };
 
+  // ── LA HOJA SE MONTA UNA VEZ ───────────────────────────────────────────────
+  // Hasta v1.51.723 esto era un `shell(bodyHtml)` que hacía `mount(rootSel, …)`
+  // en CADA fase —frase, corrección, siguiente frase—, así que de 196 nodos no
+  // sobrevivía ninguno a pulsar «Listo»: el reloj y el botón de pantalla
+  // completa se destruían y volvían a nacer entre frase y frase. La hoja de
+  // papel (`.tc-round`) y su banda de arriba (la cabecera, con el lápiz, la
+  // página, el RELOJ y el maximizar) son la ESTRUCTURA de la partida, no de la
+  // frase: se montan aquí y ya no se tocan. Cada fase pinta solo el CUERPO.
+  const hayReloj = relojDe(activity).tipo !== 'ninguno';
+  mount(rootSel, html`
+    <div class="tc-solo">
+      <div class="tc-round">
+        ${cabeceraHtml({
+          herramientas: herramientasTcHtml(),
+          pagina: `1 / ${passages.length}`,
+          tiempo: hayReloj ? '' : undefined,
+          progreso: segundos > 0,
+        })}
+        <div class="tc-body" data-tc-body></div>
+      </div>
+    </div>`);
+  const raiz = raizDe(rootSel);
+  const cuerpoOpt = raiz?.querySelector('[data-tc-body]') ?? null;
+  if (!cuerpoOpt) return;   // el marco no llegó a montarse (§23)
+  const cuerpo = cuerpoOpt;
+
+  /** Lo único que cambia entre fases: el cuerpo de la hoja, y los indicadores
+   *  por su DATO. Fuera de la hoja se escribe (herramientas y reloj a la vista);
+   *  en la corrección no hay nada que dibujar ni tiempo que contar.
+   *  @param {string} bodyHtml @param {{escribiendo?: boolean}} [o] */
+  function pintarCuerpo(bodyHtml, { escribiendo = false } = {}) {
+    cuerpo.innerHTML = bodyHtml;
+    hudSet(raiz, 'pagina', `${Math.min(idx + 1, passages.length)} / ${passages.length}`);
+    hudMandos(raiz, escribiendo);
+    if (!escribiendo) relojSet(raiz, '', null);   // el reloj es de la hoja, no de la corrección
+  }
+
   function ask() {
-    shell('', { conFrase: false });
-    const body = document.getElementById('tc-body');
-    if (!body) return;
-    const ronda = renderTextCorrectionRound(body, passages[idx] || null, {
-      kind, onSubmit: grade,
-      // SIN CHIP DE PUNTOS. Lo puse en v1.51.612 «para que el puntaje viaje de
-      // hoja en hoja» y el dueño lo quitó a la primera, con razón: el puntaje ya
-      // sale en la corrección de cada frase y en la pantalla final, así que el
-      // chip era un tercer sitio para el mismo número — y encima se solapaba con
-      // el botón de pantalla completa, que vive en esa misma esquina.
-      chips: { left: `${idx + 1} / ${passages.length}` },
-      // El hueco del reloj se reserva si va a haber reloj; lo llena el módulo.
-      reloj: relojDe(activity).tipo !== 'ninguno',
-      progreso: segundos > 0,
+    // La hoja de esta frase, DENTRO del cuerpo: la cabecera (lápiz · página ·
+    // reloj · maximizar) es la misma que ya estaba y no se toca. `cabecera:
+    // false` + `mandos` es lo que le dice a la ronda que aquí ya hay una y que
+    // su interruptor vive en ella.
+    pintarCuerpo('', { escribiendo: true });
+    const ronda = renderTextCorrectionRound(cuerpo, passages[idx] || null, {
+      kind, onSubmit: grade, cabecera: false, mandos: raiz,
     });
     pararReloj();
     reloj = montarReloj({
       activity,
       desde: inicioCrono,
       alive: () => ctx.alive(),
-      pintar: (texto, pct) => ronda.setReloj(texto, pct),
+      pintar: (texto, pct) => relojSet(raiz, texto, pct),
       // Se acabó el tiempo: se entrega LO QUE HAYA. Ni se pierde el trabajo ni se
       // deja al alumno bloqueado en una hoja que ya no puede terminar.
       onFin: () => ronda.flush(),
@@ -212,14 +233,13 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     /** @type {Set<number>} */
     const anulados = new Set();
     const filas = filasRevision(p, kind, got);
-    // LA CABECERA SIGUE AHÍ EN LA CORRECCIÓN. Sin ella, el botón de pantalla
-    // completa volvía a la esquina flotante y saltaba de sitio en cada frase
-    // (cabecera → esquina → cabecera): el sitio de un mando no puede depender de
-    // en qué mitad del ejercicio estás. Sin herramientas: aquí no se dibuja.
-    shell(`
-      <div class="tc-round">
-        ${cabeceraHtml({ pagina: `${idx + 1} / ${passages.length}` })}
-        <div class="tc-hoja">
+    // LA CABECERA SIGUE AHÍ EN LA CORRECCIÓN, y ahora es LA MISMA: no se repinta,
+    // solo se apagan sus herramientas (aquí no se dibuja) y su reloj (aquí no se
+    // cuenta). Sin ella, el botón de pantalla completa volvía a la esquina
+    // flotante y saltaba de sitio en cada frase (cabecera → esquina → cabecera):
+    // el sitio de un mando no puede depender de en qué mitad del ejercicio estás.
+    pintarCuerpo(`
+      <div class="tc-hoja">
         <div class="edu-sec edu-sec--texto tc-corrige">
           <div class="tc-passage-area"><div class="tc-passage">${passageHtml(p.text, kind, { got, want })}</div></div>
           <div class="tc-review-slot">${panelRevisionHtml(filas, anulados, { anulable })}</div>
@@ -233,12 +253,11 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
             ${last ? '<i class="bi bi-flag-fill"></i> Ver resultado' : 'Siguiente <i class="bi bi-arrow-right"></i>'}
           </button></div>
         </div>
-        </div>
-      </div>`, { conFrase: false });
+      </div>`);
     // ANULAR: se repinta el panel y se recalcula con el MISMO scorer. El
     // resultado de la frase NO se cierra hasta pulsar «Siguiente» — mientras el
     // docente está mirando la revisión, todavía puede cambiar de idea.
-    const slot = document.querySelector('.tc-review-slot');
+    const slot = cuerpo.querySelector('.tc-review-slot');
     slot?.addEventListener('click', (e) => {
       const b = desdeToque(e.target).closest('[data-anular]');
       if (!b) return;
@@ -246,7 +265,7 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
       if (anulados.has(pos)) anulados.delete(pos); else anulados.add(pos);
       slot.innerHTML = panelRevisionHtml(filas, anulados, { anulable });
       const rr = scoreMarksPerHit(valorAnulado(value, anulados, p, kind), p, [kind], activity);
-      const v = document.querySelector('[data-verdicto]');
+      const v = cuerpo.querySelector('[data-verdicto]');
       if (v) {
         v.className = `tc-verdict ${rr.perfect ? 'ok' : 'bad'}`;
         v.innerHTML = `<i class="bi ${rr.perfect ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}"></i> `
@@ -255,11 +274,11 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     });
 
     // El texto de la corrección también LLENA el área (mismo tamaño grande).
-    const areaEl = /** @type {HTMLElement} */ (document.querySelector('.tc-passage-area'));
+    const areaEl = /** @type {HTMLElement} */ (cuerpo.querySelector('.tc-passage-area'));
     const passageEl = /** @type {HTMLElement} */ (areaEl.querySelector('.tc-passage'));
     const stopFit = fitPassage(areaEl, passageEl);
     // (el botón de pantalla completa lo cablea el marco, por delegación)
-    document.querySelector('.tc-next')?.addEventListener('click', () => {
+    cuerpo.querySelector('.tc-next')?.addEventListener('click', () => {
       stopFit();
       // AQUÍ se cierra la frase, con las anulaciones ya aplicadas. `grade` dejó
       // un resultado provisional; si el docente tocó algo, se sustituye por el
@@ -280,43 +299,49 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
   function corregirTodo() {
     /** @type {Map<number, Set<number>>} */
     const anuladosDe = new Map(passageResults.map((_, i) => [i, new Set()]));
-    const pinta = () => {
-      shell(`
-        <div class="tc-final">
-          <div class="tc-final__cab">
-            <b>Corrección</b>
-            <span class="tc-final__tot" data-total>${hits} de ${totalMarks} · ${score} pts</span>
-            <button type="button" class="btn btn-primary tc-fin"><i class="bi bi-flag-fill"></i> Finalizar</button>
-          </div>
-          ${passageResults.map((r, i) => `
-            <section class="tc-final__hoja">
-              <h6 class="tc-final__n">Frase ${i + 1}</h6>
-              <div class="tc-final__cuerpo">
-                <div class="tc-passage tc-review-passage">${passageHtml(r.p.text, kind, { got: r.got, want: r.want })}</div>
-                <div class="tc-review-slot" data-hoja="${i}">
-                  ${panelRevisionHtml(filasRevision(r.p, kind, r.got), anuladosDe.get(i) || new Set(), { anulable })}
-                </div>
-              </div>
-            </section>`).join('')}
-        </div>`, { conFrase: false });
-
-      document.querySelector('.tc-final')?.addEventListener('click', (e) => {
-        const b = desdeToque(e.target).closest('[data-anular]');
-        if (b) {
-          const hoja = /** @type {HTMLElement|null} */ (b.closest('[data-hoja]'));
-          const i = Number(hoja?.dataset.hoja);
-          const pos = Number(b.dataset.anular);
-          const set = anuladosDe.get(i);
-          if (!set) return;
-          if (set.has(pos)) set.delete(pos); else set.add(pos);
-          recalcular(i, set);
-          pinta();                       // re-pinta con los totales ya ajustados
-          return;
-        }
-        if (desdeToque(e.target).closest('.tc-fin')) finish();
-      });
+    /** El panel de UNA hoja. @param {number} i @returns {string} */
+    const panelDe = (i) => {
+      const r = passageResults[i];
+      return r ? panelRevisionHtml(filasRevision(r.p, kind, r.got), anuladosDe.get(i) || new Set(), { anulable }) : '';
     };
-    pinta();
+    pintarCuerpo(`
+      <div class="tc-final">
+        <div class="tc-final__cab">
+          <b>Corrección</b>
+          <span class="tc-final__tot" data-total>${hits} de ${totalMarks} · ${score} pts</span>
+          <button type="button" class="btn btn-primary tc-fin"><i class="bi bi-flag-fill"></i> Finalizar</button>
+        </div>
+        ${passageResults.map((r, i) => `
+          <section class="tc-final__hoja">
+            <h6 class="tc-final__n">Frase ${i + 1}</h6>
+            <div class="tc-final__cuerpo">
+              <div class="tc-passage tc-review-passage">${passageHtml(r.p.text, kind, { got: r.got, want: r.want })}</div>
+              <div class="tc-review-slot" data-hoja="${i}">${panelDe(i)}</div>
+            </div>
+          </section>`).join('')}
+      </div>`);
+
+    // ANULAR CAMBIA UNA PALABRA, NO LA PANTALLA. Antes cada toque volvía a
+    // pintar la corrección ENTERA —las N frases, con sus paneles—: con la clase
+    // delante, el profe perdía el sitio del scroll en cada perdón que daba. Se
+    // reescribe el panel de ESA hoja y el total, que es lo único que cambia.
+    cuerpo.querySelector('.tc-final')?.addEventListener('click', (e) => {
+      const b = desdeToque(e.target).closest('[data-anular]');
+      if (b) {
+        const hoja = /** @type {HTMLElement|null} */ (b.closest('[data-hoja]'));
+        const i = Number(hoja?.dataset.hoja);
+        const pos = Number(b.dataset.anular);
+        const set = anuladosDe.get(i);
+        if (!set || !hoja) return;
+        if (set.has(pos)) set.delete(pos); else set.add(pos);
+        recalcular(i, set);
+        hoja.innerHTML = panelDe(i);
+        const tot = cuerpo.querySelector('[data-total]');
+        if (tot) tot.textContent = `${hits} de ${totalMarks} · ${score} pts`;
+        return;
+      }
+      if (desdeToque(e.target).closest('.tc-fin')) finish();
+    });
   }
 
   function finish() {

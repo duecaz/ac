@@ -977,9 +977,21 @@ un handler, un observer, un modal) sigue vivo pintando encima del presente.
   raíz del player, la herramienta para borrar la cabecera seguía en la mesa. El
   shell secuencial pasó a ser el DUEÑO del marco y su contexto dejó de llevar
   `rootSel` — Quiz, Operaciones y Globos pasaron de 0 % a 56-71 % de nodos
-  vivos por gesto, con la MISMA cabecera de antes del toque. Quedan `memory` y
-  `textCorrectionSolo` (Tildes/Comas), declarados en `REHACEN_EL_MARCO`
-  (`tools/matrix-smoke.mjs`), una lista que solo encoge. Ojo con el listón: el
+  vivos por gesto, con la MISMA cabecera de antes del toque. La segunda familia
+  (Tildes y Comas, v1.51.724) NO se arregló copiando eso: su dueño es otro
+  runner y el marco es del player, así que `runTextCorrectionSolo` monta la HOJA
+  (`.tc-round` + su banda) una vez y cada fase pinta solo `.tc-body` — 0 % → 21 %
+  (Tildes) y 62 % (Comas). Queda `memory` en `REHACEN_EL_MARCO`
+  (`tools/matrix-smoke.mjs`), una lista que solo encoge.
+- **UNA FASE PUEDE ESCONDER EL REMONTADO, así que la red cruza la hoja ENTERA**
+  (v1.51.724). Medir solo el primer gesto habría dado por bueno mover el
+  `mount` de «entregar» a «pasar de frase»: la red de Tildes/Comas juega frase a
+  frase hasta la corrección final y comprueba que la cabecera del final es EL
+  MISMO nodo que al empezar. Dos cosas aprendidas al ponerla en rojo: un
+  sabotaje por `outerHTML` NO la enciende (la marca viaja en el atributo, y un
+  remontado de verdad nace de una plantilla sin ella), y hay que BORRAR el
+  progreso guardado antes de empezar o el shell reanuda a media hoja y se mide
+  media transición. Ojo con el listón: el
   100 % sería falso —al pasar de pregunta el contenido de la ronda DEBE morir—;
   lo que se exige es que sobreviva el marco y que `.edu-cabecera` sea **el mismo
   nodo**. Y la API no es una jaula: en JavaScript siempre se puede buscar el DOM
