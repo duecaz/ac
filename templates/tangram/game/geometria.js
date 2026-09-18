@@ -90,6 +90,37 @@ export function bboxDe(poligonos) {
   return { minx, miny, maxx, maxy };
 }
 
+/** El centro de la caja de una pieza ya colocada (interna: su único lector es
+ *  `transformarEnSitio`). No es el centro de masa: es
+ *  el de su caja envolvente, que es lo que el dedo percibe como «la pieza».
+ *  @param {Colocacion} c @param {Record<string, Pieza>} [piezas] @returns {Punto} */
+function centroDe(c, piezas = PIEZAS) {
+  const pts = poligonosDe([c], piezas)[0] || [];
+  const b = bboxDe([pts]);
+  return /** @type {Punto} */ ([(b.minx + b.maxx) / 2, (b.miny + b.maxy) / 2]);
+}
+
+/**
+ * GIRAR (o VOLTEAR) SIN QUE LA PIEZA SE ESCAPE. La colocación guarda un giro
+ * alrededor del ORIGEN del polígono —el vértice del ángulo recto—, así que
+ * girar 45° a secas manda la pieza a varios lados de distancia del dedo: el
+ * dueño lo describió como «hace el snap en un lugar erróneo, a distancia del
+ * lugar correcto» (2026-09-18). Aquí se compensa la traslación para que el
+ * CENTRO de la pieza no se mueva: el dato sigue siendo un giro sobre el
+ * origen (la máscara y las siluetas no cambian) y el gesto se comporta como
+ * espera la mano.
+ * @param {Colocacion} c
+ * @param {{rot?: number, flip?: boolean}} cambio
+ * @param {Record<string, Pieza>} [piezas]
+ * @returns {Colocacion}
+ */
+export function transformarEnSitio(c, cambio, piezas = PIEZAS) {
+  const [cx, cy] = centroDe(c, piezas);
+  const nueva = { ...c, ...cambio };
+  const [nx, ny] = centroDe(nueva, piezas);
+  return { ...nueva, x: nueva.x + (cx - nx), y: nueva.y + (cy - ny) };
+}
+
 /** Ajusta un ángulo (grados, cualquier signo) al múltiplo de 45° más cercano,
  *  normalizado a [0, 360).
  *  @param {number} gradosBrutos @returns {number} */

@@ -658,6 +658,42 @@ for (const t of seeded) {
         if (mal) { status = 'error'; detail = `táctil: ${mal}`; }
         hits.push({ label: t.label, mode, control: 'objetivo táctil ≥ 12 % (inicial)', estado: mal || `ok (${m.pct} %, ${m.n} objetivos)`, mal: !!mal });
       }
+      // ── AJUSTAR UNA PIEZA NO PUEDE GIRARLA (tangram) ────────────────────
+      // El dueño, jugando (2026-09-18): «hace el snap en un lugar erróneo, a
+      // distancia del lugar correcto». El umbral de «esto fue un toque» iba en
+      // fracción del CONTENIDO —que incluye la bandeja—, así que salían 75 px:
+      // mover una pieza media pieza para encajarla se leía como toque y la
+      // pieza giraba, y al girar sobre su vértice salía disparada. Aquí se
+      // arrastra de verdad una pieza 30 px y se exige que se MUEVA sin girar.
+      if (mode === 'solo' && status === 'ok' && t.name === 'tangram') {
+        const g = await page.evaluate(async () => {
+          const pieza = document.querySelector('.ta-pieza');
+          if (!pieza) return { sin: true };
+          const antes = pieza.getAttribute('transform');
+          const r = pieza.getBoundingClientRect();
+          const x = r.left + r.width / 2, y = r.top + r.height / 2;
+          const ev = (tipo, dx = 0) => pieza.dispatchEvent(new PointerEvent(tipo, {
+            pointerId: 1, isPrimary: true, bubbles: true, pointerType: 'mouse',
+            clientX: x + dx, clientY: y,
+          }));
+          ev('pointerdown');
+          await new Promise(res => setTimeout(res, 30));
+          ev('pointermove', 30);
+          ev('pointerup', 30);
+          await new Promise(res => requestAnimationFrame(res));
+          const num = (tr, re) => Number((tr.match(re) || [])[1]);
+          const despues = document.querySelector('.ta-pieza[data-pieza="' + pieza.dataset.pieza + '"]').getAttribute('transform');
+          return {
+            movio: num(antes, /translate\(([-\d.]+)/) !== num(despues, /translate\(([-\d.]+)/),
+            giro: num(antes, /rotate\(([-\d.]+)/) !== num(despues, /rotate\(([-\d.]+)/),
+          };
+        });
+        const mal = g.sin ? 'sin piezas montadas'
+          : g.giro ? 'un arrastre de 30 px GIRÓ la pieza (se leyó como toque): ajustar una pieza es imposible'
+          : !g.movio ? 'un arrastre de 30 px no movió la pieza' : '';
+        if (mal) { status = 'error'; detail = `gesto: ${mal}`; }
+        hits.push({ label: t.label, mode, control: 'ajuste fino (arrastrar 30 px mueve, no gira)', estado: mal || 'ok', mal: !!mal });
+      }
       if (mode === 'solo' && status === 'ok' && BANDEJA[t.name]) {
         const b = await page.evaluate(({ tablero, piezas }) => {
           const tb = document.querySelector(tablero)?.getBoundingClientRect();

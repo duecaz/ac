@@ -163,7 +163,7 @@ export function renderTangramPlayer(rootSel, activity, opts = {}) {
   const colocaciones = colocacionesIniciales(filas, alturasFila, anchoBandeja, gap, centroX, yBandeja);
   let resuelto = false;
 
-  const tablero = montarTablero(svgOpt, capaOpt, { colocaciones, contentW, onCambio: comprobarFin });
+  const tablero = montarTablero(svgOpt, capaOpt, { colocaciones, onCambio: comprobarFin });
 
   function comprobarFin() {
     if (resuelto) return;

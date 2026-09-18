@@ -21,10 +21,16 @@
 // es el estado del que monta, el tablero solo lo mueve.
 import { capturarPuntero } from '../../../core/events.js';
 import { PIEZAS } from './piezas.js';
-import { imantar } from './geometria.js';
+import { imantar, transformarEnSitio } from './geometria.js';
 
 const TOQUE_MAX_MS = 300;      // por debajo de esto, sin desplazamiento, es un TOQUE
-const TOQUE_MAX_DIST = 0.06;   // en fracción del lado del tablero — no del cuadrado unidad fijo
+// CUÁNTO PUEDE TEMBLAR UN DEDO sin que deje de ser un toque: 12 px de PANTALLA.
+// Iba en fracción del contenido (0,06) y el contenido incluye la bandeja, así
+// que en el player salían 75 px: cualquier ajuste fino —mover una pieza media
+// pieza para encajarla— se leía como TOQUE y la pieza giraba. Medido con el
+// tablero montado (451 px por unidad): 20 y 40 px giraban en vez de mover.
+// Un umbral de gesto es del DEDO, no del dibujo: va en píxeles.
+const TOQUE_MAX_PX = 12;
 const DOBLE_TOQUE_MS = 400;    // ventana entre dos toques de la MISMA pieza
 
 /** @param {import('./piezas.js').Punto[]} p @returns {string} el atributo `points` */
@@ -50,7 +56,6 @@ const transformDe = (c) => `translate(${c.x},${c.y}) rotate(${c.rot}) ${c.flip ?
 /**
  * @typedef {Object} OpcionesTablero
  * @property {Colocacion[]} colocaciones  dónde está cada pieza; el tablero las MUTA
- * @property {number} contentW            ancho del contenido (el umbral de «toque» es una fracción)
  * @property {() => void} onCambio        tras cada gesto que cambia una colocación (ya imantada)
  * @property {Caja} [limites]             si se da, el origen de una pieza soltada no sale de esta caja
  */
@@ -67,7 +72,7 @@ const transformDe = (c) => `translate(${c.x},${c.y}) rotate(${c.rot}) ${c.flip ?
  * @param {OpcionesTablero} o
  * @returns {Tablero}
  */
-export function montarTablero(svg, capa, { colocaciones, contentW, onCambio, limites }) {
+export function montarTablero(svg, capa, { colocaciones, onCambio, limites }) {
   let orden = colocaciones.map(c => c.pieza);   // orden de pintado = quién está "encima"
 
   /** @param {string} n @returns {Colocacion|undefined} */
@@ -158,7 +163,11 @@ export function montarTablero(svg, capa, { colocaciones, contentW, onCambio, lim
     if (gesto.activo !== e.pointerId || !gesto.piezaId) return;
     const p = puntoSvg(e.clientX, e.clientY);
     const dx = p.x - gesto.inicioX, dy = p.y - gesto.inicioY;
-    const umbral = contentW * TOQUE_MAX_DIST;
+    // El umbral se mide en píxeles de pantalla y se traduce a unidades con la
+    // escala REAL del SVG (cambia con la ventana y con pantalla completa).
+    const m = svg.getScreenCTM();
+    const porUnidad = m ? Math.hypot(m.a, m.b) : 1;
+    const umbral = TOQUE_MAX_PX / (porUnidad || 1);
     if (!gesto.movido && Math.hypot(dx, dy) < umbral) return;
     gesto.movido = true;
     const c = de(gesto.piezaId);
@@ -182,17 +191,19 @@ export function montarTablero(svg, capa, { colocaciones, contentW, onCambio, lim
       Object.assign(c, acotar(imantar(c)));
       cambio = true;
     } else if (c && duracion <= TOQUE_MAX_MS) {
-      // TOQUE: gira 45°. Si es el SEGUNDO toque de esta pieza dentro de la
-      // ventana de doble-toque, además voltea (la comprobación de "resuelto"
-      // sigue siendo UNA sola, después de aplicar ambos cambios).
-      c.rot = (c.rot + 45) % 360;
+      // TOQUE: gira 45° SIN MOVERSE DEL SITIO. El giro guardado es sobre el
+      // origen de la pieza (su vértice), así que girar a secas la mandaba a
+      // varios lados de distancia del dedo; `transformarEnSitio` compensa la
+      // traslación para que el centro se quede donde está. Si es el SEGUNDO
+      // toque de esta pieza dentro de la ventana, además voltea (la
+      // comprobación de «resuelto» sigue siendo UNA, tras aplicar ambos).
       const ahora = performance.now();
-      if (ultimoToque.piezaId === n && (ahora - ultimoToque.t) <= DOBLE_TOQUE_MS) {
-        c.flip = !c.flip;
-        ultimoToque = { piezaId: null, t: 0 };   // un tercer toque rápido no encadena
-      } else {
-        ultimoToque = { piezaId: n, t: ahora };
-      }
+      const dobleToque = ultimoToque.piezaId === n && (ahora - ultimoToque.t) <= DOBLE_TOQUE_MS;
+      Object.assign(c, transformarEnSitio(c, {
+        rot: (c.rot + 45) % 360,
+        ...(dobleToque ? { flip: !c.flip } : {}),
+      }));
+      ultimoToque = dobleToque ? { piezaId: null, t: 0 } : { piezaId: n, t: ahora };
       cambio = true;
     }
     gesto.activo = null;

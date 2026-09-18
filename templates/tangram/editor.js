@@ -115,7 +115,6 @@ function wireContent(rootEl, act, ctx) {
   const capa = rootEl.querySelector('.ta-edit-tablero .ta-piezas');
   const tablero = svg && capa ? montarTablero(svg, capa, {
     colocaciones: item.colocaciones,   // el tablero MUTA el propio contenido: lo que se ve es lo que se guarda
-    contentW: MESA.w,
     limites: LIMITES,
     onCambio: () => { ctx.onChange(act); actualizarVista(rootEl, item); },
   }) : null;

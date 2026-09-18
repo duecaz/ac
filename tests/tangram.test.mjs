@@ -3,7 +3,7 @@
 import assert from 'node:assert';
 import { PIEZAS, ORDEN_PIEZAS, areaPoligono } from '../templates/tangram/game/piezas.js';
 import { SILUETAS, ORDEN_SILUETAS } from '../templates/tangram/game/siluetas.js';
-import { transformarPieza, imanRotacion, imanPosicion, imantar, poligonosDe, bboxDe } from '../templates/tangram/game/geometria.js';
+import { transformarPieza, imanRotacion, imanPosicion, imantar, poligonosDe, bboxDe, transformarEnSitio } from '../templates/tangram/game/geometria.js';
 import { xorArea, estaResuelto, UMBRAL_RESUELTO, componentesConexas } from '../templates/tangram/game/mascara.js';
 import { scoreTangramSubmission, PUNTOS_RESOLVER, PIEZAS_TOTAL } from '../templates/tangram/scorer.js';
 import { ensureContent, normalizarItem } from '../templates/tangram/content.js';
@@ -381,6 +381,45 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   assert.deepStrictEqual(T.migrateContent(conRoto(), 3).items[0].colocaciones, ROTO,
     'un contenido que ya se declara v3 no se vuelve a tocar');
   ok('v3: el «Cuadrado» roto ya guardado se repara, y una figura retocada por el docente no');
+}
+
+// ── (i) GIRAR NO ES MOVER: la pieza se queda donde está ─────────────────────
+// El dueño lo vio jugando (2026-09-18): «hace el snap en un lugar erróneo, a
+// distancia del lugar correcto». El giro que se guarda es alrededor del ORIGEN
+// del polígono —el vértice del ángulo recto—, así que un toque para orientar la
+// pieza la mandaba a media figura de distancia del dedo. Girar tiene que ser
+// girar EN EL SITIO: el centro de la pieza no se mueve.
+{
+  const centro = (c) => { const b = bboxDe(poligonosDe([c], PIEZAS)); return [(b.minx + b.maxx) / 2, (b.miny + b.maxy) / 2]; };
+  for (const pieza of ORDEN_PIEZAS) {
+    const c = { pieza, x: 0.7, y: 0.4, rot: 0, flip: false };
+    const [cx, cy] = centro(c);
+    for (const grados of [45, 90, 135, 180, 225, 270, 315]) {
+      const g = transformarEnSitio(c, { rot: grados }, PIEZAS);
+      const [gx, gy] = centro(g);
+      assert.ok(Math.abs(gx - cx) < 1e-9 && Math.abs(gy - cy) < 1e-9,
+        `${pieza} girada ${grados}°: el centro se movió a (${gx.toFixed(3)}, ${gy.toFixed(3)}) desde (${cx.toFixed(3)}, ${cy.toFixed(3)})`);
+      assert.strictEqual(g.rot, grados, 'el giro guardado es el pedido');
+      assert.strictEqual(g.pieza, pieza, 'sigue siendo la misma pieza');
+    }
+    // Voltear tampoco la mueve (el paralelogramo es donde se nota).
+    const v = transformarEnSitio(c, { flip: true }, PIEZAS);
+    const [vx, vy] = centro(v);
+    assert.ok(Math.abs(vx - cx) < 1e-9 && Math.abs(vy - cy) < 1e-9, `${pieza} volteada: el centro se movió`);
+    assert.strictEqual(v.flip, true);
+  }
+  // La FORMA es la de siempre: girar en el sitio es girar sobre el origen más
+  // una traslación, no otra geometría (la máscara y las siluetas no cambian).
+  const base = { pieza: 'paralelogramo', x: 0.3, y: 0.2, rot: 0, flip: false };
+  const enSitio = transformarEnSitio(base, { rot: 90 }, PIEZAS);
+  const crudo = poligonosDe([{ ...base, rot: 90 }], PIEZAS)[0];
+  const movido = poligonosDe([enSitio], PIEZAS)[0];
+  const dx = movido[0][0] - crudo[0][0], dy = movido[0][1] - crudo[0][1];
+  movido.forEach(([x, y], i) => {
+    assert.ok(Math.abs((x - crudo[i][0]) - dx) < 1e-9 && Math.abs((y - crudo[i][1]) - dy) < 1e-9,
+      'la pieza girada en sitio es la girada sobre el origen, solo trasladada');
+  });
+  ok('girar y voltear dejan la pieza DONDE ESTÁ (mismo centro), sin cambiar su forma');
 }
 
 console.log(`\n${passed} aserciones OK — tangram`);
