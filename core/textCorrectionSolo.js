@@ -17,7 +17,7 @@ import { runFreeformPlayer } from './soloPlayer.js';
 import { passageHtml, fitPassage } from './textCorrectionPasaje.js';
 import { filasRevision, panelRevisionHtml, valorAnulado } from './textCorrectionRevision.js';
 import { renderTextCorrectionRound, desdeToque, herramientasTcHtml } from './textCorrectionRonda.js';
-import { cabeceraHtml, hudSet, hudMandos, relojSet } from './playerHud.js';
+import { cabeceraHtml, hudSet, hudMandos, relojSet, relojActivo } from './playerHud.js';
 import { corrigeAlFinal } from './constants.js';
 import { montarReloj, relojDe } from './reloj.js';
 import { serverNow } from './serverNow.js';
@@ -46,7 +46,11 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
   const totalMarks = passages.reduce((n, p) => n + (p.marks || []).filter(m => m.kind === kind).length, 0);
   const maxScore = activity.scoring?.maxScore || totalMarks * ppc || passages.length * ppc;
 
-  const ctx = runFreeformPlayer(rootSel, activity, opts);
+  // `reloj: false`: esta hoja cuenta POR FRASE y rearma el suyo en cada una
+  // (abajo). Sin decírselo al shell había DOS cuentas atrás sobre el mismo
+  // chip —la del shell desde el principio de la partida y la de la frase— y la
+  // del shell repintaba el número en la corrección, que ya lo había apagado.
+  const ctx = runFreeformPlayer(rootSel, activity, opts, { reloj: false });
   let idx = 0, score = 0, hits = 0, misses = 0, over = 0;
   /** Lo cerrado de cada frase: lo marcado, lo que pedía y su puntaje.
    *  @typedef {{p: Passage, got: Set<number>, want: Set<number>, hits: number,
@@ -135,7 +139,11 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     cuerpo.innerHTML = bodyHtml;
     hudSet(raiz, 'pagina', `${Math.min(idx + 1, passages.length)} / ${passages.length}`);
     hudMandos(raiz, escribiendo);
-    if (!escribiendo) relojSet(raiz, '', null);   // el reloj es de la hoja, no de la corrección
+    // EL RELOJ ES DE LA HOJA, no de la corrección — y se apaga ENTERO (número y
+    // barra). Ocultar solo el número dejaba la barra de agotamiento congelada en
+    // el porcentaje donde acabó la frase: con la cabecera estable ya no muere
+    // sola, hay que apagarla.
+    relojActivo(raiz, escribiendo && hayReloj);
   }
 
   function ask() {

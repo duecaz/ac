@@ -997,8 +997,15 @@ un handler, un observer, un modal) sigue vivo pintando encima del presente.
   nodo**. Y la API no es una jaula: en JavaScript siempre se puede buscar el DOM
   a mano, por eso la segunda barrera es la regla, no la firma.
 - **ABIERTO · EL CONTRATO DEL RELOJ es un frente aparte** (anotado 2026-09-18,
-  hallazgo de la revisión externa). No es «mover dos líneas»: los DOS shells
-  arrancan `montarReloj()` antes de que exista la superficie donde se pinta, y
+  hallazgo de la revisión externa). Lo que ya se pagó por el camino, porque una
+  red lo puso rojo: en Tildes/Comas había **DOS cuentas atrás** escribiendo el
+  mismo chip —la del shell libre, desde el principio de la partida, y la de la
+  frase, que vuelve a 30 en cada una—, y en la corrección la del shell repintaba
+  un número que esa pantalla ya había apagado. Se cerró con una excepción
+  DECLARADA en el dueño (`runFreeformPlayer(…, { reloj: false })`, v1.51.725)
+  para el único caller que trae el suyo. Lo que QUEDA abierto no es eso, y no es
+  «mover dos líneas»: los DOS shells arrancan `montarReloj()` antes de que
+  exista la superficie donde se pinta, y
   `startElapsedTicker` hace su primer tic **síncrono** → ese primer número se
   pierde y el siguiente llega un segundo después. Además, el shell libre
   arranca el cronómetro ANTES de restaurar el `startedAt` guardado

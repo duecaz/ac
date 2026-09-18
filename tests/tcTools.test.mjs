@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { citaDeFuente } from './helpers/fuente.mjs';
 import { lucide, ICONOS } from '../core/lucide.js';
-import { cabeceraHtml } from '../core/playerHud.js';
+import { cabeceraHtml, relojActivo, relojSet } from '../core/playerHud.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const leer = (f) => readFileSync(join(ROOT, f), 'utf8');
@@ -182,6 +182,60 @@ const css = leer('styles/textCorrection.css');
   }
   assert.ok(/borrador/i.test(zona), 'borrar TRAZO sí: es del juego, no de los datos del profe');
   ok('CONTRA-PRUEBA: borra el trazo, nunca contenido del profe (§28 R2b)');
+}
+
+// ── 6. EL RELOJ SE APAGA ENTERO: número Y barra ────────────────────────────
+// Regresión propia de v1.51.724, cazada en revisión: con la cabecera ESTABLE, la
+// corrección ocultaba el número (`relojSet(raiz, '')`) y la barra de agotamiento
+// se quedaba congelada en el porcentaje donde acabó la frase. Antes desaparecía
+// sola porque esa pantalla se pintaba una cabecera NUEVA sin barra — justo lo
+// que se quitó. Un marco que ya no se rehace obliga a apagar lo que antes moría
+// solo, y por eso el reloj tiene ahora encendido/apagado con nombre.
+// Se EJECUTA sobre un DOM de mentira (no se lee el fuente): lo que importa es el
+// efecto, no cómo esté escrito.
+{
+  const nodo = (attrs = {}) => ({ ...attrs, hidden: false, textContent: '',
+    style: {}, querySelector: () => null });
+  const hacerCabecera = () => {
+    const chip = { hidden: true, querySelector: () => valor, style: {} };
+    const valor = { textContent: '' };
+    const barra = nodo();
+    const relleno = nodo();
+    return {
+      chip, barra, relleno,
+      /** @param {string} sel */
+      querySelector(sel) {
+        if (sel === '[data-hud="tiempo"]') return chip;
+        if (sel === '[data-progreso]') return barra;
+        if (sel === '[data-progreso] i') return relleno;
+        return null;
+      },
+    };
+  };
+
+  // La cabecera de la hoja DECLARA barra cuando hay cuenta atrás.
+  assert.match(cabeceraHtml({ tiempo: '30', progreso: true }), /data-progreso/,
+    'con cuenta atrás, la cabecera trae su barra');
+  assert.ok(!/data-progreso/.test(cabeceraHtml({ tiempo: '30' })),
+    'CONTRA-PRUEBA: sin cuenta atrás no hay barra que enseñar');
+
+  // 1) Durante la frase: número y barra a la vista, y la barra se llena.
+  const cab = hacerCabecera();
+  relojSet(cab, '12', 40);
+  assert.strictEqual(cab.chip.hidden, false, 'durante la frase se ve el número');
+  assert.strictEqual(cab.barra.hidden, false, 'y su barra');
+  assert.match(String(cab.relleno.style.transform), /scaleX\(0\.4\)/, 'la barra dice cuánto se ha ido');
+
+  // 2) En la corrección: se apagan LOS DOS.
+  relojActivo(cab, false);
+  assert.strictEqual(cab.chip.hidden, true, 'en la corrección no hay número');
+  assert.strictEqual(cab.barra.hidden, true, 'ni barra congelada (la regresión)');
+
+  // 3) En la frase siguiente vuelven los dos, sin rehacer nada.
+  relojSet(cab, '30', 100);
+  assert.strictEqual(cab.chip.hidden, false, 'la frase siguiente estrena número');
+  assert.strictEqual(cab.barra.hidden, false, 'y recupera su barra');
+  ok('el reloj se enciende y se apaga como UNIDAD (número + barra), sin tocar la cabecera');
 }
 
 console.log(`\n  ${passed} tcTools checks passed`);

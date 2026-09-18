@@ -130,6 +130,27 @@ export function hudMandos(scope, visibles) {
   if (el) el.hidden = !visibles;
 }
 
+/** EL RELOJ SE ENCIENDE Y SE APAGA COMO UNA UNIDAD: el número y su barra son el
+ *  mismo dato (uno dice cuánto queda, la otra cuánto se ha ido), así que
+ *  también se esconden juntos. Quien lo apaga dice «ahora no hay reloj» y no
+ *  tiene por qué conocer las cajas de dentro de la cabecera (§21b).
+ *
+ *  Nació de una regresión propia (v1.51.725): al hacer ESTABLE la cabecera de
+ *  Tildes/Comas, la corrección ocultaba el número con `relojSet(raiz, '')` y la
+ *  BARRA se quedaba ahí, congelada en el porcentaje donde acabó la frase —
+ *  antes desaparecía sola porque esa pantalla se pintaba una cabecera nueva sin
+ *  barra, que es justo lo que se quitó. Un marco que ya no se rehace obliga a
+ *  APAGAR lo que antes moría solo.
+ * @param {Element|string|null|undefined} scope
+ * @param {boolean} activo
+ * @returns {void} */
+export function relojActivo(scope, activo) {
+  const raiz = raizDe(scope);
+  if (!activo) hudSet(raiz, 'tiempo', null);
+  const barra = /** @type {HTMLElement|null} */ (raiz?.querySelector('[data-progreso]') ?? null);
+  if (barra) barra.hidden = !activo;
+}
+
 /** El reloj y su barra, que son el MISMO dato: el número dice cuánto queda y la
  *  barra dice cuánto se ha ido, que es lo que se capta sin leer. Se pintan
  *  juntos porque `core/reloj.js` los entrega juntos (`pintar(valor, pct)`) y
@@ -144,6 +165,10 @@ export function hudMandos(scope, visibles) {
 export function relojSet(scope, valor, pct) {
   hudSet(scope, 'tiempo', valor);
   const raiz = raizDe(scope);
+  // Pintar un valor ENCIENDE el reloj: si venía apagado (la corrección de la
+  // hoja anterior), su barra vuelve con él. Lo contrario —apagarlo— es
+  // explícito, y por eso tiene nombre propio.
+  if (valor != null && valor !== '') relojActivo(raiz, true);
   const barra = /** @type {HTMLElement|null} */ (raiz?.querySelector('[data-progreso] i') ?? null);
   if (barra && pct != null) barra.style.transform = `scaleX(${Math.max(0, Math.min(100, pct)) / 100})`;
 }

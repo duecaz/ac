@@ -1441,19 +1441,29 @@ try {
 // frase hasta la corrección final, con el marco marcado desde el principio: si
 // la cabecera que hay al final no es EL MISMO nodo que al empezar, algo la
 // destruyó por el camino. Corre una vez por plantilla y fuera del bucle.
+//
+// Y se juega CON RELOJ (`timer: 60`), que es la única forma de ver la otra
+// mitad: con la cabecera estable, lo que antes moría solo hay que apagarlo. La
+// primera versión de este arreglo ocultaba el NÚMERO y dejaba la barra de
+// agotamiento congelada en la corrección — se ve o no se ve, así que se mide.
 for (const n of ['tildes', 'comas']) {
   const sem = seeded.find(s => s.name === n);
   if (!sem) continue;
+  const idReloj = `${sem.id}_reloj`;
   try {
-    // DESDE LA PRIMERA FRASE. El bucle de arriba ya jugó una ronda de esta
-    // misma actividad y el shell GUARDA el avance para reanudar tras un F5: sin
-    // borrarlo, esta red empezaría por la mitad de la hoja y mediría media
-    // transición (pasó: Tildes entraba ya en la última frase).
-    await page.evaluate(async (id) => {
+    // Una COPIA con cuenta atrás: la sembrada de arriba no la trae, y pedirle
+    // reloj a la de todos cambiaría lo que miden las demás redes.
+    await page.evaluate(async ([base, id]) => {
+      const storage = await import('/core/storage.js');
       const { clearSoloProgress } = await import('/core/soloPlayer.js');
+      const a = storage.get(base);
+      if (!a) throw new Error(`no está sembrada ${base}`);
+      storage.save({ ...a, id, title: `${a.title} · con reloj`,
+                     rules: { ...(a.rules || {}), timer: 60 },
+                     updatedAt: new Date().toISOString() });
       clearSoloProgress(id);
-    }, sem.id);
-    await page.evaluate((id) => { location.hash = `#/play/${id}`; }, sem.id);
+    }, [sem.id, idReloj]);
+    await page.evaluate((id) => { location.hash = `#/play/${id}`; }, idReloj);
     await page.waitForSelector('[data-ww-start]', { timeout: 9000 });
     await page.click('[data-ww-start]');
     await page.waitForSelector('#ww-player-widget .tc-done', { timeout: 9000 });
@@ -1461,6 +1471,20 @@ for (const n of ['tildes', 'comas']) {
       const c = document.querySelector('#ww-player-widget .edu-cabecera');
       if (c) c.dataset.wwMarca = '1';
     });
+    // ¿Se VE el reloj? Se pregunta por lo que llega al ojo (estilo computado),
+    // no por el atributo: `hidden` pierde contra cualquier regla de `display`, y
+    // esa lección ya costó un chip fantasma en la Ruleta.
+    const relojVisible = () => page.evaluate(() => {
+      const vis = (sel) => {
+        const el = document.querySelector(`#ww-player-widget ${sel}`);
+        if (!el) return false;
+        const cs = getComputedStyle(el);
+        return cs.display !== 'none' && cs.visibility !== 'hidden';
+      };
+      return { numero: vis('[data-hud="tiempo"]'), barra: vis('[data-progreso]') };
+    });
+    const fases = [];
+    fases.push({ fase: 'frase 1', ...(await relojVisible()) });
     // Frase a frase hasta que no quede hoja que entregar (tope: no se cuelga).
     let frases = 0;
     for (let i = 0; i < 8; i++) {
@@ -1468,7 +1492,11 @@ for (const n of ['tildes', 'comas']) {
       await playRound(page, '#ww-player-widget', {});
       frases++;
       await page.waitForTimeout(250);
+      if (await page.locator('#ww-player-widget .tc-done').count()) {
+        fases.push({ fase: `frase ${frases + 1}`, ...(await relojVisible()) });
+      }
     }
+    fases.push({ fase: 'corrección', ...(await relojVisible()) });
     const fin = await page.evaluate(() => {
       const c = /** @type {HTMLElement|null} */ (document.querySelector('#ww-player-widget .edu-cabecera'));
       return {
@@ -1476,12 +1504,20 @@ for (const n of ['tildes', 'comas']) {
         corrigiendo: !!document.querySelector('.tc-final'),
       };
     });
+    const enHoja = fases.filter(f => f.fase !== 'corrección');
+    const enCorreccion = fases[fases.length - 1];
+    const apagado = fases.length > 1 && !enCorreccion.numero && !enCorreccion.barra;
+    const encendido = enHoja.length > 0 && enHoja.every(f => f.numero && f.barra);
     const mal = !frases ? 'no se pudo entregar ninguna frase'
       : !fin.hay ? 'la hoja se queda sin cabecera al llegar a la corrección'
       : !fin.marca ? 'alguna fase rehace la cabecera (el reloj y el maximizar renacen a mitad de hoja)'
-      : !fin.corrigiendo ? 'la hoja no llegó a la corrección final' : '';
+      : !fin.corrigiendo ? 'la hoja no llegó a la corrección final'
+      : !encendido ? `en la hoja falta parte del reloj: ${enHoja.map(f => `${f.fase} ${f.numero ? 'nº' : 'sin nº'}/${f.barra ? 'barra' : 'sin barra'}`).join(' · ')}`
+      : !apagado ? `en la corrección se queda ${enCorreccion.numero ? 'el número' : ''}${enCorreccion.numero && enCorreccion.barra ? ' y ' : ''}${enCorreccion.barra ? 'la BARRA congelada' : ''}`
+      : '';
     hits.push({ label: sem.label, mode: 'solo', control: 'la hoja entera conserva el marco',
-                estado: mal || `ok (${frases} frase(s) → corrección)`, mal: !!mal });
+                estado: mal || `ok (${frases} frase(s) → corrección · reloj encendido en la hoja y apagado al corregir)`,
+                mal: !!mal });
   } catch (e) {
     hits.push({ label: sem.label, mode: 'solo', control: 'la hoja entera conserva el marco',
                 estado: String(e.message).split('\n')[0], mal: true });

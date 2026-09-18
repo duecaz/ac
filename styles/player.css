@@ -394,6 +394,11 @@
    fuera de la esquina en la Ruleta (lo cazó la matriz al aparecer su primer
    chip visible). */
 .edu-cab__chip[hidden], .edu-cab__reloj[hidden] { display: none; }
+/* Y la barra con ellos: el reloj se apaga ENTERO (`relojActivo`), número y
+   barra. La regla se escribe aunque hoy la barra no declare `display`, por la
+   misma lección de arriba: el día que alguien le ponga uno, `hidden` perdería
+   en silencio y la barra se quedaría congelada en la corrección. */
+.edu-cab__barra[hidden] { display: none; }
 /* Pantalla completa: pegado al extremo derecho de la cabecera. Absoluto, no
    `margin-left:auto`: con dos mandos que lo usaran, el hueco libre se REPARTE y
    el reloj deja de estar centrado. */

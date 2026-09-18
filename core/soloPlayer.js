@@ -283,9 +283,10 @@ function cablearRepetir(rootSel, activityId) {
  * @param {string|Element} rootSel
  * @param {Activity} activity
  * @param {PlayerOpts} [opts]
+ * @param {{reloj?: boolean}} [config]  `reloj:false` = este caller trae el suyo
  * @returns {FreeformCtx}
  */
-export function runFreeformPlayer(rootSel, activity, opts = {}) {
+export function runFreeformPlayer(rootSel, activity, opts = {}, { reloj = true } = {}) {
   let startedAt = clock.now();
   let finished = false;
   // Ficha de ocupación (§23): un timer del core (el spin de la Ruleta, el
@@ -301,13 +302,26 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
   // `alAgotarse`: qué hace la plantilla cuando el reloj llega a cero (la Sopa
   // termina la partida). El shell monta el reloj UNA vez y lo pinta; la
   // plantilla ya no monta relojes.
+  //
+  // …CON UNA EXCEPCIÓN DECLARADA (`reloj: false`): la hoja de Tildes y Comas
+  // cuenta POR FRASE —el límite del editor son «segundos por ítem» y ahí un
+  // ítem es una frase—, así que su runner rearma el suyo en cada una. Con los
+  // dos montados había DOS cuentas atrás escribiendo el mismo chip: la del
+  // shell corriendo desde el principio de la partida y la de la frase volviendo
+  // a 30, y en la corrección la del shell seguía repintando un número que esa
+  // pantalla ya había apagado. Se declara aquí, en el dueño, en vez de dejar
+  // que el caller apague a manotazos lo que el shell enciende. (El resto del
+  // lío del reloj —el primer tic que se pierde, el `startedAt` que se restaura
+  // después de arrancar— es un frente aparte: docs/leyes.md §23.)
   /** @type {(() => void)|null} */
   let alAgotarseCb = null;
-  const crono = montarReloj({
-    activity, alive,
-    pintar: (texto) => hudSet(rootSel, 'tiempo', texto),
-    onFin: () => alAgotarseCb?.(),
-  });
+  const crono = reloj
+    ? montarReloj({
+        activity, alive,
+        pintar: (texto) => hudSet(rootSel, 'tiempo', texto),
+        onFin: () => alAgotarseCb?.(),
+      })
+    : { stop: () => {} };
 
   // Progreso opt-in para players LIBRES (Memoria, etc.): como el shell no posee
   // el estado del tablero, el core lo aporta. loadProgress() devuelve el snapshot
