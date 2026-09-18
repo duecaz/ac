@@ -38,14 +38,23 @@
 export const SILUETAS = {
   cuadrado: {
     nombre: 'Cuadrado',
+    // CUBRIMIENTO EXACTO del cuadrado unidad, resuelto por búsqueda
+    // (tools/… scratch, backtracking sobre un raster de 48×48 con las
+    // colocaciones posibles de cada pieza). La solución que había aquí NO
+    // era un cuadrado: el XOR contra el cuadrado unidad daba 12,6 %, la caja
+    // medía 1×1,25 y la pieza del cuadrado colgaba por fuera mientras dos
+    // huecos quedaban dentro. Se veía en cuanto el editor pintó las piezas
+    // de colores (antes solo se enseñaba la silueta gris, y una mancha gris
+    // rara no delata nada). El test lo fija ahora contra el cuadrado, no
+    // contra sí misma.
     solucion: [
       { pieza: 'grande1', x: 0.5, y: 0.5, rot: 225, flip: false },
       { pieza: 'grande2', x: 0.5, y: 0.5, rot: 135, flip: false },
-      { pieza: 'mediano', x: 1, y: 0.5, rot: 180, flip: false },
-      { pieza: 'pequeno1', x: 0.75, y: 0.75, rot: 315, flip: false },
-      { pieza: 'pequeno2', x: 0.75, y: 0.75, rot: 225, flip: false },
-      { pieza: 'paralelogramo', x: 1, y: 1, rot: 225, flip: true },
-      { pieza: 'cuadrado', x: 0.25, y: 0.75, rot: 45, flip: false },
+      { pieza: 'mediano', x: 1, y: 1, rot: 180, flip: false },
+      { pieza: 'pequeno1', x: 0.75, y: 0.25, rot: 315, flip: false },
+      { pieza: 'pequeno2', x: 0.5, y: 0.5, rot: 45, flip: false },
+      { pieza: 'cuadrado', x: 0.75, y: 0.75, rot: 225, flip: false },
+      { pieza: 'paralelogramo', x: 0.75, y: 0.75, rot: 135, flip: false },
     ],
   },
   casa: {

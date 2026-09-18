@@ -177,61 +177,81 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   ok('defaultContent trae una figura jugable (v2)');
 }
 
-// ── (e) poligonosDe = LA derivación de la silueta (§21b). CONTRA-PRUEBA de que
-//     es correcta: para cuadrado y casa debe dar EXACTAMENTE los polígonos que
-//     el dueño dio a mano (tolerancia 1e-6), en el mismo orden que la solución.
-//     Ese ORÁCULO vive aquí, no en el catálogo (allí era una segunda fuente de
-//     la misma verdad sin lector de producto). Y la caja se DERIVA de los puntos.
+// ── (e) poligonosDe = LA derivación de la silueta (§21b), y LAS PIEZAS NO SE
+//     PISAN. Esta segunda parte es la que faltaba: hasta v1.51.715 el catálogo
+//     se comprobaba contra SÍ MISMO (la silueta salía de la solución, así que
+//     encajar era trivial) y nadie miraba si las 7 piezas teselaban de verdad.
+//     «Cuadrado» llevaba versiones sin ser un cuadrado —la pieza del cuadrado
+//     colgaba fuera y dentro quedaban dos huecos— y solo se vio cuando el
+//     editor las pintó de colores. El área de la unión lo dice sin dibujar
+//     nada: si dos piezas se solapan, la unión mide menos que 1.
 {
-  /** @type {Record<string, {bbox: {minx: number, maxx: number, miny: number, maxy: number}, poligonos: number[][][]}>} */
-  const ORACULO = {
-    cuadrado: {
-      bbox: { minx: 0, maxx: 1, miny: 0, maxy: 1.25 },
-      poligonos: [
-        [[0.5, 0.5], [0, 0], [1, 0]],
-        [[0.5, 0.5], [0, 1], [0, 0]],
-        [[1, 0.5], [0.5, 0.5], [1, 0]],
-        [[0.75, 0.75], [1, 0.5], [1, 1]],
-        [[0.75, 0.75], [0.5, 0.5], [1, 0.5]],
-        [[1, 1], [0.75, 0.75], [0.25, 0.75], [0.5, 1]],
-        [[0.25, 0.75], [0.5, 1], [0.25, 1.25], [0, 1]],
-      ],
-    },
-    casa: {
-      bbox: { minx: -0.146446609, maxx: 1.103553391, miny: -1.060660172, maxy: 0.25 },
-      poligonos: [
-        [[0.707106781, 0], [0, 0], [0.707106781, -0.707106781]],
-        [[0, -0.707106781], [0.707106781, -0.707106781], [0, 0]],
-        [[0.353553391, -1.060660172], [0.707106781, -0.707106781], [0, -0.707106781]],
-        [[0.707106781, -0.353553391], [1.060660172, -0.353553391], [1.060660172, 0], [0.707106781, 0]],
-        [[0.103553391, 0], [0.353553391, 0.25], [0.853553391, 0.25], [0.603553391, 0]],
-        [[0.103553391, 0], [0.353553391, 0.25], [-0.146446609, 0.25]],
-        [[0.853553391, 0.25], [0.603553391, 0], [1.103553391, 0]],
-      ],
-    },
-  };
-  for (const n of /** @type {const} */ (['cuadrado', 'casa'])) {
-    const f = SILUETAS[n], esperados = ORACULO[n];
-    const derivados = poligonosDe(f.solucion, PIEZAS);
-    assert.strictEqual(derivados.length, esperados.poligonos.length, `${n}: un polígono por colocación`);
-    derivados.forEach((poly, i) => {
-      const esperado = esperados.poligonos[i];
-      assert.strictEqual(poly.length, esperado.length, `${n}[${i}]: mismo nº de vértices`);
-      poly.forEach(([x, y], j) => {
-        assert.ok(Math.abs(x - esperado[j][0]) < 1e-6 && Math.abs(y - esperado[j][1]) < 1e-6,
-          `${n}[${i}][${j}]: derivado (${x.toFixed(6)},${y.toFixed(6)}) ≠ oráculo (${esperado[j][0]},${esperado[j][1]})`);
-      });
-    });
-    const caja = bboxDe(derivados);
-    for (const k of /** @type {const} */ (['minx', 'miny', 'maxx', 'maxy'])) {
-      assert.ok(Math.abs(caja[k] - esperados.bbox[k]) < 1e-6, `${n}: bbox.${k} derivada ${caja[k]} ≠ oráculo ${esperados.bbox[k]}`);
+  /** Área de la unión, rasterizando sobre la caja de la figura. */
+  const areaUnion = (colocaciones, n = 480) => {
+    const polis = poligonosDe(colocaciones, PIEZAS);
+    const c = bboxDe(polis);
+    const w = c.maxx - c.minx, h = c.maxy - c.miny;
+    const dentro = (pts, x, y) => {
+      let d = false;
+      for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+        const [xi, yi] = pts[i], [xj, yj] = pts[j];
+        if ((yi > y) !== (yj > y) && x < xi + ((y - yi) / (yj - yi)) * (xj - xi)) d = !d;
+      }
+      return d;
+    };
+    let con = 0;
+    for (let r = 0; r < n; r++) for (let q = 0; q < n; q++) {
+      const x = c.minx + ((q + 0.5) / n) * w, y = c.miny + ((r + 0.5) / n) * h;
+      if (polis.some(p => dentro(p, x, y))) con++;
     }
+    return (con / (n * n)) * w * h;
+  };
+
+  for (const n of ORDEN_SILUETAS) {
+    const union = areaUnion(SILUETAS[n].solucion);
+    // Las 7 piezas suman 1 (bloque (a)): si la unión mide menos, se pisan, y
+    // entonces la figura tiene un hueco del mismo tamaño en otro sitio.
+    assert.ok(Math.abs(union - 1) < 0.01,
+      `${n}: las piezas se solapan — la unión mide ${union.toFixed(3)} y las 7 piezas suman 1`);
   }
+  ok(`las ${ORDEN_SILUETAS.length} figuras del catálogo TESELAN: ninguna pieza pisa a otra`);
+
+  // Y «Cuadrado» tiene que ser un CUADRADO, no una figura conexa cualquiera:
+  // es la única del catálogo cuyo nombre promete una forma exacta.
+  const unidad = [[[0, 0], [1, 0], [1, 1], [0, 1]]];
+  const err = xorArea(unidad, SILUETAS.cuadrado.solucion, PIEZAS, 400);
+  assert.ok(err < 0.005, `«Cuadrado» no es un cuadrado: XOR ${(err * 100).toFixed(1)} % contra el cuadrado unidad`);
+  ok('«Cuadrado» cubre EXACTAMENTE el cuadrado unidad (0,0)-(1,1)');
+
+  // CONTRA-PRUEBA de la derivación: para «Casa» —coordenadas que dio el dueño,
+  // pieza a pieza— `poligonosDe` tiene que reproducir sus polígonos exactos.
+  // El oráculo vive aquí y no en el catálogo, donde era una segunda fuente de
+  // la misma verdad que nadie cruzaba.
+  const CASA = [
+    [[0.707106781, 0], [0, 0], [0.707106781, -0.707106781]],
+    [[0, -0.707106781], [0.707106781, -0.707106781], [0, 0]],
+    [[0.353553391, -1.060660172], [0.707106781, -0.707106781], [0, -0.707106781]],
+    [[0.707106781, -0.353553391], [1.060660172, -0.353553391], [1.060660172, 0], [0.707106781, 0]],
+    [[0.103553391, 0], [0.353553391, 0.25], [0.853553391, 0.25], [0.603553391, 0]],
+    [[0.103553391, 0], [0.353553391, 0.25], [-0.146446609, 0.25]],
+    [[0.853553391, 0.25], [0.603553391, 0], [1.103553391, 0]],
+  ];
+  const derivados = poligonosDe(SILUETAS.casa.solucion, PIEZAS);
+  assert.strictEqual(derivados.length, CASA.length, 'casa: un polígono por colocación');
+  derivados.forEach((poly, i) => {
+    assert.strictEqual(poly.length, CASA[i].length, `casa[${i}]: mismo nº de vértices`);
+    poly.forEach(([x, y], j) => {
+      assert.ok(Math.abs(x - CASA[i][j][0]) < 1e-6 && Math.abs(y - CASA[i][j][1]) < 1e-6,
+        `casa[${i}][${j}]: derivado (${x.toFixed(6)},${y.toFixed(6)}) ≠ oráculo (${CASA[i][j][0]},${CASA[i][j][1]})`);
+    });
+  });
+  const caja = bboxDe(derivados);
+  assert.ok(Math.abs(caja.minx + 0.146446609) < 1e-6 && Math.abs(caja.maxy - 0.25) < 1e-6, 'casa: la caja se deriva de los puntos');
   // Sin `piezas` explícito usa PIEZAS; una colocación de pieza desconocida se omite, no se inventa.
   assert.strictEqual(poligonosDe(SILUETAS.cuadrado.solucion).length, 7);
   assert.strictEqual(poligonosDe([{ pieza: 'dragon', x: 0, y: 0, rot: 0, flip: false }]).length, 0);
   assert.deepStrictEqual(bboxDe([]), { minx: 0, miny: 0, maxx: 1, maxy: 1 }, 'sin puntos: la caja del cuadrado unidad');
-  ok('poligonosDe(solucion) reproduce el oráculo del dueño (cuadrado y casa, 1e-6) y bboxDe su caja');
+  ok('poligonosDe(solucion) reproduce el oráculo del dueño (casa, 1e-6) y bboxDe su caja');
 }
 
 // ── (f) MIGRACIÓN v1 → v2 (§24): `{id, figura}` sube a `{id, nombre, colocaciones}`.

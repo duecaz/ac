@@ -34,8 +34,8 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 15 · 3700 | 13 · 1724 | 0.47 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 42 · 5796 | 19 · 3180 | 0.55 |
 | **informes/tareas** | después de clase | 10 · 1388 | 5 · 619 | 0.45 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 94 · 8434 | 13 · 1945 | 0.23 |
-| **infra/común** | todo lo anterior | 195 · 26787 | 79 · 10972 | 0.41 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 94 · 8443 | 13 · 1945 | 0.23 |
+| **infra/común** | todo lo anterior | 195 · 26787 | 79 · 10992 | 0.41 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
