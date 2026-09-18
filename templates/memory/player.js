@@ -1,13 +1,13 @@
 // Memory player: grid of face-down cards. Each pair contributes two cards
 // (one with .left text, one with .right text), sharing pair.id. Flip 2 → if
 // ids match, both stay; else they flip back after revealMs.
-import { html, escapeHtml, mount } from '../../core/html.js';
+import { html, escapeHtml, mount, raizDe } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { scoreMemorySubmission } from './scorer.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { shuffle } from '../../core/azar.js';
 import { pairComplete } from '../../core/contentModels/pairs.js';
-import { cabeceraHtml } from '../../core/playerHud.js';
+import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
 import { memoryRules } from './template.js';
 
 // TIEMPO DE REVELADO POR DEFECTO — el mismo número vivía escrito a mano tres
@@ -104,28 +104,67 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
     score: state.score, matched: state.matched, flips: state.flips, mistakes: state.mistakes,
   });
 
-  function paint() {
-    mount(rootSel, html`
-      <div class="ww-memory">
-        ${cabeceraHtml({
-          pagina: `${state.matched} / ${pairs.length}`,
-          extra: `Flips: ${state.flips}`,
-        })}
-        <div class="edu-sec edu-sec--tablero ww-memo-grid" style="grid-template-columns:repeat(${columns},1fr)">
-          ${deck.map(c => {
-            const isOpen = state.open.includes(c.cardId);
-            const isLocked = state.locked.has(c.cardId);
-            const showFace = isOpen || isLocked;
-            const cls = isLocked ? 'mc-locked' : isOpen ? 'mc-open' : '';
-            return `<button class="mc ${cls}" data-id="${escapeHtml(c.cardId)}" ${isLocked?'disabled':''}>
-              ${showFace ? `<span class="mc-text">${escapeHtml(c.text)}</span>` : '<i class="bi bi-question-lg"></i>'}
-            </button>`;
-          }).join('')}
-        </div>
+  // ── EL TABLERO SE MONTA UNA VEZ, Y UNA JUGADA CAMBIA CARTAS ───────────────
+  // Hasta v1.51.725 cada volteo hacía `mount(rootSel, …)` con el player entero:
+  // medido en la matriz, de 51 nodos no sobrevivía ninguno, y un ACIERTO lo
+  // rehacía DOS veces con un solo toque (una al abrir la segunda carta y otra
+  // al casarlas). Aquí eso es peor que en Quiz o en Tildes, porque al voltear
+  // NO cambia el contenido —las cartas ya están puestas—: lo único que cambia
+  // es el ESTADO de una o dos de ellas. En una pizarra Android lenta, rehacer
+  // doce botones para volver a pintar los mismos doce se nota con el dedo.
+  //
+  // Cada carta nace con SUS DOS CARAS dentro (el texto y el dorso) y cuál se ve
+  // lo decide una clase: así voltear no reemplaza hijos, solo cambia estado.
+  /** @param {MemoryCard} c @returns {string} */
+  const cartaHtml = (c) => `<button class="mc" data-id="${escapeHtml(c.cardId)}">`
+    + `<span class="mc-text">${escapeHtml(c.text)}</span>`
+    + `<i class="bi bi-question-lg mc-dorso"></i>`
+    + `</button>`;
+
+  mount(rootSel, html`
+    <div class="ww-memory">
+      ${cabeceraHtml({
+        pagina: `${state.matched} / ${pairs.length}`,
+        extra: `Flips: ${state.flips}`,
+      })}
+      <div class="edu-sec edu-sec--tablero ww-memo-grid" style="grid-template-columns:repeat(${columns},1fr)">
+        ${deck.map(cartaHtml).join('')}
       </div>
-    `);
-    on(rootSel, 'click', '.mc', (_, btn) => onFlip(btn.dataset.id));
+    </div>`);
+
+  const raiz = raizDe(rootSel);
+  const gridOpt = raiz?.querySelector('.ww-memo-grid') ?? null;
+  if (!gridOpt) return;   // el marco no llegó a montarse (§23)
+  /** Cada carta, por su id. Se resuelve UNA vez: durante la partida los nodos
+   *  son siempre los mismos, así que no hace falta volver a buscarlos.
+   *  @type {Map<string, HTMLButtonElement>} */
+  const nodos = new Map([...gridOpt.querySelectorAll('.mc')]
+    .map(b => [/** @type {HTMLButtonElement} */ (b).dataset.id || '', /** @type {HTMLButtonElement} */ (b)]));
+
+  /** El estado visual de UNA carta, desde el estado del juego. Es el único
+   *  sitio que toca el DOM del tablero. @param {string} cardId @returns {void} */
+  function pintarCarta(cardId) {
+    const btn = nodos.get(cardId);
+    if (!btn) return;
+    const casada = state.locked.has(cardId);
+    btn.classList.toggle('mc-locked', casada);
+    btn.classList.toggle('mc-open', !casada && state.open.includes(cardId));
+    btn.disabled = casada;
   }
+
+  /** Los indicadores, por su dato (nunca rehaciendo la cabecera). */
+  const pintarHud = () => {
+    hudSet(raiz, 'pagina', `${state.matched} / ${pairs.length}`);
+    hudSet(raiz, 'extra', `Flips: ${state.flips}`);
+  };
+
+  // Reanudar (F5): el mazo ya viene en el orden guardado y las parejas casadas
+  // se marcan aquí, en el primer montaje — nadie las «descubre» otra vez.
+  for (const id of state.locked) pintarCarta(id);
+
+  // Un solo handler, delegado en la raíz, para toda la partida: los botones ya
+  // no se reemplazan, así que no hay nada que volver a cablear.
+  on(rootSel, 'click', '.mc', (_, btn) => onFlip(btn.dataset.id));
 
   /** @param {string|undefined} cardId */
   function onFlip(cardId) {
@@ -135,7 +174,8 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
     if (state.open.includes(cardId)) return;
     state.open.push(cardId);
     state.flips += 1;
-    paint();
+    pintarCarta(cardId);
+    pintarHud();
     if (state.open.length === 2) {
       const [a, b] = state.open;
       const pa = a.split(':')[0], pb = b.split(':')[0];
@@ -144,14 +184,21 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
         state.matched += 1;
         addScore(scoreMemorySubmission({ value: pb, item: byId.get(pa), activity }));   // pa === pb → acierto
         state.open = [];
-        paint();
+        pintarCarta(a); pintarCarta(b);   // SOLO esas dos: pasan a casadas
+        pintarHud();
         if (state.matched >= pairs.length) finish();
         else ctx.saveProgress(snapshot()); // estado estable → reanudable
       } else {
         state.busy = true;
         addScore(scoreMemorySubmission({ value: pb, item: byId.get(pa), activity }));   // pa ≠ pb → fallo
         state.mistakes += 1;
-        setTimeout(() => { if (!ctx.alive()) return; state.open = []; state.busy = false; paint(); ctx.saveProgress(snapshot()); }, revealMs);
+        setTimeout(() => {
+          if (!ctx.alive()) return;
+          state.open = [];
+          state.busy = false;
+          pintarCarta(a); pintarCarta(b);   // se cierran ESAS DOS, y nada más
+          ctx.saveProgress(snapshot());
+        }, revealMs);
       }
     }
   }
@@ -174,6 +221,4 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
   // El RELOJ no espera a nadie: si hay cuenta atrás y se agota, se cierra con
   // los pares que se hayan levantado (el scorer ya los fue sumando).
   ctx.alAgotarse(finish);
-
-  paint();
 }

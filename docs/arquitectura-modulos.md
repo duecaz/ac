@@ -34,7 +34,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 15 · 3783 | 13 · 1811 | 0.48 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 42 · 5840 | 19 · 3180 | 0.54 |
 | **informes/tareas** | después de clase | 10 · 1388 | 5 · 619 | 0.45 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 94 · 8504 | 13 · 1945 | 0.23 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 94 · 8549 | 13 · 1945 | 0.23 |
 | **infra/común** | todo lo anterior | 195 · 26948 | 79 · 11199 | 0.42 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de

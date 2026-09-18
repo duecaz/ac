@@ -649,24 +649,21 @@ for (const t of seeded) {
       // mando de pantalla completa, en la esquina. Se declara aquí, junto al
       // resto de lo que esta red sabe por plantilla.
       const JUEGOS = new Set(['colorear', 'tangram', 'puzzle']);
-      // DEUDA DECLARADA, y solo puede ENCOGER. Estas seis vuelven a montar el
-      // player entero en cada gesto —cabecera incluida—, así que el reloj
-      // parpadea: lo vio el dueño en Abre Cajas (2026-09-18) y allí se arregló
-      // de raíz (montar una vez, refrescar solo lo que cambia).
-      // NO comparten una causa, son TRES FAMILIAS (dicho aquí antes con una
-      // sola, y era falso — un diagnóstico equivocado escrito al lado de la red
-      // manda a arreglar el sitio que no es):
-      //   · quiz · math · globos → `runSequentialPlayer` (core/soloPlayer.js).
-      //     ARREGLADA en v1.51.722 y por eso ya no están en la lista: el shell
-      //     monta el marco UNA vez y `renderItem` ya no recibe la raíz, solo su
-      //     ronda — no es que se porten bien, es que no tienen con qué.
-      //   · tildes · comas      → `core/textCorrectionSolo.js`. ARREGLADA en
-      //     v1.51.724: la hoja de papel y su banda se montan una vez y cada fase
-      //     —frase · corrección · frase siguiente— pinta solo el cuerpo.
-      //   · memory              → su propio `paint()` con `mount()`, sin shell
-      //     de por medio.
-      // Esta lista solo ENCOGE, y no deja entrar a nadie nuevo.
-      const REHACEN_EL_MARCO = new Set(['memory']);
+      // LA LISTA ESTÁ VACÍA, Y ASÍ SE QUEDA. Fue la deuda de SEIS plantillas que
+      // volvían a montar el player entero en cada gesto —el reloj parpadeaba,
+      // lo vio el dueño en Abre Cajas (2026-09-18)—, y no compartían causa:
+      // eran TRES familias, cada una con su arreglo y su medida.
+      //   · quiz · math · globos → `runSequentialPlayer` (v1.51.722): el shell
+      //     pasó a ser dueño del marco y `renderItem` ya no recibe la raíz.
+      //   · tildes · comas      → `core/textCorrectionSolo.js` (v1.51.724): la
+      //     hoja y su banda se montan una vez; cada fase pinta solo el cuerpo.
+      //   · memory              → `templates/memory/player.js` (v1.51.726): el
+      //     tablero se monta una vez y una jugada cambia UNA CLASE.
+      // Vacía NO significa que sobre: es el ratchet. Cualquier plantilla que
+      // vuelva a rehacer su cabecera al jugar tumba la matriz aquí mismo, y
+      // volver a meter un nombre en este Set es una decisión que hay que
+      // escribir, no un descuido que se cuela.
+      const REHACEN_EL_MARCO = new Set();
       // LA PIEZA MIDE SU HUECO (rompecabezas). Medido antes de arreglarlo: 117
       // px de pieza contra 234 de hueco en escritorio, 64 contra 191 en móvil.
       // El dueño: «las piezas no están del mismo tamaño que donde encajan» —
@@ -1524,6 +1521,122 @@ for (const n of ['tildes', 'comas']) {
   }
 }
 
+// ── MEMORIA: UNA JUGADA CAMBIA CARTAS, NO EL TABLERO ────────────────────────
+// Aquí el listón es más alto que en Quiz o en Tildes, y por una razón de
+// producto: al voltear NO cambia el contenido —las cartas ya están puestas—,
+// así que conservar la cabecera no basta. Lo que tiene que sobrevivir es el
+// TABLERO ENTERO: los mismos botones, con los mismos nodos, cambiando de clase.
+// Se miden los cuatro momentos reales de una partida por separado, porque cada
+// uno tenía su propio repintado: el primer volteo, el segundo que ACIERTA (que
+// llegaba a repintar el player dos veces con un solo toque), el segundo que
+// FALLA, y el cierre de las dos cartas cuando pasa el tiempo de revelado.
+/** @type {{nombre: string, vivos: number, antes: number, cartas: number, cartasVivas: number,
+ *    cab: boolean, grid: boolean, cambiadas: string[], esperadas: string[]}[]} */
+const memoria = [];
+{
+  const sem = seeded.find(s => s.name === 'memory');
+  const idLento = `${sem?.id || ''}_lento`;
+  const REVEAL = 2500;   // el revelado por defecto (900 ms) no deja marcar antes del cierre
+  try {
+    if (!sem) throw new Error('memory no está sembrada');
+    await page.evaluate(async ([base, id, ms]) => {
+      const storage = await import('/core/storage.js');
+      const { clearSoloProgress } = await import('/core/soloPlayer.js');
+      const a = storage.get(String(base));
+      if (!a) throw new Error(`no está sembrada ${base}`);
+      storage.save({ ...a, id: String(id), title: `${a.title} · revelado lento`,
+                     rules: { ...(a.rules || {}), revealMs: Number(ms) },
+                     updatedAt: new Date().toISOString() });
+      clearSoloProgress(String(id));
+    }, [sem.id, idLento, REVEAL]);
+    await page.evaluate((id) => { location.hash = `#/play/${id}`; }, idLento);
+    await page.waitForSelector('[data-ww-start]', { timeout: 9000 });
+    await page.click('[data-ww-start]');
+    await page.waitForSelector('#ww-player-widget .mc', { timeout: 9000 });
+
+    // QUÉ CARTAS TOCAR, leído del propio tablero: una pareja DE VERDAD (las dos
+    // caras del mismo par) y dos de pares distintos. El id de una carta es
+    // `<par>:L|R`, así que la pareja se deduce sin conocer el contenido.
+    const plan = await page.evaluate(() => {
+      const ids = [...document.querySelectorAll('#ww-player-widget .mc')].map(b => b.dataset.id || '');
+      const par = (/** @type {string} */ s) => s.split(':')[0];
+      const a = ids[0] || '';
+      const b = ids.find(x => x !== a && par(x) === par(a)) || '';
+      const resto = ids.filter(x => x !== a && x !== b);
+      const c = resto[0] || '';
+      const d = resto.find(x => par(x) !== par(c)) || '';
+      return { a, b, c, d };
+    });
+    if (!plan.a || !plan.b || !plan.c || !plan.d) throw new Error('el mazo no da para una pareja y un fallo');
+
+    // Se MARCA todo el árbol y se guarda el estado visual de cada carta; después
+    // del gesto se pregunta quién sigue vivo y quién cambió. Comparar por
+    // `data-id` (no por posición) hace la medida válida aunque el tablero se
+    // reconstruya entero, que es justo lo que se quiere detectar.
+    const marcar = () => page.evaluate(() => {
+      const w = document.querySelector('#ww-player-widget');
+      for (const el of w ? w.querySelectorAll('*') : []) el.dataset.wwMarca = '1';
+      // CUÁNTAS VECES SE REHACE EL PLAYER ENTERO en este gesto — el dato que
+      // convierte «se destruye» en «se destruye DOS veces con un solo toque»:
+      // un `mount()` vacía la raíz y la vuelve a llenar, así que cada
+      // remontado deja una mutación con nodos retirados.
+      window.__wwRemontes = 0;
+      if (window.__wwObs) window.__wwObs.disconnect();
+      window.__wwObs = new MutationObserver((ms) => {
+        for (const m of ms) if (m.removedNodes.length) window.__wwRemontes++;
+      });
+      if (w) window.__wwObs.observe(w, { childList: true });
+      window.__wwAntes = w ? w.querySelectorAll('*').length : 0;
+      window.__wwEstado = Object.fromEntries([...(w ? w.querySelectorAll('.mc') : [])]
+        .map(b => [b.dataset.id || '', `${b.className}|${b.disabled ? 1 : 0}`]));
+    });
+    const medir = () => page.evaluate(() => {
+      const w = document.querySelector('#ww-player-widget');
+      const todos = [...(w ? w.querySelectorAll('*') : [])];
+      const cartas = [...(w ? w.querySelectorAll('.mc') : [])];
+      const antes = window.__wwAntes || 0;
+      const prev = window.__wwEstado || {};
+      const cab = w?.querySelector('.edu-cabecera') ?? null;
+      const grid = w?.querySelector('.ww-memo-grid') ?? null;
+      if (window.__wwObs) window.__wwObs.disconnect();
+      return {
+        remontes: window.__wwRemontes || 0,
+        vivos: antes ? Math.round((100 * todos.filter(e => e.dataset.wwMarca === '1').length) / antes) : 100,
+        antes,
+        cartas: cartas.length,
+        cartasVivas: cartas.filter(b => b.dataset.wwMarca === '1').length,
+        cab: !!cab && cab.dataset.wwMarca === '1',
+        grid: !!grid && grid.dataset.wwMarca === '1',
+        cambiadas: cartas.filter(b => `${b.className}|${b.disabled ? 1 : 0}` !== prev[b.dataset.id || ''])
+          .map(b => b.dataset.id || ''),
+      };
+    });
+    const carta = (/** @type {string} */ id) => `#ww-player-widget .mc[data-id="${id}"]`;
+    /** @param {string} nombre @param {() => Promise<unknown>} accion @param {string[]} esperadas */
+    const paso = async (nombre, accion, esperadas) => {
+      await marcar();
+      await accion();
+      await page.waitForTimeout(160);
+      memoria.push({ nombre, esperadas, ...(await medir()) });
+    };
+
+    await paso('primer volteo', () => page.click(carta(plan.a)), [plan.a]);
+    // ACIERTO: cambian las DOS (la primera pasa de abierta a casada).
+    await paso('segundo volteo · ACIERTA', () => page.click(carta(plan.b)), [plan.a, plan.b]);
+    await paso('volteo suelto', () => page.click(carta(plan.c)), [plan.c]);
+    // FALLO: solo cambia la que se acaba de abrir; la otra ya estaba abierta.
+    await paso('segundo volteo · FALLA', () => page.click(carta(plan.d)), [plan.d]);
+    // …y al pasar el revelado se cierran ESAS DOS, sin tocar el resto.
+    await paso('se cierran al pasar el revelado', () => page.waitForTimeout(REVEAL + 400), [plan.c, plan.d]);
+  } catch (e) {
+    memoria.push({ nombre: `error: ${String(e.message).split('\n')[0]}`, vivos: 0, antes: 0,
+                   cartas: 0, cartasVivas: 0, cab: false, grid: false, cambiadas: [], esperadas: ['—'], remontes: 0 });
+  }
+}
+const lista = (/** @type {string[]} */ xs) => xs.slice().sort().join(' · ') || '(ninguna)';
+const memoriaMal = memoria.filter(p => !p.cab || !p.grid || p.cartasVivas !== p.cartas || !p.cartas
+  || lista(p.cambiadas) !== lista(p.esperadas));
+
 // Deja el DOM como estaba para lo que venga detrás (el informe no navega más).
 await page.evaluate(() => { location.hash = '#/mine'; });
 await page.waitForTimeout(150);
@@ -1658,6 +1771,22 @@ const marcoHits = hits.filter(x => x.control === 'jugar no rehace el marco'
 if (marcoHits.length) {
   console.log('\nEL MARCO SOBREVIVE AL GESTO (nodos vivos tras un toque real)\n');
   for (const x of marcoHits) console.log(`  ${x.mal ? '❌' : '✅'} ${String(x.label).padEnd(16)} ${x.estado}`);
+}
+
+// ── MEMORIA · una jugada cambia CARTAS, no el tablero ───────────────────────
+if (memoria.length) {
+  console.log('\nMEMORIA · qué cambia en cada momento de la partida\n');
+  for (const p of memoria) {
+    const mal = !p.cab || !p.grid || p.cartasVivas !== p.cartas || !p.cartas
+      || lista(p.cambiadas) !== lista(p.esperadas);
+    console.log(`  ${mal ? '❌' : '✅'} ${p.nombre.padEnd(30)} cartas vivas ${p.cartasVivas}/${p.cartas}`
+      + ` · nodos ${p.vivos} % de ${p.antes} · el player se rehace ${p.remontes ?? '?'} vez(ces)`
+      + ` · cabecera ${p.cab ? 'la misma' : 'REHECHA'} · tablero ${p.grid ? 'el mismo' : 'REHECHO'}`);
+    if (mal && lista(p.cambiadas) !== lista(p.esperadas)) {
+      console.log(`     cambian: ${lista(p.cambiadas)}`);
+      console.log(`     deberían: ${lista(p.esperadas)}`);
+    }
+  }
 }
 
 // ── Rondas jugadas con un toque real ────────────────────────────────────────
@@ -1819,4 +1948,4 @@ console.log(`\n✅ ok: ${results.filter(r => r.status === 'ok').length}` +
   ` · · no aplica: ${results.filter(r => r.status === 'n/a').length}`);
 console.log('El ALUMNO en vivo lo cubre tools/live-smoke.mjs (dos contextos) y la Tarea tools/task-smoke.mjs. Sin cubrir: carrera con 2 alumnos.');
 await browser.close();
-bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length || presuBad.length || embedBad.length || marcoBad.length || formaBad.length || escalaBad.length || espejoBad.length || bloqueBad.length || origenBad.length || gestosBad.length ? 1 : 0);
+bye(bad.length || seedBad.length || tapBad.length || hitBad.length || memoriaMal.length || roundBad.length || presuBad.length || embedBad.length || marcoBad.length || formaBad.length || escalaBad.length || espejoBad.length || bloqueBad.length || origenBad.length || gestosBad.length ? 1 : 0);

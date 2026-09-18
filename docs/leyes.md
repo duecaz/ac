@@ -981,8 +981,13 @@ un handler, un observer, un modal) sigue vivo pintando encima del presente.
   (Tildes y Comas, v1.51.724) NO se arregló copiando eso: su dueño es otro
   runner y el marco es del player, así que `runTextCorrectionSolo` monta la HOJA
   (`.tc-round` + su banda) una vez y cada fase pinta solo `.tc-body` — 0 % → 21 %
-  (Tildes) y 62 % (Comas). Queda `memory` en `REHACEN_EL_MARCO`
-  (`tools/matrix-smoke.mjs`), una lista que solo encoge.
+  (Tildes) y 62 % (Comas). Y la tercera (Memoria, v1.51.726) tenía el listón más
+  alto, porque al voltear NO cambia el contenido —las cartas ya están puestas—:
+  ahí sobrevivir la cabecera no bastaba. El tablero se monta una vez, cada carta
+  nace con SUS DOS CARAS y voltear es UNA CLASE: **100 %** de los nodos vivos y
+  **cero** remontados, cuando antes un acierto rehacía el player DOS veces con un
+  solo toque. `REHACEN_EL_MARCO` (`tools/matrix-smoke.mjs`) queda **vacía**, y
+  vacía es el ratchet: volver a meter un nombre ahí es una decisión escrita.
 - **UNA FASE PUEDE ESCONDER EL REMONTADO, así que la red cruza la hoja ENTERA**
   (v1.51.724). Medir solo el primer gesto habría dado por bueno mover el
   `mount` de «entregar» a «pasar de frase»: la red de Tildes/Comas juega frase a
@@ -1003,7 +1008,9 @@ un handler, un observer, un modal) sigue vivo pintando encima del presente.
   frase, que vuelve a 30 en cada una—, y en la corrección la del shell repintaba
   un número que esa pantalla ya había apagado. Se cerró con una excepción
   DECLARADA en el dueño (`runFreeformPlayer(…, { reloj: false })`, v1.51.725)
-  para el único caller que trae el suyo. Lo que QUEDA abierto no es eso, y no es
+  para el único caller que trae el suyo — y esa puerta (`reloj:false`) hay que
+  cerrarla con una norma al abrir el frente, o se llenará de excepciones sin
+  motivo escrito, que es como nacen todas. Lo que QUEDA abierto no es eso, y no es
   «mover dos líneas»: los DOS shells arrancan `montarReloj()` antes de que
   exista la superficie donde se pinta, y
   `startElapsedTicker` hace su primer tic **síncrono** → ese primer número se

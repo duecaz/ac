@@ -37,3 +37,10 @@
 }
 .ww-memory .mc.mc-locked { background: #d1fae5; color: #065f46; border-color: #10b981; opacity: .8; cursor: default; }
 .ww-memory .mc-text { font-size: 1rem; padding: .25rem; text-align: center; word-break: break-word; }
+/* LAS DOS CARAS VIVEN EN LA CARTA, y voltear solo cambia cuál se ve. Antes el
+   player reemplazaba el hijo (texto ↔ interrogación) y, para hacerlo, rehacía
+   el tablero entero en cada toque. Con las dos puestas desde el principio, una
+   jugada es UNA CLASE: ni un nodo nuevo, ni uno menos. */
+.ww-memory .mc:not(.mc-open):not(.mc-locked) .mc-text { display: none; }
+.ww-memory .mc.mc-open .mc-dorso,
+.ww-memory .mc.mc-locked .mc-dorso { display: none; }
