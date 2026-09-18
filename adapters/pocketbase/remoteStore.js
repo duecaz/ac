@@ -11,7 +11,7 @@ import { lsGet, lsSet } from '../../core/ls.js';
 import { getAuthUserId } from '../../core/auth.js';
 import { signedFetch, pbJson } from '../../core/pbHttp.js';
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
-import { esFila, fila, filas, estadoPb, texto } from '../frontera.js';
+import { esFila, fila, filas, estadoPb, esIdRepetido, texto } from '../frontera.js';
 import { pbListar } from './listar.js';
 
 /**
@@ -135,14 +135,21 @@ export function createPocketbaseRemoteStore() {
             method: 'POST', body: JSON.stringify(payload),
           });
         } catch (e) {
-          const st = estadoPb(e);
-          if (st !== 400 && st !== 409) throw e;
+          // SOLO si el 400 dice que el ID ya existe. Un 400 de validación de
+          // verdad (el payload no cabe, §25) reintentado con PATCH acababa
+          // propagando un 404 y escondiendo el motivo real (R6).
+          if (estadoPb(e) !== 409 && !esIdRepetido(e)) throw e;
           await pbFetch(`/api/collections/activities/records/${pbId}`, {
             method: 'PATCH', body: JSON.stringify(payload),
           });
         }
       }
 
+      // `ww.pb.synced` es una PISTA, no la verdad: otro navegador, el almacén
+      // limpiado o una fila borrada fuera la dejan obsoleta, y por eso las dos
+      // ramas se auto-curan. Sirve para ahorrar un viaje en el camino frecuente
+      // (el autosave cada 2 s); nadie debe construir lógica encima como si
+      // supiera qué hay en el servidor.
       if (getSynced().has(pbId)) {
         // La fila EXISTE que sepamos → PATCH directo, sin 404 en la consola.
         // Si aun así da 404, fue BORRADA fuera: se olvida la marca y se recrea.

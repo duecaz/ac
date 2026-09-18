@@ -6,5 +6,10 @@
 .preflight-ok
 .shots/
 
+# Capturas que un recorrido deja al FALLAR (tools/find-smoke.mjs y compañía):
+# son el diagnóstico de esa ejecución, no producto. Una se coló en el repo y se
+# publicó en aulareto.com.
+*-fallo.png
+
 # Tomas de tools/opcion-sonda.mjs (mediciones de una sesión, no producto)
 .opcion-sonda.*.json

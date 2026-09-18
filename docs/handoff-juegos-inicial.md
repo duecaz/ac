@@ -396,6 +396,36 @@ nota), luego 2b. 2c solo si se quieren figuras antes de que exista 2b.
 
 **Lo que NO se hace**: buscar más bancos de tangram (§8c, ya mirado).
 
+### 8d-bis · Lo que la revisión dejó ABIERTO (v1.51.714)
+
+Los dos skills se pasaron por fin sobre los commits v1.51.704-709, que se
+habían subido sin revisar. Lo que se arregló va en el commit; esto es lo que se
+DECIDIÓ NO tocar, con el motivo, para que no se redescubra dentro de un mes:
+
+- **La palma en Colorear no borra, solo se ignora.** El proyecto tiene un
+  detector palma/dedo calibrado (`core/penDetector.js`) que Tildes y Comas usan
+  para que la palma BORRE. Colorear se quedó en «pinta el primer dedo que
+  baja»: resuelve el destrozo (la raya de lado a lado) sin inventar una segunda
+  herramienta en un juego de 3 años. Si el dueño quiere que la palma borre
+  también aquí, es una decisión de producto, no una limpieza.
+- **El selector de láminas está escrito dos veces** (editor de Colorear y de
+  Rompecabezas) y ya divergió: uno escapa el nombre y pone `title`, el otro no.
+  Sale a un `core/` compartido cuando se toque cualquiera de los dos.
+- **El banco sigue siendo DOS listas.** El motivo por el que se separaron
+  caducó en v1.51.710; unificarlas renombra láminas ya guardadas y eso pide
+  migración versionada (§24). Anotado también en `core/bancoDibujos.js`.
+- **«Probar» se arregló en el botón, no en la raíz.** Una actividad nueva vive
+  solo en memoria hasta que se guarda, y eso rompe además dos caminos que nadie
+  ha pedido todavía: exportarla descarga un JSON vacío, y salir del editor sin
+  tocarla la tira. El arreglo profundo (que nazca «sucia» y el autosave la
+  persista) CREA actividades que hoy se descartan solas, y con el tope de 200
+  por profe (§25) eso es decisión del dueño.
+- **La nota de Colorear mide toda la hoja**, no solo la figura. Es lo correcto
+  con el decorado pintable («si no tendrían que pintar ese fondo blanco nada
+  más»), pero conviene saberlo: garabatear en una esquina puntúa. La
+  alternativa honrada, si algún día molesta, es declararlo NO PUNTUABLE, que el
+  sistema ya soporta.
+
 ### 8e · Lo que decide el dueño
 
 1. **¿Arranca la tanda 1 ahora?** (~3 h, verificable en la sesión).

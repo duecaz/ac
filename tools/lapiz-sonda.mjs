@@ -192,6 +192,85 @@ else mal(`el panel parece usar la MEDIA (${cal.media.toFixed(1)}): un solo pico 
 if (cal.recuadros === 2) ok('el panel de calibración pide DOS medidas (dedo y palma), no cuatro');
 else mal(`el panel pide ${cal.recuadros} medidas: cada frontera de más es otra forma de equivocarse`);
 
+// ── LA PALMA SOBRE LA HOJA DE COLOREAR ──────────────────────────────────────
+// La misma clase de defecto que el de arriba, en el otro lienzo del proyecto:
+// la pieza era correcta y la SECUENCIA no. Colorear guardaba UN último punto
+// para todos los punteros, así que al apoyar la palma (un segundo contacto, que
+// en una pizarra táctil es inevitable) el trazo siguiente se dibujaba desde la
+// palma hasta el dedo: una raya de lado a lado que TACHA el dibujo. Aquí se
+// reproduce el gesto de verdad —dos contactos— y se mira el píxel.
+{
+  await page.evaluate(async () => {
+    await import('/core/registerTemplates.js');
+    const s = await import('/core/storage.js');
+    s.save({ id: 'co_palma', template: 'colorear', title: 'Sonda palma',
+      content: { items: [{ id: 'it_palma', dibujo: 'gato' }] },
+      rules: {}, scoring: {}, presentation: { skin: 'default', background: 'none' },
+      updatedAt: '2026-01-01T00:00:00.000Z' });
+  });
+  await page.evaluate(() => { location.hash = '#/play/co_palma'; });
+  await page.waitForSelector('[data-ww-start]', { timeout: 9000 });
+  await page.click('[data-ww-start]');
+  await page.waitForSelector('#co-tinta', { timeout: 9000 });
+
+  const palma = await page.evaluate(async () => {
+    const cv = /** @type {HTMLCanvasElement} */ (document.querySelector('#co-tinta'));
+    const caja = () => cv.getBoundingClientRect();
+    const ev = (tipo, fx, fy, id) => {
+      const r = caja();
+      cv.dispatchEvent(new PointerEvent(tipo, { pointerId: id, isPrimary: id === 1, bubbles: true,
+        pointerType: 'touch', clientX: r.left + r.width * fx, clientY: r.top + r.height * fy }));
+    };
+    // Alpha en un punto del lienzo, en fracción de su lado.
+    const alpha = (fx, fy) => {
+      const d = cv.getContext('2d').getImageData(Math.round(cv.width * fx), Math.round(cv.height * fy), 1, 1).data;
+      return d[3];
+    };
+    const limpiar = () => cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+    const esperar = () => new Promise((res) => requestAnimationFrame(res));
+
+    // (1) EL DEDO PINTA: de una esquina a la otra, pasando por el centro.
+    limpiar();
+    ev('pointerdown', 0.25, 0.25, 1);
+    await esperar();
+    ev('pointermove', 0.75, 0.75, 1);
+    ev('pointerup', 0.75, 0.75, 1);
+    const dedo = alpha(0.5, 0.5);
+
+    // (2) LA PALMA NO: dedo arriba-izquierda, palma abajo-derecha, y el dedo se
+    //     mueve un poco. Ni la palma deja su punto ni aparece la diagonal.
+    limpiar();
+    ev('pointerdown', 0.25, 0.25, 1);
+    await esperar();
+    ev('pointerdown', 0.75, 0.75, 2);     // la palma se apoya
+    ev('pointermove', 0.28, 0.28, 1);     // el dedo sigue pintando lo suyo
+    ev('pointerup', 0.28, 0.28, 1);
+    const centro = alpha(0.5, 0.5), enLaPalma = alpha(0.75, 0.75), dondePinta = alpha(0.26, 0.26);
+
+    // (3) Y levantar la palma no puede cortar el trazo del dedo.
+    limpiar();
+    ev('pointerdown', 0.25, 0.25, 1);
+    await esperar();
+    ev('pointerdown', 0.75, 0.75, 2);
+    ev('pointerup', 0.75, 0.75, 2);       // se levanta la PALMA
+    ev('pointermove', 0.45, 0.45, 1);     // el dedo sigue abajo
+    const sigueTrazando = alpha(0.35, 0.35);
+    return { dedo, centro, enLaPalma, dondePinta, sigueTrazando };
+  });
+
+  if (palma.dedo > 8) ok('colorear: un dedo pinta su trazo de verdad (contra-prueba del resto)');
+  else mal(`colorear: el dedo NO pinta (alpha ${palma.dedo} en el centro) — la sonda no está midiendo el lienzo`);
+
+  if (palma.centro <= 8 && palma.enLaPalma <= 8) ok('colorear: apoyar la palma no pinta nada ni tacha el dibujo con una diagonal');
+  else mal(`colorear: la palma dejó tinta (centro ${palma.centro}, palma ${palma.enLaPalma}): en la pizarra tacha el dibujo`);
+
+  if (palma.dondePinta > 8) ok('colorear: y el dedo sigue pintando donde toca, con la palma apoyada');
+  else mal(`colorear: con la palma apoyada el dedo dejó de pintar (alpha ${palma.dondePinta})`);
+
+  if (palma.sigueTrazando > 8) ok('colorear: levantar la palma no corta el trazo del dedo');
+  else mal(`colorear: al levantar la palma se cortó el trazo del dedo (alpha ${palma.sigueTrazando})`);
+}
+
 if (errores.length) mal(`errores JS en la página: ${errores.join(' | ')}`);
 else ok('sin errores JS');
 

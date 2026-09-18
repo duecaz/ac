@@ -24,9 +24,12 @@
 // CREDITOS.md`. La obra derivada —el SVG reescalado— se queda CC BY-SA, que es
 // lo que el share-alike exige.
 import { writeFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const RAIZ = new URL('..', import.meta.url).pathname;
+// `fileURLToPath`, no `.pathname`: en Windows —que es donde trabaja el dueño—
+// una URL de fichero da «/C:/…» y ningún `join` lo arregla.
+const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DESTINO = join(RAIZ, 'assets/juegos/dibujos');
 // DOS VARIANTES POR LÁMINA, porque el banco lo comparten DOS juegos:
 //  · `linea`  (black/svg) → Colorear: contorno para pintar encima.
@@ -93,9 +96,9 @@ ${dentro}
 `;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   mkdirSync(DESTINO, { recursive: true });
-  /** @type {{nombre:string,label:string,tema:string,archivo:string,bytes:number}[]} */
+  /** @type {{nombre:string,label:string,tema:string,archivo:string}[]} */
   const hechos = [];
   const fallos = [];
   for (const { tema, items } of CATALOGO) {
@@ -103,7 +106,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       try {
         /** @type {Record<string,string>} */
         const salida = {};
-        let bytes = 0, malo = '';
+        let malo = '';
         for (const [variante, sufijo] of [['black', ''], ['color', '-color']]) {
           const r = await fetch(FUENTE(cp, variante));
           if (!r.ok) { malo = `${variante}: HTTP ${r.status}`; break; }
@@ -111,11 +114,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
           const n = Buffer.byteLength(out, 'utf8');
           if (n > 16 * 1024) { malo = `${variante}: ${n} B > 16 KB`; break; }
           salida[`${nombre}${sufijo}.svg`] = out;
-          bytes += n;
         }
         if (malo) { fallos.push(`${nombre} (U+${cp}): ${malo}`); continue; }
         for (const [f, txt] of Object.entries(salida)) writeFileSync(join(DESTINO, f), txt, 'utf8');
-        hechos.push({ nombre, label, tema, archivo: `${nombre}.svg`, bytes });
+        hechos.push({ nombre, label, tema, archivo: `${nombre}.svg` });
       } catch (e) {
         fallos.push(`${nombre} (U+${cp}): ${e instanceof Error ? e.message : String(e)}`);
       }
@@ -131,7 +133,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   for (const { tema } of CATALOGO) {
     console.log(`  // ${tema}`);
     for (const h of hechos.filter(x => x.tema === tema)) {
-      console.log(`  { nombre: '${h.nombre}', label: '${h.label}', archivo: '${h.archivo}', tema: '${h.tema}', tipo: 'linea' },`);
+      // Los CUATRO campos que tiene `Dibujo` y ni uno más: emitía un `tipo`
+      // que el banco no tiene, y quien pegara la línea metía un campo muerto.
+      console.log(`  { nombre: '${h.nombre}', label: '${h.label}', archivo: '${h.archivo}', tema: '${h.tema}' },`);
     }
   }
 }

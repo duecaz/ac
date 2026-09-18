@@ -57,6 +57,13 @@ function wireContent(root, a, ctx) {
     if (!nombre || nombre === contenido(a).items[0].dibujo) return;
     contenido(a).items[0].dibujo = nombre;
     ctx.onChange(a);
-    ctx.repaint();
+    // Se marca a mano, sin `ctx.repaint()`: repintar el editor entero rehace
+    // las 43 miniaturas SVG (decodificado y maquetación de la rejilla) para
+    // cambiar una clase en dos botones. Lo mismo hace el editor del puzzle.
+    for (const b of root.querySelectorAll('.co-ed-pick')) {
+      const elegido = b === el;
+      b.classList.toggle('co-ed-pick--on', elegido);
+      b.setAttribute('aria-pressed', String(elegido));
+    }
   });
 }

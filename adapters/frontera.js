@@ -7,7 +7,7 @@
 // RE-EXPORTA con los nombres que usan los adaptadores (una fila es un objeto) y
 // se queda con lo que de verdad es suyo: la respuesta `{items}` de PocketBase,
 // el status de sus errores y el blob de estado de la sala en vivo.
-import { esObjeto, saco, numero } from '../core/frontera.js';
+import { esObjeto, saco, numero, texto } from '../core/frontera.js';
 
 export {
   esObjeto as esFila,
@@ -45,6 +45,16 @@ export const mapaTextos = (x) => (esObjeto(x) ? /** @type {Record<string, string
  *  `{ status, pb }` sobre un `Error`). 0 = sin status (red caída, abort). */
 /** @param {unknown} e @returns {number} */
 export const estadoPb = (e) => numero(saco(e).status, 0);
+
+/** ¿Este error dice «ese id YA EXISTE» (y no otra cosa)? PocketBase contesta
+ *  400 tanto a un POST con id repetido —`data.id.code = validation_not_unique`—
+ *  como a un payload que RECHAZA (una actividad por encima del tope de §25).
+ *  Tratar los dos igual y reintentar con PATCH pierde el motivo verdadero: el
+ *  usuario veía el 404 del PATCH en vez de «no cabe». Se mira el campo, no solo
+ *  el número.
+ *  @param {unknown} e @returns {boolean} */
+export const esIdRepetido = (e) =>
+  texto(saco(saco(saco(saco(e).pb).data).id).code).startsWith('validation_not_unique');
 
 // ─── EL BLOB DE LA SALA EN VIVO ──────────────────────────────────────────────
 // El estado de una sala hace DOS viajes y por eso vive aquí, en la frontera:

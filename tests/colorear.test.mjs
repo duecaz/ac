@@ -23,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { DIBUJOS, TEMAS, dibujosDe, rutaDibujo } from '../core/bancoDibujos.js';
 import { scoreColorearSubmission, LLENO, MINIMO } from '../templates/colorear/scorer.js';
-import { escenaDe, TEMAS_CON_ESCENA, SUELO } from '../core/escenasDibujo.js';
+import { escenaDe, escenaColorDe, TEMAS_CON_ESCENA, SUELO } from '../core/escenasDibujo.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 let passed = 0;
@@ -168,7 +168,6 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 // Una geometría, dos lecturas (§21b): la variante de color no puede redibujar
 // nada — solo rellena cielo y suelo y pinta las formas que DECLARAN su color.
 {
-  const { escenaColorDe } = await import('../core/escenasDibujo.js');
   for (const t of TEMAS) {
     const linea = escenaDe(t.id), color = escenaColorDe(t.id);
     assert.ok(color, `el tema "${t.id}" no tiene escena coloreada`);

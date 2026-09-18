@@ -88,11 +88,10 @@ export const DIBUJOS = [
   { nombre: 'reloj', label: 'Reloj', archivo: 'reloj.svg', tema: 'cosas' },
 ];
 
-/** El tema de una lámina, o `null` si no está en el banco. Lo pide el player
- *  para elegir el FONDO de la hoja: un animal se colorea sobre un campo, un
- *  coche sobre una carretera. */
-/** Mira en LOS DOS bancos: el rompecabezas también pone su decorado por tema y
- *  un legado `casa-geo` es tan «cosas» como la casa de OpenMoji.
+/** El tema de una lámina, o `null` si no está en ningún banco. Decide el FONDO:
+ *  un animal se colorea (y se arma) sobre un campo, un coche sobre una
+ *  carretera. Mira en LOS DOS bancos — un legado `casa-geo` es tan «cosas» como
+ *  la casa de OpenMoji.
  *  @param {string|null|undefined} nombre @returns {string|null} */
 export const temaDe = (nombre) =>
   (DIBUJOS.find(d => d.nombre === nombre) ?? DIBUJOS_PUZZLE.find(d => d.nombre === nombre))?.tema ?? null;
@@ -118,18 +117,17 @@ export function rutaDibujo(nombre, variante = 'linea') {
 
 // ── EL OTRO BANCO: las láminas CON ZONAS, de Rompecabezas ────────────────────
 //
-// SE SEPARARON EN v1.51.704, y el motivo es que los dos juegos dejaron de
-// querer el mismo arte. Colorear pinta ENCIMA de una línea: cuanto mejor sea la
-// ilustración, mejor. Rompecabezas RECORTA la figura en piezas, y para eso
-// necesita saber dónde está el dibujo dentro del lienzo — lo deduce de las
-// zonas `data-color`, que son las que dejan recortar el aire sobrante y evitan
-// piezas vacías. Las láminas de OpenMoji son línea pura y no tienen ninguna.
+// SE SEPARARON EN v1.51.704 porque el puzzle solo sabía recortar por zonas
+// `data-color`, y las láminas de OpenMoji no tienen ninguna. ESO YA NO ES ASÍ
+// (v1.51.710: la caja se mide con `getBBox()`), así que los dos bancos se
+// juegan en los dos juegos y lo único que queda separado es el ARTE: estas
+// ocho son geométricas, las otras 43 son ilustraciones.
 //
-// Compartir un banco que sirve a medias a los dos habría degradado el puzzle en
-// silencio (piezas en blanco, recorte sin ajustar) para no tocar una regla. Son
-// dos colecciones con dos contratos, y se dicen.
-//
-// Estas ocho son las originales, dibujadas a mano: geométricas y sencillas.
+// DEUDA ANOTADA (revisión de v1.51.714): siendo así, sobra la segunda lista.
+// Una sola con la capacidad declarada por lámina (`zonas: true` o su carpeta)
+// dejaría `rutaDibujo` como única función de ruta, un solo `find` en `temaDe` y
+// sin el sufijo `-geo`. No se hizo aquí porque mover los nombres otra vez toca
+// contenido ya guardado y eso pide migración versionada (§24).
 // Desde v1.51.710 el puzzle también recorta las láminas de OpenMoji (mide la
 // figura con `getBBox()` en el navegador, `templates/puzzle/player.js`), así
 // que los DOS bancos se juegan. Los nombres llevan el sufijo `-geo` a propósito:

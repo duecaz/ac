@@ -18,6 +18,7 @@ import assert from 'node:assert';
 import { createPocketbaseRealtime } from '../adapters/pocketbase/realtime.js';
 import { createPocketbaseRemoteStore } from '../adapters/pocketbase/remoteStore.js';
 import { createPocketbaseAssignments } from '../adapters/pocketbase/assignments.js';
+import { estadoPb } from '../adapters/frontera.js';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
@@ -140,6 +141,38 @@ function espia(responder) {
     await assert.rejects(() => rs.listPublicActivities({}), 'la biblioteca sin red debe fallar, no salir vacía');
     await assert.rejects(() => as.listAssignmentsForActivity('a1'), 'las tareas sin red, igual');
     ok('CONTRA-PRUEBA (R6): sin red las tres FALLAN en vez de fingir que no hay datos');
+  } finally { espión.restore(); }
+}
+
+// ── 4. GUARDAR: qué 400 significa «ya existe» y cuál es un NO ───────────────
+// Al guardar una actividad que no consta sincronizada se hace POST primero (si
+// no, la consola se llenaba de 404 esperados). PocketBase contesta 400 a DOS
+// cosas distintas: un id repetido y un payload rechazado. Reintentar el segundo
+// con PATCH devolvía un 404 y el docente no llegaba a enterarse de que su
+// actividad no cabía (§25 · R6: fallar en silencio está prohibido).
+{
+  const act = { id: 'act_x', template: 'quiz', content: { items: [] } };
+  const noUnico = { message: 'Failed to create record.', data: { id: { code: 'validation_not_unique', message: 'Value must be unique.' } } };
+  const noCabe = { message: 'Failed to create record.', data: { data: { code: 'validation_max_size', message: 'Too large.' } } };
+
+  // (a) id repetido → se cae al PATCH y se guarda.
+  let espión = espia((url, opts) => ((opts.method || 'GET') === 'POST' ? res(400, noUnico) : res(200, { id: 'actx000000000' })));
+  try {
+    await createPocketbaseRemoteStore().saveActivity(act);
+    assert.strictEqual(espión.urls.length, 2, 'un id repetido se resuelve en dos viajes: POST y PATCH');
+    ok('guardar: el 400 de «ese id ya existe» cae al PATCH y la actividad se guarda');
+  } finally { espión.restore(); }
+
+  // (b) CONTRA-PRUEBA: un 400 de validación real NO se reintenta, y el error
+  //     que llega arriba es el del servidor, no un 404 de rebote.
+  espión = espia((url, opts) => ((opts.method || 'GET') === 'POST' ? res(400, noCabe) : res(404, { message: 'Not found.' })));
+  try {
+    const e = await createPocketbaseRemoteStore().saveActivity({ ...act, id: 'act_y' }).then(() => null, (err) => err);
+    assert.ok(e, 'un 400 de validación tiene que FALLAR, no darse por guardado');
+    assert.strictEqual(estadoPb(e), 400, `el error que sube es el 400 del servidor, no el 404 del PATCH de rebote (dio ${estadoPb(e)})`);
+    assert.match(String(e.message), /Failed to create record/, 'y con el mensaje del servidor');
+    assert.strictEqual(espión.urls.length, 1, 'un 400 de validación no se reintenta con PATCH');
+    ok('CONTRA-PRUEBA: un 400 de validación sube tal cual (sin esconderse tras un 404)');
   } finally { espión.restore(); }
 }
 

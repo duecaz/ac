@@ -280,7 +280,9 @@ try {
 } catch (e) {
   console.error('\n❌ BUSCAR/CREAR FALLA:', String(e.message).split('\n')[0]);
   if (errs.length) errs.slice(0, 6).forEach(x => console.error('  ✗', x));
-  try { await page.screenshot({ path: join(ROOT, 'find-smoke-fallo.png') }); console.error('  · captura: find-smoke-fallo.png'); } catch {}
+  // La captura del fallo es diagnóstico de ESTA ejecución, no producto: lleva
+  // el sufijo que `.gitignore` conoce (una se commiteó y acabó publicada).
+  try { await page.screenshot({ path: join(ROOT, 'find-smoke-fallo.png') }); console.error('  · captura: find-smoke-fallo.png (ignorada por git)'); } catch {}
   try { await browser.close(); } catch {}
   bye(1);
 }

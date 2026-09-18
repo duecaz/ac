@@ -25,12 +25,12 @@
 import { html, mount, raizDe } from '../../core/html.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
-import { on } from '../../core/events.js';
+import { on, capturarPuntero, soltarPuntero } from '../../core/events.js';
 import { cabeceraHtml } from '../../core/playerHud.js';
 import { rutaDibujo, temaDe } from '../../core/bancoDibujos.js';
 import { escenaDe, componerEscena } from '../../core/escenasDibujo.js';
 import { observeResize } from '../../core/observeResize.js';
-import { scoreColorearSubmission } from './scorer.js';
+import { scoreColorearSubmission, LLENO } from './scorer.js';
 import { ensureContent } from './content.js';
 
 // LA PALETA ES DATO, no CSS (§3, como las bolas de Pelotas): los colores que
@@ -84,7 +84,7 @@ export async function renderColorearPlayer(rootSel, activity, opts = {}) {
              hoja es cuadrada, blanca y centrada, y la tinta y la línea van
              exactamente encima de ella. Blanca además porque la lámina es de
              trazo NEGRO sobre transparente: sobre un tema oscuro no se vería. -->
-        <div class="co-hoja" id="co-lienzo" data-tema="${temaDe(item.dibujo) || ''}">
+        <div class="co-hoja" id="co-lienzo">
           <canvas id="co-tinta"></canvas>
           <div id="co-linea"></div>
         </div>
@@ -127,6 +127,8 @@ export async function renderColorearPlayer(rootSel, activity, opts = {}) {
   // dibujo por eso sería imperdonable. Con tope de lado y de DPR, como manda la
   // ley de animaciones.
   let trazos = 0;
+  // UN solo lienzo de respaldo, reutilizado: se redimensiona en vez de crearse.
+  const respaldo = document.createElement('canvas');
   function medir() {
     if (!lienzo || !cx || !hueco) return;
     const r = hueco.getBoundingClientRect();
@@ -134,16 +136,22 @@ export async function renderColorearPlayer(rootSel, activity, opts = {}) {
     const w = Math.min(Math.round(r.width * dpr), TOPE_LADO);
     const h = Math.min(Math.round(r.height * dpr), TOPE_LADO);
     if (!w || !h || (lienzo.width === w && lienzo.height === h)) return;
-    const previo = lienzo.width && lienzo.height ? document.createElement('canvas') : null;
-    if (previo) {
-      previo.width = lienzo.width; previo.height = lienzo.height;
-      previo.getContext('2d')?.drawImage(lienzo, 0, 0);
+    // La copia solo si HAY algo que conservar: al montar y tras cargar la
+    // lámina el lienzo está vacío, y copiarlo pedía varios MB de memoria por
+    // cada tic del redimensionado (entrar a pantalla completa da una ráfaga).
+    const conservar = trazos > 0 && lienzo.width > 0 && lienzo.height > 0;
+    if (conservar) {
+      respaldo.width = lienzo.width; respaldo.height = lienzo.height;
+      respaldo.getContext('2d')?.drawImage(lienzo, 0, 0);
     }
     lienzo.width = w; lienzo.height = h;
     cx.lineCap = 'round'; cx.lineJoin = 'round';
-    if (previo) cx.drawImage(previo, 0, 0, w, h);
+    if (conservar) cx.drawImage(respaldo, 0, 0, w, h);
   }
-  if (hueco) observeResize(hueco, medir);
+  // El desuscriptor NO se tira: el observador retiene el hueco y el callback, y
+  // el callback retiene el lienzo (varios MB de respaldo). Se suelta al
+  // terminar, que es cuando el juego deja de existir.
+  const pararMedida = hueco ? observeResize(hueco, medir) : () => {};
   medir();
 
   /** @param {PointerEvent} e @returns {{x:number,y:number}|null} */
@@ -155,30 +163,50 @@ export async function renderColorearPlayer(rootSel, activity, opts = {}) {
              y: (e.clientY - r.top) / r.height * lienzo.height };
   }
 
-  /** @type {{x:number,y:number}|null} */
-  let ultimo = null;
+  // UN SOLO DEDO PINTA A LA VEZ, y el trazo es SUYO hasta que lo levanta.
+  //
+  // Antes el último punto era uno solo para todos los punteros: en una pizarra
+  // táctil, apoyar la palma abría un segundo puntero y la siguiente línea se
+  // trazaba desde la palma hasta el dedo — una raya de lado a lado que TACHA el
+  // dibujo. Medido en el navegador (dos toques en 0.2,0.2 y 0.8,0.8 y un
+  // movimiento del primero dejaban tinta en el centro y en la esquina opuesta).
+  // Y al revés: levantar CUALQUIER puntero cortaba el trazo del que sí pintaba.
+  // Es la misma regla que el tablero del tangram: un puntero activo, el resto
+  // se ignora mientras dure.
+  /** @type {{id: number, x: number, y: number}|null} */
+  let trazo = null;
   /** @param {PointerEvent} e */
   function empezar(e) {
-    if (!cx || !lienzo) return;
-    ultimo = punto(e);
-    if (!ultimo) return;
-    // `setPointerCapture`: el dedo puede salirse del lienzo y volver sin que el
-    // trazo se parta en dos.
-    try { lienzo.setPointerCapture(e.pointerId); } catch { /* algún navegador sin captura: se sigue pintando igual */ }
+    if (!cx || !lienzo || trazo) return;
+    const p = punto(e);
+    if (!p) return;
+    trazo = { id: e.pointerId, ...p };
+    // La captura deja que el dedo se salga del lienzo y vuelva sin partir el
+    // trazo (`core/events.js` es el dueño del try/catch y del motivo).
+    capturarPuntero(lienzo, e.pointerId);
     trazos++;
-    pintar(ultimo, ultimo);          // un toque suelto deja su punto
+    pintar(p, p);                    // un toque suelto deja su punto
     e.preventDefault();
   }
   /** @param {PointerEvent} e */
   function mover(e) {
-    if (!ultimo || !cx) return;
+    if (!trazo || trazo.id !== e.pointerId || !cx) return;
     const p = punto(e);
     if (!p) return;
-    pintar(ultimo, p);
-    ultimo = p;
+    pintar(trazo, p);
+    trazo = { id: e.pointerId, ...p };
     e.preventDefault();
   }
-  const soltar = () => { ultimo = null; };
+  /** Solo termina el trazo el dedo que lo empezó. `lostpointercapture` está
+   *  porque la captura puede fallar (el propio `try` lo contempla): sin él, un
+   *  dedo levantado fuera del lienzo dejaba el trazo vivo y se seguía pintando
+   *  al volver a pasar por encima sin pulsar.
+   *  @param {PointerEvent} e */
+  const soltar = (e) => {
+    if (!trazo || trazo.id !== e.pointerId) return;
+    trazo = null;
+    if (lienzo) soltarPuntero(lienzo, e.pointerId);   // o el lienzo se queda con un puntero muerto
+  };
 
   /** @param {{x:number,y:number}} a @param {{x:number,y:number}} b */
   function pintar(a, b) {
@@ -197,6 +225,7 @@ export async function renderColorearPlayer(rootSel, activity, opts = {}) {
     lienzo.addEventListener('pointermove', mover);
     lienzo.addEventListener('pointerup', soltar);
     lienzo.addEventListener('pointercancel', soltar);
+    lienzo.addEventListener('lostpointercapture', soltar);
   }
 
   // ── LA LÁMINA, DENTRO DE SU ESCENA ────────────────────────────────────────
@@ -206,7 +235,10 @@ export async function renderColorearPlayer(rootSel, activity, opts = {}) {
   // el mismo que usa el rompecabezas: una sola caja de figura para los dos.
   try {
     const ruta = rutaDibujo(item.dibujo) || rutaDibujo('gato');
-    const res = await fetch(`./${ruta}`);
+    const res = await fetch(`${ruta}`);
+    // Sin esto, el 404 en HTML de GitHub Pages entraba como lámina y la hoja
+    // salía en blanco sin que el `catch` llegara a enterarse (R6).
+    if (!res.ok) throw new Error(`no se pudo cargar la lámina (${res.status})`);
     const svgText = await res.text();
     if (!ctx.alive()) return;   // la ruta ya cambió mientras llegaba el fetch (§23)
     // El SVG traído se mete DENTRO de uno propio, junto al decorado: así los dos
@@ -224,37 +256,46 @@ export async function renderColorearPlayer(rootSel, activity, opts = {}) {
   emitGame(GameEvents.QUESTION_SHOWN, { idx: 0, total: 1, item });
 
   on(rootSel, 'click', '.co-listo', () => {
+    pararMedida();
     const r = scoreColorearSubmission({ value: { pintado: cobertura(), trazos }, item, activity });
     if (r.correct) emitGame(GameEvents.ANSWER_CORRECT, { idx: 0, points: r.points });
     ctx.finish({
       title: '¡Bien hecho!',
       icon: 'bi-palette-fill', iconColor: 'text-warning',
       lead: r.lead,
-      score: r.points, maxScore: 100,
+      // EL TECHO LO DA EL SCORER, «lo que daría hacerlo entero» (ley
+      // `scoringSources`): estaba cableado a 100 y bastaba con que el profe
+      // tocara «Puntos por acierto» para que el X / max de la pantalla y lo
+      // registrado dejaran de ser el mismo número.
+      score: r.points, maxScore: scoreColorearSubmission({ value: { pintado: LLENO, trazos: 1 }, item, activity }).points,
     });
   });
 
-  /** CUÁNTO SE PINTÓ, de 0 a 1 — la fracción del lienzo con tinta. Se mide
-   *  MUESTREANDO (una de cada ocho filas y columnas): leer el lienzo entero a
-   *  1280×1280 son 6,5 millones de píxeles y esto corre al pulsar «Listo», con
-   *  la clase mirando. Con 1 de cada 64 el número no se mueve y cuesta nada. */
+  /** CUÁNTO SE PINTÓ, de 0 a 1 — la fracción de la hoja con tinta. Se mide
+   *  sobre una COPIA REDUCIDA (64×64) y no sobre el lienzo: lo caro no es el
+   *  bucle, es el `getImageData`, que en 1280×1280 devuelve 1,6 M de píxeles
+   *  (6,5 MB) de una tacada, y esto corre al pulsar «Listo», con la clase
+   *  delante. Reducir con `drawImage` además PROMEDIA el alfa, así que el
+   *  número sale más fiel que muestreando una de cada ocho filas. */
+  const LADO_MEDIDA = 64;
   function cobertura() {
     if (!cx || !lienzo || !lienzo.width) return 0;
     try {
-      const d = cx.getImageData(0, 0, lienzo.width, lienzo.height).data;
-      let con = 0, total = 0;
-      for (let y = 0; y < lienzo.height; y += 8) {
-        for (let x = 0; x < lienzo.width; x += 8) {
-          total++;
-          if (d[(y * lienzo.width + x) * 4 + 3] > 32) con++;
-        }
-      }
-      return total ? con / total : 0;
+      const mini = document.createElement('canvas');
+      mini.width = mini.height = LADO_MEDIDA;
+      const mcx = mini.getContext('2d');
+      if (!mcx) return 0;
+      mcx.drawImage(lienzo, 0, 0, LADO_MEDIDA, LADO_MEDIDA);
+      const d = mcx.getImageData(0, 0, LADO_MEDIDA, LADO_MEDIDA).data;
+      let con = 0;
+      for (let i = 3; i < d.length; i += 4) if (d[i] > 32) con++;
+      return con / (LADO_MEDIDA * LADO_MEDIDA);
     } catch {
-      // `getImageData` puede fallar si el lienzo quedó "sucio" por una imagen de
-      // otro origen. Aquí no puede pasar (solo pintamos nosotros), pero si
-      // pasara, lo honrado es puntuar por los trazos y no fingir un 0.
-      return trazos ? 0.3 : 0;
+      // `getImageData` puede fallar si el lienzo quedó «sucio» por una imagen
+      // de otro origen. Aquí no puede pasar (solo pintamos nosotros), y si
+      // pasara, NO se puede inventar una nota: un fallo de lectura que devolvía
+      // 0,3 —casi el techo— convertía una avería en «casi perfecto».
+      return 0;
     }
   }
 }

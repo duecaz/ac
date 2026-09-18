@@ -57,7 +57,10 @@ const act = { id: 'act_owned01', template: 'quiz', title: 'T', visibility: 'priv
 // profe, o la marca de sincronizadas vaciada, dan una fila que SÍ existe.
 {
   calls.length = 0;
-  script = [{ status: 400, body: { message: 'id ya existe' } }, { status: 200, body: {} }];
+  // El cuerpo es el que manda PocketBase de verdad: el 400 no basta —dice lo
+  // mismo cuando RECHAZA el payload—, lo que identifica «ya existe» es el campo.
+  script = [{ status: 400, body: { message: 'Failed to create record.', data: { id: { code: 'validation_not_unique' } } } },
+            { status: 200, body: {} }];
   await rs.saveActivity({ ...act, id: 'act_owned02' });
   assert.deepStrictEqual(calls.map(c => c.method), ['POST', 'PATCH'],
     'si el id ya estaba, el POST cae en 400 y se actualiza');
