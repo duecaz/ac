@@ -785,14 +785,26 @@ for (const t of seeded) {
         //    el siguiente tic. Se MARCA el nodo antes del gesto: si después la
         //    marca no está, es que lo destruyeron y volvieron a crearlo.
         await page.evaluate(() => {
-          const h = document.querySelector('#ww-player-widget .edu-cabecera');
-          if (h) h.dataset.wwMarca = '1';
+          const w = document.querySelector('#ww-player-widget');
+          // Se marca TODO el árbol, no solo la cabecera: la cabecera dice
+          // sí/no y el recuento dice CUÁNTO — «rehace el marco» y «rehace el
+          // player entero» no son el mismo pecado, y sin el número no se sabe
+          // cuál de los dos se está mirando.
+          for (const el of w ? w.querySelectorAll('*') : []) el.dataset.wwMarca = '1';
+          window.__wwAntes = w ? w.querySelectorAll('*').length : 0;
         });
         const r = await playRound(page, caja, { ...(hints[t.name] || {}), progressSel: prog, effectSel: efecto });
         if (mode === 'solo' && status === 'ok') {
           const marco = await page.evaluate(() => {
-            const h = document.querySelector('#ww-player-widget .edu-cabecera');
-            return { hay: !!h, marca: h ? h.dataset.wwMarca === '1' : null };
+            const w = document.querySelector('#ww-player-widget');
+            const h = w?.querySelector('.edu-cabecera') ?? null;
+            const todos = w ? [...w.querySelectorAll('*')] : [];
+            const vivos = todos.filter(e => e.dataset.wwMarca === '1').length;
+            const antes = window.__wwAntes || 0;
+            return {
+              hay: !!h, marca: h ? h.dataset.wwMarca === '1' : null,
+              sobrevive: antes ? Math.round((100 * vivos) / antes) : 100, antes,
+            };
           });
           // Sin cabecera no hay nada que vigilar (los juegos no la llevan), y si
           // la hay tiene que ser LA MISMA de antes del gesto.
@@ -801,9 +813,9 @@ for (const t of seeded) {
             detail = 'jugar rehace la cabecera: el reloj parpadea en cada gesto (§23)';
             hits.push({ label: t.label, mode, control: 'jugar no rehace el marco', estado: detail, mal: true });
           } else if (marco.hay && !marco.marca) {
-            hits.push({ label: t.label, mode, control: 'jugar no rehace el marco', estado: 'DEUDA declarada: rehace el marco', mal: false });
+            hits.push({ label: t.label, mode, control: 'jugar no rehace el marco', estado: `DEUDA declarada: rehace el marco (sobrevive el ${marco.sobrevive} % de ${marco.antes} nodos)`, mal: false });
           } else {
-            hits.push({ label: t.label, mode, control: 'jugar no rehace el marco', estado: marco.hay ? 'ok' : 'sin cabecera (juego)', mal: false });
+            hits.push({ label: t.label, mode, control: 'jugar no rehace el marco', estado: `${marco.hay ? 'ok' : 'sin cabecera (juego)'} — sobrevive el ${marco.sobrevive} % de ${marco.antes} nodos`, mal: false });
           }
         }
         const dialogos = await page.evaluate(() => window.__wwDialogos || []);
