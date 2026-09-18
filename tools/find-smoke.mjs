@@ -249,6 +249,25 @@ try {
   if (/Ruta no encontrada/i.test(pantallaLista)) fail('#/list/:id no resuelve');
   ok(`la lista se juega: "Jugar" lleva a ${jugandoLista} y monta`);
 
+  // ── «PROBAR» EN UNA ACTIVIDAD RECIÉN CREADA ────────────────────────────────
+  // El botón daba «Actividad no encontrada» antes de empezar: navegaba a
+  // `#/play/<id>` dando por hecho que una actividad sin cambios pendientes ya
+  // estaba guardada, y una recién creada NO lo está — nace en memoria. Solo se
+  // veía con una plantilla jugable desde el primer momento (Colorear trae su
+  // lámina puesta), porque con las demás el botón avisa de que falta contenido y
+  // ni llega a navegar. Por eso el paso usa Colorear: con Quiz este recorrido
+  // habría seguido en verde con el defecto dentro.
+  await page.evaluate(() => { location.hash = '#/edit-new/colorear'; });
+  await page.waitForSelector('#btn-test', { timeout: 9000 })
+    .catch(() => fail('el editor de Colorear no monta su botón «Probar»'));
+  await page.waitForTimeout(500);
+  await page.click('#btn-test');
+  await page.waitForTimeout(1200);
+  const tras = await page.evaluate(() => ({ hash: location.hash, txt: document.querySelector('#app')?.innerText || '' }));
+  if (!/^#\/play\//.test(tras.hash)) fail(`«Probar» en una actividad nueva no llevó a jugar, fue a ${tras.hash}`);
+  if (/no encontrada/i.test(tras.txt)) fail('«Probar» en una actividad recién creada da «Actividad no encontrada»');
+  ok('«Probar» en una actividad recién creada la guarda y la abre (no un error)');
+
   if (errs.length) {
     console.error('\nERRORES DE PÁGINA:');
     errs.slice(0, 6).forEach(e => console.error('  ✗', e));

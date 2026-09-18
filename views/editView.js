@@ -234,7 +234,24 @@ export function renderEditView(rootSel, { id, template }) {
       document.querySelector('#ww-falta')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
-    if (dirty) await doSave(true);
+    // SE GUARDA SI HACE FALTA, Y «HACE FALTA» NO ES SOLO `dirty`. Aquí ponía
+    // `if (dirty)`, que da por hecho que una actividad sin cambios pendientes ya
+    // está guardada — y una RECIÉN CREADA no lo está: nace en memoria, y si su
+    // plantilla ya es jugable con los valores por defecto (Colorear lo es: trae
+    // su lámina puesta), se podía pulsar «Probar» sin haber tocado nada, con
+    // `dirty` en false. Entonces se navegaba a `#/play/<id>` de algo que no
+    // existía en ninguna parte y el profe se comía «Actividad no encontrada»
+    // antes siquiera de empezar (lo cazó el dueño, 2026-09-18).
+    //
+    // La condición honrada es la del destino: no se puede jugar lo que no está
+    // guardado. Se pregunta al almacén en vez de deducirlo de una bandera.
+    if (dirty || !get(activity.id)) await doSave(true);
+    // Y si aun así no está —la cuota llena, que `doSave` ya cuenta en el
+    // estado—, no se manda a una pantalla de error: se dice aquí.
+    if (!get(activity.id)) {
+      toast('No se pudo guardar la actividad, así que todavía no se puede probar.', 'danger', TOAST_LARGO);
+      return;
+    }
     navigate(`#/play/${activity.id}`);
   });
 
