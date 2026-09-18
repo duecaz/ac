@@ -8,6 +8,7 @@ import { renderColorearPlayer } from './player.js';
 import { renderColorearEditor } from './editor.js';
 import { scoreColorearSubmission, PUNTOS_TERMINAR } from './scorer.js';
 import { rid } from '../../core/ids.js';
+import { DIBUJOS, TEMAS } from '../../core/bancoDibujos.js';
 
 export class ColorearTemplate extends BaseTemplate {
   /** @type {import('../../kernel/contracts/template.js').TemplateMeta<import('../../kernel/contracts/activity.js').ColorearContent>} */
@@ -25,13 +26,18 @@ export class ColorearTemplate extends BaseTemplate {
     // OBLIGATORIO (contrato): frase corta de cómo se juega — la pantalla de inicio.
     // Sin dar por hecho que el que juega LEE (§1 del norte, público 3-6 años):
     // el gesto ya es la instrucción, esta frase es para el profe que prepara la clase.
-    instructions: 'Toca un color y luego toca la parte del dibujo que quieras pintar.',
+    instructions: 'Elige un color y pinta el dibujo con el dedo. La goma borra.',
     // El EDITOR se declara (lo exige el contrato). Aquí no se AÑADE nada —el
     // profe no crea zonas ni preguntas—, solo ELIGE de un banco fijo: por eso
     // es `generado: true` (como Pelotas con su tablero), nunca `elemento`.
     editor: {
       generado: true,
-      primerPaso: 'Elige un dibujo del banco: casa, pez, flor, coche, globo, gato, sol o mariposa.',
+      // LA PISTA SALE DEL BANCO, no de una lista a mano. La que había aquí
+      // nombraba los ocho dibujos originales uno por uno y siguió diciéndolo
+      // con el banco ya en 43: una frase escrita dos veces (aquí y en el índice)
+      // siempre acaba diciendo dos cosas (§21b).
+      primerPaso: `Elige una lámina: ${DIBUJOS.length} dibujos en ${TEMAS.length} temas `
+                + `(${TEMAS.map(t => t.label.toLowerCase()).join(', ')}).`,
     },
     panelFit: 'fill',             // panel VS: 'fill' (llena y escala) | 'block' | 'center'
     aspectRatio: '4/3',           // marco del player: '16/10' | '4/3' | '1/1' | 'auto'

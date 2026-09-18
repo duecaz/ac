@@ -27,7 +27,8 @@ import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { on } from '../../core/events.js';
 import { cabeceraHtml } from '../../core/playerHud.js';
-import { rutaDibujo } from '../../core/bancoDibujos.js';
+import { rutaDibujo, temaDe } from '../../core/bancoDibujos.js';
+import { escenaDe, SUELO } from '../../core/escenasDibujo.js';
 import { observeResize } from '../../core/observeResize.js';
 import { scoreColorearSubmission } from './scorer.js';
 import { ensureContent } from './content.js';
@@ -75,9 +76,18 @@ export async function renderColorearPlayer(rootSel, activity, opts = {}) {
   mount(rootSel, html`
     <div class="ww-player co-play">
       ${cabeceraHtml({ fullscreen: true })}
-      <div class="edu-sec edu-sec--dibujo" id="co-lienzo" aria-label="Dibujo para colorear">
-        <canvas id="co-tinta"></canvas>
-        <div id="co-linea"></div>
+      <div class="edu-sec edu-sec--dibujo" aria-label="Dibujo para colorear">
+        <!-- LA HOJA. Las láminas son CUADRADAS (viewBox 0 0 100 100) y el hueco
+             casi nunca lo es, así que sin una hoja propia el lienzo ocupaba toda
+             la franja mientras el dibujo se centraba dentro: se podía pintar en
+             un palmo de vacío a cada lado y el campo se veía descuadrado. La
+             hoja es cuadrada, blanca y centrada, y la tinta y la línea van
+             exactamente encima de ella. Blanca además porque la lámina es de
+             trazo NEGRO sobre transparente: sobre un tema oscuro no se vería. -->
+        <div class="co-hoja" id="co-lienzo" data-tema="${temaDe(item.dibujo) || ''}">
+          <canvas id="co-tinta"></canvas>
+          <div id="co-linea"></div>
+        </div>
       </div>
       <div class="edu-sec edu-sec--paleta" role="group" aria-label="Colores">
         ${PALETA.map((c, i) => `<button type="button" class="co-color${i === 0 ? ' co-color--on' : ''}"
@@ -189,13 +199,25 @@ export async function renderColorearPlayer(rootSel, activity, opts = {}) {
     lienzo.addEventListener('pointercancel', soltar);
   }
 
-  // ── LA LÁMINA ─────────────────────────────────────────────────────────────
+  // ── LA LÁMINA, DENTRO DE SU ESCENA ────────────────────────────────────────
+  // La figura se ENCOGE y se APOYA en el suelo del decorado en vez de ocupar el
+  // lienzo entero: si no, el campo o el aula quedarían detrás de ella y no se
+  // verían. El factor y el desplazamiento salen de la altura del suelo, así que
+  // cambiar `SUELO` en la escena mueve las dos cosas a la vez.
+  const ESCALA = 0.7;
+  const DESPLAZ = (100 - 100 * ESCALA) / 2;        // centrada a lo ancho
   try {
     const ruta = rutaDibujo(item.dibujo) || rutaDibujo('gato');
     const res = await fetch(`./${ruta}`);
     const svgText = await res.text();
     if (!ctx.alive()) return;   // la ruta ya cambió mientras llegaba el fetch (§23)
-    if (linea) linea.innerHTML = svgText;
+    // El SVG traído se mete DENTRO de uno propio, junto al decorado: así los dos
+    // comparten lienzo y el niño pinta debajo de todo por igual.
+    const figura = svgText.replace(/^[\s\S]*?<svg\b[^>]*>/, '').replace(/<\/svg>\s*$/, '');
+    if (linea) linea.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">`
+      + escenaDe(temaDe(item.dibujo))
+      + `<g transform="translate(${DESPLAZ} ${SUELO - 100 * ESCALA}) scale(${ESCALA})">${figura}</g>`
+      + `</svg>`;
     medir();
   } catch {
     // Sin la lámina no hay nada que colorear, pero la pantalla NO se queda muda:

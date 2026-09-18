@@ -126,7 +126,7 @@ const SEMBRAR = async () => {
   await import('/core/registerTemplates.js');
   const { getTemplate } = await import('/core/registry.js');
   const s = await import('/core/storage.js');
-  for (const [id, tpl] of [['cq_ws', 'wordsearch'], ['cq_quiz', 'quiz']]) {
+  for (const [id, tpl] of [['cq_ws', 'wordsearch'], ['cq_quiz', 'quiz'], ['cq_col', 'colorear']]) {
     const T = getTemplate(tpl);
     s.save({ id, template: tpl, title: `Sonda ${tpl}`, content: T.meta.defaultContent(),
       rules: {}, scoring: {}, presentation: { skin: 'default', background: 'none' },
@@ -144,6 +144,15 @@ const PANTALLAS = [
   { id: 'jugar',   pagina: 'teacher.html', hash: '#/play/cq_quiz', espera: '.pp-acc summary',
     antes: (p) => p.evaluate(() => document.querySelectorAll('.pp-acc').forEach(d => { d.open = true; })) },
   { id: 'editor',  pagina: 'teacher.html', hash: '#/edit/cq_ws', espera: '#editor-root' },
+  // COLOREAR entra en el barrido (v1.51.705) porque su hoja se dimensiona con
+  // `min(100cqw, 100cqh)` contra el hueco del dibujo: si alguien quita el
+  // `container-type: size` de ese hueco, las unidades pasan a medir el VIEWPORT
+  // y la hoja deja de ser cuadrada — que es justo el defecto que el dueño vio
+  // («el campo de dibujo está ladeado»). Esta sonda es la que sabe verlo.
+  // Se espera a la ANTESALA y se arranca: la hoja solo existe una vez dentro
+  // del juego, y una pantalla que no monta se saltaba en silencio.
+  { id: 'colorear', pagina: 'teacher.html', hash: '#/play/cq_col', espera: '[data-ww-start]',
+    antes: (p) => p.click('[data-ww-start]').then(() => p.waitForSelector('.co-hoja', { timeout: 9000 })) },
 ];
 
 for (const pant of PANTALLAS) {

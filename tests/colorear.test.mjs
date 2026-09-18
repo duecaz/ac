@@ -23,6 +23,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { DIBUJOS, TEMAS, dibujosDe, rutaDibujo } from '../core/bancoDibujos.js';
 import { scoreColorearSubmission, LLENO, MINIMO } from '../templates/colorear/scorer.js';
+import { escenaDe, TEMAS_CON_ESCENA, SUELO } from '../core/escenasDibujo.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 let passed = 0;
@@ -135,6 +136,32 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   assert.match(p(0.2, 1).lead, /1 trazo\b/, 'un trazo, en singular');
   assert.match(p(0.2, 4).lead, /4 trazos\b/, 'varios trazos, en plural');
   ok('el scorer mide cobertura, tiene techo, y emborronar no puntúa más que colorear');
+}
+
+// ── 7. EL DECORADO ES LÍNEA, Y SE PINTA ──────────────────────────────────
+// El dueño lo pidió así con una frase que es el contrato entero: «para que los
+// alumnos pinten también, si no tendrían que pintar ese fondo blanco nada más».
+// Un decorado ya coloreado, o hecho con degradados de CSS, dejaría al niño sin
+// nada que hacer fuera de la figura — y es un error fácil de cometer al
+// «mejorar» el fondo más adelante, porque se ve bonito en la captura.
+{
+  for (const t of TEMAS) {
+    const esc = escenaDe(t.id);
+    assert.ok(esc.trim(), `el tema "${t.id}" no tiene decorado`);
+    // Trazo sin relleno: eso es lo que se puede colorear por debajo.
+    assert.ok(/fill="none"/.test(esc), `la escena de "${t.id}" tiene que ser de línea`);
+    assert.ok(!/gradient|opacity|<image\b/i.test(esc),
+      `la escena de "${t.id}" usa relleno/degradado: dejaría de ser pintable`);
+    // Todas apoyan en el MISMO suelo, o la figura quedaría flotando en unas y
+    // hundida en otras.
+    assert.ok(esc.includes(String(SUELO)), `la escena de "${t.id}" no usa el suelo común (${SUELO})`);
+  }
+  assert.deepStrictEqual([...TEMAS_CON_ESCENA].sort(), TEMAS.map(t => t.id).sort(),
+    'hay temas sin escena o escenas de temas que ya no existen');
+  // Un tema inventado no revienta: se colorea sobre la hoja limpia.
+  assert.strictEqual(escenaDe('inventado'), '');
+  assert.strictEqual(escenaDe(null), '');
+  ok(`los ${TEMAS.length} temas tienen decorado de LÍNEA, pintable y apoyado en el mismo suelo`);
 }
 
 console.log(`\ncolorear.test: ${passed} checks passed`);

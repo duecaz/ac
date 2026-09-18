@@ -21,6 +21,8 @@
   align-items: center;
   justify-content: center;
   padding: 1cqmin;
+  /* La hoja mide contra ESTE hueco (min(100cqw,100cqh)), no contra el marco. */
+  container-type: size;
 }
 /* LAS DOS CAPAS, y aquí está toda la mecánica (v1.51.704): el LIENZO donde se
    pinta va debajo y la LÁMINA encima, ocupando los dos el mismo hueco. Como las
@@ -29,12 +31,31 @@
    alternativa era recortar la pintura al contorno, que cuesta más y además
    quita lo que se quiere entrenar: salirse tiene que ser POSIBLE para que no
    salirse signifique algo. */
-.co-play .edu-sec--dibujo { position: relative; }
+/* LA HOJA: cuadrada como la lámina (viewBox 0 0 100 100), centrada en el hueco
+   y BLANCA. Sin ella el lienzo se estiraba a toda la franja —que casi nunca es
+   cuadrada— y el dibujo se centraba dentro: quedaba un palmo de vacío pintable
+   a cada lado y el campo se veía ladeado. Y blanca porque la lámina es trazo
+   NEGRO sobre transparente: encima de un tema oscuro no se vería nada. */
+.co-play .co-hoja {
+  position: relative;
+  /* EL LADO SALE DEL HUECO, no de `aspect-ratio` + `max-*`. Con
+     `height:100%; aspect-ratio:1; max-width:100%` la hoja salía 517×560 en
+     pantalla estrecha: `max-width` recorta el ancho y la altura se queda, así
+     que el cuadrado deja de serlo justo donde más se nota. `min(100cqw, 100cqh)`
+     mide el hueco (que declara `container-type: size` abajo) y da el lado menor,
+     que es exactamente lo que se busca. */
+  width: min(100cqw, 100cqh);
+  height: min(100cqw, 100cqh);
+  background: #fff;
+  border-radius: 2cqmin;
+  box-shadow: 0 0.4cqmin 1.6cqmin rgba(0, 0, 0, .18);
+  overflow: hidden;
+}
 .co-play #co-tinta,
 .co-play #co-linea {
   position: absolute;
-  inset: 1cqmin;
-  width: auto; height: auto;
+  inset: 0;
+  width: 100%; height: 100%;
 }
 /* La lámina no intercepta el dedo: los eventos son del lienzo, que está debajo.
    Sin esto el SVG se comería el `pointerdown` y no se pintaría nada. */
