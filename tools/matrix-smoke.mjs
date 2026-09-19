@@ -38,15 +38,22 @@ const { conMarcoLleno } = await import('./helpers/marcoLleno.mjs');
 // por verde.
 const { CAJA: PZ_CAJA } = await import('../templates/puzzle/game/contornos.js');
 
-/** LAS TRES REJILLAS QUE EL PRODUCTO OFRECE (`meta.play.options.piezas`) y las
- *  CUATRO ventanas del ciclo real de un móvil. 3×3 era la única que se medía —
- *  y es la única donde filas y columnas valen lo mismo, es decir, la única
- *  donde el defecto de v1.51.734 no podía aparecer. */
-const PZ_REJILLAS = [
-  { id: 'mx_puzzle_2x2', filas: 2, columnas: 2, etq: '4 piezas' },
-  { id: 'mx_puzzle_2x3', filas: 2, columnas: 3, etq: '6 piezas' },
-  { id: 'mx_puzzle_3x3', filas: 3, columnas: 3, etq: '9 piezas' },
-];
+/** LAS REJILLAS SE LEEN DE SU DUEÑO, no se copian aquí. Son las que el producto
+ *  OFRECE (`meta.play.options` de la plantilla, opción `piezas`): escritas a
+ *  mano, el día que alguien añada un 4×4 el editor lo ofrecería y esta red
+ *  seguiría midiendo tres casos —con la conciencia tranquila, que es lo peor—.
+ *  3×3 era la única que se medía, y es justo la única donde filas y columnas
+ *  valen lo mismo: la única donde el defecto de v1.51.734 no podía aparecer. */
+const { PuzzleTemplate } = await import('../templates/puzzle/template.js');
+const PZ_REJILLAS = (PuzzleTemplate.meta.play.options ?? [])
+  .find(o => o.id === 'piezas')?.values.map(v => {
+    const [filas, columnas] = String(v.value).split('x').map(Number);
+    return { id: `mx_puzzle_${v.value}`, filas, columnas, etq: v.label.replace(/^.*·\s*/, '') };
+  }) ?? [];
+if (!PZ_REJILLAS.length || PZ_REJILLAS.some(r => !r.filas || !r.columnas)) {
+  throw new Error('matrix-smoke: la opción «piezas» del rompecabezas cambió de forma '
+    + '(se esperaban valores «FxC»). La red mide lo que el producto ofrece: arréglala antes de seguir.');
+}
 const PZ_VENTANAS = [
   { w: 1280, h: 800, etq: 'escritorio' },
   { w: 390, h: 844, etq: 'móvil vertical' },
@@ -215,6 +222,17 @@ let bucket = [];
 const note = (msg) => { const s = String(msg).split('\n')[0]; if (!NOISE.test(s)) bucket.push(s); };
 page.on('pageerror', e => note(e.message));
 page.on('console', m => { if (m.type() === 'error') note(m.text()); });
+// PERO UN 404 DE ESTE SERVIDOR NO ES RUIDO. `NOISE` se come la frase «Failed to
+// load resource», que en el sandbox tapa lo de fuera (CDN, fuentes) y tapaba
+// TAMBIÉN un asset del repo que no llega — justo lo que un compañero reportó a
+// mano en la ronda 2026-09-18 («ya no está el molde… 404») y ninguna red vio.
+// Se mira la RESPUESTA, no el texto de la consola: mismo origen + estado ≥ 400
+// entra en el informe con su URL; lo externo se sigue ignorando.
+page.on('response', r => {
+  if (r.status() < 400) return;
+  if (!r.url().startsWith(BASE)) return;   // internet: ruido del entorno
+  bucket.push(`${r.status()} al pedir ${r.url().slice(BASE.length)}`);
+});
 
 // El sandbox no tiene red saliente: el confetti viene de un CDN → lo sustituimos
 // por un módulo vacío para que su fallo no contamine el informe.
@@ -739,14 +757,23 @@ for (const t of seeded) {
           // un rojo falso, que cuesta tanto como un verde falso).
           const alto = piezas[0]?.height || 1;
           const tops = piezas.map(r => r.top).sort((a, b) => a - b);
-          let filasFisicas = tops.length ? 1 : 0;
-          for (let i = 1; i < tops.length; i++) if (tops[i] - tops[i - 1] > alto / 2) filasFisicas++;
+          // CUÁNTAS PIEZAS HAY EN CADA FILA, no solo cuántas filas. Contar filas
+          // demuestra la mitad: con `por_fila = 5` y 9 piezas, «2 filas» lo
+          // cumple igual un 5+4 que un 8+1, y el presupuesto de ancho habla de
+          // la fila MÁS ANCHA. Se compara el reparto entero.
+          /** @type {number[]} */
+          const porFilaFisico = [];
+          let corte = 0;
+          for (let i = 1; i <= tops.length; i++) {
+            if (i === tops.length || tops[i] - tops[i - 1] > alto / 2) { porFilaFisico.push(i - corte); corte = i; }
+          }
+          const filasFisicas = porFilaFisico.length;
           return {
             bw: b.width, bh: b.height, n: piezas.length,
             pw: piezas[0]?.width ?? 0, ph: piezas[0]?.height ?? 0,
             pisan: piezas.filter(solapa).length,
             fuera: piezas.filter(fuera).length,
-            filasFisicas,
+            filasFisicas, porFilaFisico,
             // El desborde, en píxeles y no como un sí/no: medio píxel de
             // redondeo y una pieza cortada por la mitad no son lo mismo.
             desborde: Math.round(Math.max(0, ...piezas.map(r => Math.max(
@@ -792,7 +819,7 @@ for (const t of seeded) {
             if (m.pisan) rotas.push(`${donde}: ${m.pisan} pieza(s) de la bandeja encima del tablero`);
             // EL REPARTO REAL, para el informe: no es veredicto todavía (ver abajo).
             reparto.push({ rejilla: r.etq, ventana: v.etq, filas: m.filasBandejaDeclarado,
-              fisicas: m.filasFisicas, porFila: m.porFilaDeclarado });
+              fisicas: m.filasFisicas, porFila: m.porFilaDeclarado, real: m.porFilaFisico, total });
           }
         }
         await page.setViewportSize({ width: 1280, height: 800 });
@@ -809,9 +836,18 @@ for (const t of seeded) {
         // piezas; si `flex-wrap` decide otra cosa, la cuenta es correcta sobre
         // una bandeja que no existe. Que hoy coincida por espacio disponible no
         // basta: se mide y se dice.
-        const desajustes = reparto.filter(x => x.fisicas !== null && x.filas !== null && x.fisicas !== x.filas);
-        for (const d of desajustes) {
-          rotas.push(`${d.rejilla} · ${d.ventana}: la bandeja presupuestó ${d.filas} fila(s) y el navegador puso ${d.fisicas}`);
+        for (const d of reparto) {
+          if (d.filas === null || d.porFila === null) continue;
+          if (d.fisicas !== d.filas) {
+            rotas.push(`${d.rejilla} · ${d.ventana}: la bandeja presupuestó ${d.filas} fila(s) y el navegador puso ${d.fisicas}`);
+          }
+          // El reparto ENTERO: `por_fila` en todas menos la última, y el resto
+          // en la última. Es lo que la fórmula presupuesta como fila más ancha.
+          const esperado = Array.from({ length: d.filas }, (_, i) =>
+            Math.max(0, Math.min(d.porFila, d.total - i * d.porFila)));
+          if (esperado.join('+') !== d.real.join('+')) {
+            rotas.push(`${d.rejilla} · ${d.ventana}: reparto ${d.real.join('+')} y el declarado era ${esperado.join('+')}`);
+          }
         }
         const mal = rotas.join(' · ');
         if (mal) { status = 'error'; detail = `rompecabezas: ${mal}`; }

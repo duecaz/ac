@@ -6,12 +6,13 @@
 
 .pu-play {
   display: flex; flex-direction: column; height: 100%; gap: 2cqmin;
-  /* CONTENEDOR DE TAMAÑO (alto y ancho): todo lo que mide el juego sale de UN
-     número, el LADO del tablero, y ese lado sale del hueco entero — como mucho
-     el 62 % del alto (el resto es de la bandeja) y el 88 % del ancho. Las piezas
-     de la bandeja son una FRACCIÓN DE CELDA (0,7), no una fracción del ancho de
-     la página: en pantalla completa (1515×1023) `90cqw/total` daba piezas de
-     430 px que se comían el tablero (captura del dueño, v1.51.668). */
+  /* CONTENEDOR DE TAMAÑO: todo lo que mide el juego sale de UN número, el LADO
+     del tablero (`--pu-lado`, que calcula `.pu-arena`), y la pieza es una
+     FRACCIÓN DE CELDA, nunca una fracción del ancho de la página: en pantalla
+     completa (1515×1023) un `90cqw/total` daba piezas de 430 px que se comían
+     el tablero (captura del dueño, v1.51.668). El reparto exacto —cuánto del
+     alto es del tablero y cuánto de la bandeja— ya no es un porcentaje fijo:
+     sale de la cuenta de `.pu-arena`. */
   container-type: inline-size;
 }
 
@@ -127,20 +128,19 @@
 
 /* LA BANDEJA — piezas barajadas alrededor del tablero (norte: «repartidas
    alrededor»). `flex: 0 0 auto`: HUG de su contenido — la bandeja mide lo que
-   miden sus piezas, nunca al revés. Antes tenía un `flex-basis` fijo del 30%
+   miden sus piezas, nunca al revés. Antes tenía un `flex-basis` fijo del 30 %
    y las piezas se apretaban a lo que cupiera en ESE hueco (55 px en 3×3 sobre
-   1000 px: 7,8% del lado corto, menos que el 12% mínimo táctil del plan). Con
-   la bandeja midiendo por CONTENIDO, la pieza pide su tamaño con un PISO
-   táctil (`12cqw`, del propio `.pu-play`) y si no caben todas en una fila,
-   `flex-wrap` abre una segunda — la bandeja crece para tenerlas, nunca al
-   revés, y el tablero (que ya no compite por ese espacio: ver `.pu-arena`)
-   se ajusta con lo que quede. */
+   1000 px: 7,8 % del lado corto, menos que el 12 % mínimo táctil del plan).
+   Hoy la pieza mide EXACTAMENTE su hueco del tablero (`--pu-lado · --pu-kx`) y
+   el tamaño táctil se cuida al revés: el tablero se presupuesta para que las
+   piezas quepan a ese tamaño, y la matriz mide el objetivo más pequeño contra
+   el lado corto del marco. No hay piso `12cqw` en el CSS —lo hubo— y el reparto
+   ya no lo decide `flex-wrap`: ver la cuadrícula de abajo. */
 .pu-pieces {
   flex: 0 0 auto;
   /* SIN `container-type` propio: su alto es CONTENIDO (lo miden sus piezas),
-     así que no puede ser contenedor de tamaño de sí mismo (ciclo). El `cqw`
-     de las piezas cae en el `.pu-play` de fuera —ESTABLE, ver arriba—, que
-     ya declara el eje en línea. */
+     así que no puede ser contenedor de tamaño de sí mismo (ciclo). Las `cq` de
+     lo que hay dentro caen en `.pu-arena`, que sí lo es. */
   /* CUADRÍCULA EXPLÍCITA, no `flex-wrap`. El reparto (`--pu-por-fila` ×
      `--pu-filas-bandeja`) entra en el presupuesto de `--pu-lado`, así que con
      `flex-wrap` era una PREDICCIÓN: el navegador decidía por su cuenta cuántas
