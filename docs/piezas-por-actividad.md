@@ -27,7 +27,7 @@ Andamio = la plantilla ya usa `styles/scaffold.css` (roles declarados, §3b).
 | **Explota Globos** (`globos`) | `16/10` | — | `header «1 / 3» (sin nombre)` 100%×6% → **barra**<br>`ww-ronda` 0%×0% → **—** | `header «1 / 3» (sin nombre)` 100%×4% → **barra**<br>`ww-ronda` 0%×0% → **—** |
 | **Colorear** (`colorear`) | `4/3` | — | `div (sin nombre)` 100%×70% → **escenario**<br>`div (sin nombre)` 100%×15% → **barra**<br>`div «Listo» (sin nombre)` 100%×11% → **barra** | `div (sin nombre)` 100%×73% → **escenario**<br>`div (sin nombre)` 76%×17% → **barra**<br>`div «Listo» (sin nombre)` 100%×7% → **barra** |
 | **Tangram** (`tangram`) | `4/3` | — | `ta-silueta` 32%×52% → **—**<br>`ta-piezas` 47%×87% → **—** | `ta-silueta` 45%×25% → **—**<br>`ta-piezas` 90%×28% → **—** |
-| **Rompecabezas** (`puzzle`) | `4/3` | — | `pu-board` 29%×46% → **—**<br>`pu-pieces` 100%×52% → **escenario** | `pu-board` 61%×5% → **—**<br>`pu-pieces` 100%×94% → **escenario** |
+| **Rompecabezas** (`puzzle`) | `4/3` | — | `pu-board` 29%×46% → **—**<br>`pu-pieces` 100%×52% → **escenario** | `pu-board` 61%×34% → **—**<br>`pu-pieces` 100%×94% → **escenario** |
 
 ## Qué cambia al girar el hueco
 

@@ -63,7 +63,7 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
   const filasBandejaV = Math.ceil(total / porFilaV);
 
   mount(rootSel, html`
-    <div class="ww-player pu-play" style="--pu-columnas:${columnas};--pu-caja:${CAJA};--pu-filas-bandeja:${filasBandeja};--pu-por-fila:${porFila};--pu-filas-bandeja-v:${filasBandejaV};--pu-por-fila-v:${porFilaV}">
+    <div class="ww-player pu-play" style="--pu-columnas:${columnas};--pu-filas:${filas};--pu-caja:${CAJA};--pu-filas-bandeja:${filasBandeja};--pu-por-fila:${porFila};--pu-filas-bandeja-v:${filasBandejaV};--pu-por-fila-v:${porFilaV}">
       <div class="edu-sec edu-sec--tablero pu-arena">
         <div class="pu-board" data-pu-board></div>
         <div class="edu-sec edu-sec--piezas pu-pieces" data-pu-pieces></div>

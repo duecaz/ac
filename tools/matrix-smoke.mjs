@@ -241,6 +241,20 @@ const seeded = await page.evaluate(async () => {
     try { storage.save(a); out.push({ name: m.name, label: m.label || m.name, id: a.id }); }
     catch (e) { out.push({ name: m.name, label: m.label || m.name, id: a.id, seedError: e.message }); }
   }
+  // UNA REJILLA NO CUADRADA, aparte de la siembra normal. El rompecabezas nace
+  // 3×3 y TODO lo que se midió de él se midió en 3×3 — la única forma en que
+  // filas y columnas valen lo mismo. Con «6 piezas» (2×3) el tablero salía
+  // 385×116 y la pieza 205×308: más alta que el tablero entero. No se juega
+  // (no hace falta): se monta, se mide y se sale.
+  {
+    const { getTemplate } = await import('/core/registry.js');
+    const T = getTemplate('puzzle'), m = T.meta;
+    const a = { id: 'mx_puzzle_2x3', template: 'puzzle', title: 'Matriz · Rompecabezas 2×3',
+      content: m.defaultContent(), rules: m.defaultRules(), scoring: m.defaultScoring(),
+      updatedAt: new Date().toISOString() };
+    a.content.items[0].filas = 2; a.content.items[0].columnas = 3;
+    try { storage.save(a); } catch { /* lo dirá la red al no encontrar el tablero */ }
+  }
   return out;
 });
 
@@ -669,20 +683,60 @@ for (const t of seeded) {
       // El dueño: «las piezas no están del mismo tamaño que donde encajan» —
       // y comparar la pieza con el hueco ES el juego.
       if (mode === 'solo' && status === 'ok' && t.name === 'puzzle') {
-        const m = await page.evaluate(() => {
+        // SE MIDE EL TABLERO QUE SE VE, no el que debería salir de la fórmula.
+        // Esta red decía «ok (100 %)» con la pieza midiendo 308 px de alto y el
+        // tablero entero 116, porque derivaba el hueco de `--pu-caja` y
+        // `--pu-columnas` —las mismas variables de las que sale el ancho de la
+        // pieza— y comparaba una cuenta consigo misma. Ahora el hueco sale del
+        // rectángulo REAL del tablero y se miran los DOS ejes: el alto era el
+        // roto, y el ancho salía bien en los dos casos.
+        const medirEscala = () => page.evaluate(() => {
           const b = document.querySelector('.pu-board')?.getBoundingClientRect();
           const p = document.querySelector('.pu-pieces .pu-piece')?.getBoundingClientRect();
           const play = document.querySelector('.pu-play');
           if (!b || !p || !play) return { sin: true };
           const cs = getComputedStyle(play);
           const columnas = Number(cs.getPropertyValue('--pu-columnas')) || 2;
+          const filas = Number(cs.getPropertyValue('--pu-filas')) || columnas;
           const caja = Number(cs.getPropertyValue('--pu-caja')) || 1.6;
-          const hueco = (b.width / columnas) * caja;
-          return { pct: +(100 * p.width / hueco).toFixed(0) };
+          return {
+            pctX: +(100 * p.width / ((b.width / columnas) * caja)).toFixed(0),
+            pctY: +(100 * p.height / ((b.height / filas) * caja)).toFixed(0),
+            // El tablero es CUADRADO por contrato (`aspect-ratio: 1/1`). Si sale
+            // aplastado es que alguien lo encogió, y entonces ninguna celda mide
+            // lo que la pieza cree.
+            board: `${Math.round(b.width)}×${Math.round(b.height)}`,
+            cuadrado: Math.abs(b.width - b.height) <= Math.max(2, b.width * 0.02),
+            filas, columnas,
+          };
         });
-        const mal = m.sin ? 'sin tablero o sin piezas' : (Math.abs(m.pct - 100) > 3 ? `la pieza mide el ${m.pct} % de su hueco (tiene que ser el 100 %)` : '');
+        const juzgar = (m, etq) => {
+          if (m.sin) return `${etq}: sin tablero o sin piezas`;
+          const fallos = [];
+          if (!m.cuadrado) fallos.push(`el tablero salió ${m.board} (tiene que ser cuadrado)`);
+          if (Math.abs(m.pctX - 100) > 3) fallos.push(`la pieza mide el ${m.pctX} % de su hueco de ANCHO`);
+          if (Math.abs(m.pctY - 100) > 3) fallos.push(`la pieza mide el ${m.pctY} % de su hueco de ALTO`);
+          return fallos.length ? `${etq} (${m.filas}×${m.columnas}): ${fallos.join(' · ')}` : '';
+        };
+        const malCuadrada = juzgar(await medirEscala(), 'rejilla cuadrada');
+        // Y LA REJILLA NO CUADRADA, que es donde vivía el defecto.
+        await page.evaluate(() => { location.hash = '#/mine'; });
+        await page.waitForTimeout(120);
+        await page.evaluate(() => { location.hash = '#/play/mx_puzzle_2x3'; });
+        await page.waitForSelector('[data-ww-start]', { timeout: 10000 }).catch(() => {});
+        await page.click('[data-ww-start]').catch(() => {});
+        await page.waitForTimeout(600);
+        const malRect = juzgar(await medirEscala(), '6 piezas');
+        // Se vuelve a la sembrada normal: las redes de abajo miden ESE montaje.
+        await page.evaluate(() => { location.hash = '#/mine'; });
+        await page.waitForTimeout(120);
+        await page.evaluate(h => { location.hash = h; }, route);
+        await page.waitForSelector('[data-ww-start]', { timeout: 10000 }).catch(() => {});
+        await page.click('[data-ww-start]').catch(() => {});
+        await page.waitForTimeout(600);
+        const mal = [malCuadrada, malRect].filter(Boolean).join(' · ');
         if (mal) { status = 'error'; detail = `escala: ${mal}`; }
-        hits.push({ label: t.label, mode, control: 'la pieza mide su hueco (1:1)', estado: mal || `ok (${m.pct} %)`, mal: !!mal });
+        hits.push({ label: t.label, mode, control: 'la pieza mide su hueco (1:1, los dos ejes)', estado: mal || 'ok (3×3 y 2×3)', mal: !!mal });
       }
       // ── GIRAR EL TELÉFONO CON EL JUEGO YA VIVO (rompecabezas) ───────────
       // La red de arriba mide el montaje RECIÉN hecho y a un solo tamaño, y por

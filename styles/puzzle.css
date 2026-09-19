@@ -41,17 +41,30 @@
      hueco ES el juego. Así que las piezas van a tamaño 1:1 y el tablero ocupa
      lo que quede.
 
-     `--pu-k` es lo que mide una pieza en tableros (la celda más sus lengüetas:
-     `--pu-caja / --pu-columnas`), así que con `f` filas y `c` por fila de
-     bandeja el tablero cabe si:
-       lado ≤ 100cqw / (c · k)        (la fila más ancha de la bandeja)
-       lado ≤ 100cqh / (1 + f · k)    (tablero y bandeja apilados)
-     Las dos van en un `min()`: una cuenta, sin medir nada en JS. */
+     UNA PIEZA TIENE DOS MEDIDAS Y NO SON LA MISMA. El tablero es CUADRADO y la
+     rejilla no tiene por qué serlo: con `c` columnas y `f` filas, la celda mide
+     `lado/c` de ancho y `lado/f` de alto. Así que la caja de la pieza vale
+     `kx = caja/c` en tableros de ancho y `ky = caja/f` de alto. Con `F` filas y
+     `C` por fila de bandeja, el tablero cabe si:
+       lado ≤ 100cqw / (C · kx)        (la fila más ancha de la bandeja)
+       lado ≤ 100cqh / (1 + F · ky)    (tablero y bandeja apilados)
+     Las dos van en un `min()`: una cuenta, sin medir nada en JS.
+
+     AQUÍ HABÍA UN SOLO `k`, el de ancho, usado TAMBIÉN para el presupuesto de
+     alto. Con rejilla cuadrada (3×3, que es como nace) los dos valen lo mismo y
+     no se notaba nada; con «6 piezas» (2×3) el alto de la bandeja se calculaba
+     un 50 % más pequeño de lo que ocupa, la columna se desbordaba y quien cedía
+     era el tablero: 385×116 px con piezas de 205×308 — más altas que el tablero
+     entero (medido, v1.51.733; el dueño: «los tamaños no corresponden, y en
+     pantalla completa la diferencia es muchísimo mayor»). La red de la matriz no
+     lo veía porque derivaba el hueco de estas mismas variables: comparaba la
+     cuenta consigo misma, y solo en 3×3. */
   container-type: size;
-  --pu-k: calc(var(--pu-caja) / var(--pu-columnas, 2));
+  --pu-kx: calc(var(--pu-caja) / var(--pu-columnas, 2));
+  --pu-ky: calc(var(--pu-caja) / var(--pu-filas, var(--pu-columnas, 2)));
   --pu-lado: min(
-    calc((100cqw - 2cqmin) / (var(--pu-por-fila, 1) * var(--pu-k))),
-    calc((100cqh - 4cqmin) / (1 + var(--pu-filas-bandeja, 1) * var(--pu-k)))
+    calc((100cqw - 2cqmin) / (var(--pu-por-fila, 1) * var(--pu-kx))),
+    calc((100cqh - 4cqmin) / (1 + var(--pu-filas-bandeja, 1) * var(--pu-ky)))
   );
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 2cqmin;
@@ -68,6 +81,13 @@
 }
 .pu-board {
   position: relative;
+  /* `flex: 0 0 auto` — el tablero NO se encoge. Es un item de la columna y sin
+     esto `flex-shrink` valía 1: en cuanto la cuenta de arriba se quedaba corta,
+     el que cedía era él (la bandeja ya declara `0 0 auto`), y un tablero
+     aplastado deja de ser cuadrado — con lo que ninguna celda mide lo que la
+     pieza cree que mide. Que no ceda convierte un error de cuenta en algo que
+     se VE (desborda) en vez de en una deformación silenciosa. */
+  flex: 0 0 auto;
   width: var(--pu-lado);
   aspect-ratio: 1 / 1;
   border-radius: max(6px, 1.5cqmin);
@@ -119,7 +139,7 @@
      El tablero ya está calculado para que quepan (ver `.pu-arena`), así que
      aquí no hay tope ninguno que negociar — antes había tres, y el resultado
      era una pieza a la mitad de su hueco. */
-  width: calc(var(--pu-lado) * var(--pu-k));
+  width: calc(var(--pu-lado) * var(--pu-kx));
   /* La SOMBRA sigue al recorte: `box-shadow` pinta la caja cuadrada; `filter:
      drop-shadow` en la caja EXTERIOR (que no lleva clip) sigue la forma. Es
      ESTÁTICA (nunca se anima ni se transiciona: ley de animaciones). */
