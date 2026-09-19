@@ -201,7 +201,13 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
 
   /** @param {number[]} value */
   function grade(value) {
-    ctx.pararReloj();   // esta frase ya está entregada: su tiempo no corre
+    // Esta frase ya está entregada: durante la corrección el reloj NO PINTA. Ojo
+    // con la redacción, que antes decía «su tiempo no corre» y era falsa: con
+    // cronómetro (sin límite) el tiempo es de la PARTIDA y sigue contando para
+    // `timeUsed` — lo que se detiene es el pintado. Si alguien «corrige» esto
+    // para pausar también el origen, vuelve a separar lo que se ve de lo que se
+    // guarda, que es justo el defecto que costó este frente entero.
+    ctx.pararReloj();
     const p = passages[idx];
     if (!p) return;
     // MISMO scorer que VS/Equipos/Live/Tarea (fuente única): no reimplementamos

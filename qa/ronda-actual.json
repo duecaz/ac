@@ -1,8 +1,8 @@
 {
-  "id": "2026-09-18",
+  "id": "2026-09-19",
   "titulo": "AulaReto · Hoja de pruebas",
-  "intro": "Esta ronda estrena TRES JUEGOS NUEVOS pensados para los pequeños que aún no leen: Colorear, Tangram y Rompecabezas. Son de dedo puro, así que casi todo lo que hay que mirar aquí solo se ve tocando: si al apoyar la mano se estropea lo pintado, si una pieza del tangram gira donde estaba o sale disparada al otro lado, si la pieza del rompecabezas es del mismo tamaño que el hueco donde va. El ordenador no puede decir si eso «se juega bien»; tú sí.\n\nLo segundo que trae es limpieza: en esos tres juegos ya NO hay barra de arriba (solo el botón de pantalla completa en la esquina), mientras que en los diez ejercicios de siempre —Quiz, Operaciones, Tildes…— la barra sigue donde estaba. Y el reloj ya no debería parpadear al pasar de pregunta ni al abrir una caja: para ver eso hay que ENCENDER el reloj primero, y la hoja te dice dónde.\n\nAviso importante antes de nada: hubo un fallo en el que el número de versión subía pero el juego seguía siendo el de antes. Por eso la prueba 0 no se conforma con leer el número: hay que comprobar que lo nuevo SE VE. Si la prueba 0 falla, para y avisa — todo lo demás sobraría.\n\nMarca Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no, y escribe en la nota lo que viste aunque sea una tontería. Un «me pareció raro» vale más que un Falla sin explicar.",
-  "versionMin": "1.51.723",
+  "intro": "Esta ronda estrena TRES JUEGOS NUEVOS pensados para los pequeños que aún no leen: Colorear, Tangram y Rompecabezas. Son de dedo puro, así que casi todo lo que hay que mirar aquí solo se ve tocando: si al apoyar la mano se estropea lo pintado, si una pieza del tangram gira donde estaba o sale disparada al otro lado, si la pieza del rompecabezas es del mismo tamaño que el hueco donde va. El ordenador no puede decir si eso «se juega bien»; tú sí.\n\nLo segundo que trae es limpieza: en esos tres juegos ya NO hay barra de arriba (solo el botón de pantalla completa en la esquina), mientras que en los diez ejercicios de siempre —Quiz, Operaciones, Tildes…— la barra sigue donde estaba. Y el reloj ya no debería parpadear al pasar de pregunta ni al abrir una caja: para ver eso hay que ENCENDER el reloj primero, y la hoja te dice dónde. Se añade además un bloque nuevo (Parte 6) sobre lo que pasa al RECARGAR la página a media partida: el tiempo ya no tiene que volver a empezar de cero.\n\nAviso importante antes de nada: hubo un fallo en el que el número de versión subía pero el juego seguía siendo el de antes. Por eso la prueba 0 no se conforma con leer el número: hay que comprobar que lo nuevo SE VE. Si la prueba 0 falla, para y avisa — todo lo demás sobraría.\n\nMarca Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no, y escribe en la nota lo que viste aunque sea una tontería. Un «me pareció raro» vale más que un Falla sin explicar.",
+  "versionMin": "1.51.730",
   "secciones": [
     {
       "titulo": "Antes de empezar",
@@ -18,12 +18,12 @@
           ],
           "accion": "Abre aulareto.com y recarga con Ctrl+F5 dos veces. En el móvil, cierra la pestaña y vuelve a abrirla. Después entra en «Crear actividad» y mira la lista de tipos.",
           "pasos": [
-            "Arriba se ve el número de versión: tiene que ser 1.51.723 o más.",
+            "Arriba se ve el número de versión: tiene que ser 1.51.730 o más.",
             "En la lista de tipos de actividad tienen que aparecer «Colorear», «Tangram» y «Rompecabezas».",
-            "Si el número es 1.51.723 pero NO están los tres juegos, es justo el fallo que buscamos: apúntalo y vuelve a hacer Ctrl+F5.",
+            "Si el número es 1.51.730 pero NO están los tres juegos, es justo el fallo que buscamos: apúntalo y vuelve a hacer Ctrl+F5.",
             "Repite las dos comprobaciones en el móvil."
           ],
-          "espera": "arriba se lee 1.51.723 o más Y los tres juegos nuevos aparecen al crear una actividad. Si el número es menor, para y avisa: estarías probando la de antes.",
+          "espera": "arriba se lee 1.51.730 o más Y los tres juegos nuevos aparecen al crear una actividad. Si el número es menor, para y avisa: estarías probando la de antes.",
           "casillas": [
             "PC: número y juegos nuevos",
             "Móvil: número y juegos nuevos"
@@ -323,7 +323,7 @@
       "pruebas": [
         {
           "n": 12,
-          "titulo": "El reloj no pestañea al pasar de pregunta",
+          "titulo": "El reloj no pestañea al pasar de pregunta (y vuelve al límite entero)",
           "ruta": [
             "PC",
             "Quiz",
@@ -332,17 +332,18 @@
           ],
           "accion": "IMPORTANTE, sin esto no se ve nada: edita una actividad de Quiz, vete a la pestaña «Juego», y en «Tiempo» pon 60 en «Tiempo por pregunta (s)». Guarda y juega en Individual.",
           "pasos": [
-            "Mira el reloj de arriba mientras contestas: al pasar de una pregunta a la siguiente NO tiene que pestañear, quedarse en blanco un instante ni volver a empezar la cuenta.",
-            "La cuenta sigue corriendo de una pregunta a otra sin saltos raros.",
-            "La barra fina de debajo del reloj tampoco tiene que dar un tirón.",
+            "Mira la barra de arriba mientras contestas: al pasar de una pregunta a la siguiente NO tiene que pestañear, quedarse en blanco un instante ni desaparecer y volver.",
+            "OJO, esto es lo que se espera y NO es un fallo: el tiempo es POR PREGUNTA. Al entrar en la pregunta siguiente el reloj vuelve enseguida al límite entero (si pusiste 60, marca 60 otra vez aunque la anterior la contestaras en 3 segundos). Ver 57 → contestas → 60 es lo CORRECTO.",
+            "Lo que sí sería un fallo: que el reloj se quede en blanco, que tarde un segundo largo en aparecer, o que siga bajando desde donde iba la pregunta anterior.",
+            "La barra fina de debajo del reloj tampoco tiene que dar un tirón: se rellena de nuevo entera, sin parpadeo.",
             "Repite exactamente lo mismo en Operaciones y en Explota Globos, poniendo también su tiempo en el editor.",
             "De paso: el número de página de arriba cambia sin que la barra entera se rehaga."
           ],
-          "espera": "en Quiz, Operaciones y Explota Globos el reloj sigue corriendo al cambiar de pregunta, sin parpadeos ni reinicios.",
+          "espera": "en Quiz, Operaciones y Explota Globos la barra de arriba no parpadea al cambiar de pregunta, y el reloj arranca de nuevo en el límite completo porque el tiempo es de cada pregunta.",
           "casillas": [
-            "Quiz: sin parpadeo",
-            "Operaciones: sin parpadeo",
-            "Explota Globos: sin parpadeo"
+            "Quiz: sin parpadeo y vuelve al límite",
+            "Operaciones: sin parpadeo y vuelve al límite",
+            "Explota Globos: sin parpadeo y vuelve al límite"
           ],
           "notaPista": "Si parpadea, di en cuál y si fue un pestañeo o el reloj se quedó vacío un rato"
         },
@@ -374,10 +375,86 @@
       ]
     },
     {
-      "titulo": "Parte 6 · LO QUE SIGUE ABIERTO DE RONDAS ANTERIORES",
+      "titulo": "Parte 6 · EL RELOJ SOBREVIVE A UN F5 (recargar la página)",
+      "nota": "Estas pruebas empiezan después de generar un checkpoint. Un F5 antes del primer progreso guardado no está cubierto por esta función. En la práctica: juega un poco ANTES de recargar (contesta una pregunta, gira una carta), así el juego ya tiene algo guardado; si recargas nada más entrar, volverás al principio y eso no es un fallo.",
       "pruebas": [
         {
           "n": 14,
+          "titulo": "El cronómetro no vuelve a cero al recargar",
+          "ruta": [
+            "PC",
+            "Quiz",
+            "Editar",
+            "Juego › Tiempo"
+          ],
+          "accion": "Edita un Quiz y en «Juego › Tiempo» deja el tiempo en 0 (sin límite): así arriba sale un CRONÓMETRO que sube. Guarda y juega en Individual.",
+          "pasos": [
+            "Contesta un par de preguntas sin prisa y deja que el cronómetro llegue por lo menos a 0:30.",
+            "Pulsa F5 (o el botón de recargar del navegador).",
+            "Cuando vuelva el juego, mira el cronómetro de arriba: tiene que seguir por donde iba (alrededor de 0:30 y subiendo), NO empezar otra vez en 0:00.",
+            "Termina la actividad y mira el tiempo que sale en la pantalla final: tiene que parecerse a lo que marcaba el cronómetro, no ser mucho menor."
+          ],
+          "espera": "tras recargar, el cronómetro continúa desde donde iba y el tiempo final coincide con lo que se vio en pantalla.",
+          "casillas": [
+            "Sigue por donde iba tras F5",
+            "El tiempo final cuadra con el cronómetro"
+          ],
+          "notaPista": "Apunta el número que marcaba ANTES de recargar y el que marcaba DESPUÉS"
+        },
+        {
+          "n": 15,
+          "titulo": "Memoria con límite: al recargar queda lo que quedaba, no el límite entero",
+          "ruta": [
+            "PC",
+            "Memoria",
+            "Editar",
+            "Juego › Tiempo"
+          ],
+          "accion": "Edita una actividad de Memoria y ponle 180 segundos de tiempo para toda la partida. Guarda y juega en Individual.",
+          "pasos": [
+            "Juega con calma y gira varias parejas hasta que el reloj haya bajado como un minuto (de 3:00 a más o menos 2:00).",
+            "Pulsa F5 (o el botón de recargar del navegador) y espera a que vuelva el juego.",
+            "Al volver, el reloj tiene que marcar aproximadamente lo que quedaba (unos 2:00), NO volver a 3:00.",
+            "Un margen de unos pocos segundos arriba o abajo es normal; volver al límite entero NO lo es.",
+            "Sigue jugando: el reloj baja normalmente desde ahí."
+          ],
+          "espera": "el tiempo restante sobrevive a la recarga: vuelve con lo que quedaba, no con el límite completo.",
+          "casillas": [
+            "Vuelve con el tiempo que quedaba",
+            "No se reinicia a 3:00"
+          ],
+          "notaPista": "Apunta el tiempo que marcaba justo antes de recargar y el de después"
+        },
+        {
+          "n": 16,
+          "titulo": "Memoria: si el tiempo se agota mientras estás fuera, al volver se acabó",
+          "ruta": [
+            "PC",
+            "Memoria",
+            "Editar",
+            "Juego › Tiempo"
+          ],
+          "accion": "Con la misma Memoria, baja el tiempo a 60 segundos en el editor. Guarda y juega en Individual.",
+          "pasos": [
+            "Gira una o dos parejas para que el juego guarde el progreso (esto es el checkpoint: sin él la prueba no aplica).",
+            "Cierra la pestaña o vete a otra página y espera MÁS de un minuto, hasta pasarte del tiempo.",
+            "Vuelve a la actividad y recárgala.",
+            "Tiene que terminar sola y enseñar la pantalla de final (con la puntuación), NO dejarte jugando con el reloj parado en 0:00."
+          ],
+          "espera": "al volver con el tiempo ya vencido, la partida se cierra sola y muestra el resultado; no se queda abierta en 0:00.",
+          "casillas": [
+            "Se cierra sola al volver",
+            "Enseña la pantalla de resultado"
+          ],
+          "notaPista": "Si te deja seguir jugando con el reloj en 0:00, dilo: eso es exactamente el fallo"
+        }
+      ]
+    },
+    {
+      "titulo": "Parte 7 · LO QUE SIGUE ABIERTO DE RONDAS ANTERIORES",
+      "pruebas": [
+        {
+          "n": 17,
           "titulo": "EL LÁPIZ Y LA PALMA en pizarra de verdad",
           "ruta": [
             "Pizarra del aula",
@@ -403,7 +480,7 @@
           "notaPista": "Apunta los dos números de la calibración tal cual (p.ej. «dedo 7, palma 22») y, si falla, cómo tenías la mano"
         },
         {
-          "n": 15,
+          "n": 18,
           "titulo": "El profe y el alumno cuentan lo MISMO en «Preparados…»",
           "ruta": [
             "PC (profe) + móvil (alumno)",
@@ -428,10 +505,10 @@
       ]
     },
     {
-      "titulo": "Parte 7 · SI TE QUEDA TIEMPO",
+      "titulo": "Parte 8 · SI TE QUEDA TIEMPO",
       "pruebas": [
         {
-          "n": 16,
+          "n": 19,
           "titulo": "Una vuelta libre buscando roturas",
           "ruta": [
             "Lo que tengas a mano",
