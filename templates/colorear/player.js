@@ -31,6 +31,8 @@ import { escenaDe, componerEscena } from '../../core/escenasDibujo.js';
 import { observeResize } from '../../core/observeResize.js';
 import { scoreColorearSubmission, LLENO } from './scorer.js';
 import { ensureContent } from './content.js';
+import { registrarFalloDeRed } from '../../core/errorLog.js';
+import { mensajeDe } from '../../core/frontera.js';
 
 // LA PALETA ES DATO, no CSS (§3, como las bolas de Pelotas): los colores que
 // el niño toca viajan como valores JS y se pintan INLINE, así el trinquete de
@@ -232,8 +234,8 @@ export async function renderColorearPlayer(rootSel, activity, opts = {}) {
   // lienzo entero: si no, el campo o el aula quedarían detrás de ella y no se
   // verían. Dónde y cuánto lo decide `componerEscena` (core/escenasDibujo.js),
   // el mismo que usa el rompecabezas: una sola caja de figura para los dos.
+  const ruta = rutaDibujo(item.dibujo) || rutaDibujo('gato');
   try {
-    const ruta = rutaDibujo(item.dibujo) || rutaDibujo('gato');
     const res = await fetch(`${ruta}`);
     // Sin esto, el 404 en HTML de GitHub Pages entraba como lámina y la hoja
     // salía en blanco sin que el `catch` llegara a enterarse (R6).
@@ -246,10 +248,13 @@ export async function renderColorearPlayer(rootSel, activity, opts = {}) {
     const escena = escenaDe(temaDe(item.dibujo));
     if (linea) linea.innerHTML = escena ? componerEscena(svgText, escena) : svgText;
     medir();
-  } catch {
+  } catch (e) {
     // Sin la lámina no hay nada que colorear, pero la pantalla NO se queda muda:
     // "Listo" sigue ahí (R6, fallar en silencio está prohibido) y el fin se
-    // reporta con lo que haya pintado.
+    // reporta con lo que haya pintado. Y desde la ronda 2026-09-18, la URL queda
+    // en el registro: sin ella, «la hoja salió en blanco» llega al informe sin
+    // decir qué fichero faltó, que es lo único accionable.
+    registrarFalloDeRed(ruta || '(sin ruta)', mensajeDe(e));
   }
 
   emitGame(GameEvents.QUESTION_SHOWN, { idx: 0, total: 1, item });

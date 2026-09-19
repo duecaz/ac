@@ -6,6 +6,8 @@
 // porque ese módulo es PURO (Node lo prueba) y aquí hace falta el navegador:
 // `getBBox()` y `fetch`.
 import { rutaDibujoPuzzle, rutaDibujo, temaDe } from '../../core/bancoDibujos.js';
+import { registrarFalloDeRed } from '../../core/errorLog.js';
+import { mensajeDe } from '../../core/frontera.js';
 import { escenaColorDe } from '../../core/escenasDibujo.js';
 import { svgParaPuzzle, tieneZonas } from './game/imagen.js';
 
@@ -54,8 +56,21 @@ function cajaDeSvg(texto) {
 export async function imagenDe(nombre) {
   const ruta = rutaDibujoPuzzle(nombre) ?? rutaDibujo(nombre, 'color');
   if (!ruta) return null;
-  const res = await fetch(ruta);
-  if (!res.ok) return null;
+  // El fallo se DICE dos veces y no es repetir: quien llama pinta el aviso para
+  // el niño («no se pudo cargar el dibujo»), y esto deja la URL y el código en
+  // el registro, que es lo que viaja en el informe de QA. Sin la segunda, un
+  // compañero reportó «ya no está el molde para poner las piezas» con un 404 en
+  // la consola y el informe decía «errores: ninguno registrado» (ronda
+  // 2026-09-18): la nota no se podía accionar porque no nombraba el fichero.
+  /** @type {Response} */
+  let res;
+  try {
+    res = await fetch(ruta);
+  } catch (e) {
+    registrarFalloDeRed(ruta, mensajeDe(e));
+    return null;
+  }
+  if (!res.ok) { registrarFalloDeRed(ruta, `HTTP ${res.status}`); return null; }
   const texto = await res.text();
   return svgParaPuzzle(texto, {
     caja: tieneZonas(texto) ? null : cajaDeSvg(texto),

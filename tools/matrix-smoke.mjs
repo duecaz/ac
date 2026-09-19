@@ -684,6 +684,57 @@ for (const t of seeded) {
         if (mal) { status = 'error'; detail = `escala: ${mal}`; }
         hits.push({ label: t.label, mode, control: 'la pieza mide su hueco (1:1)', estado: mal || `ok (${m.pct} %)`, mal: !!mal });
       }
+      // ── GIRAR EL TELÉFONO CON EL JUEGO YA VIVO (rompecabezas) ───────────
+      // La red de arriba mide el montaje RECIÉN hecho y a un solo tamaño, y por
+      // eso podía estar verde mientras un compañero reportaba (ronda 2026-09-18)
+      // «en el móvil cuando cambias a horizontal y vertical no se ve bien; un
+      // bug muy feo es que ya no está el molde para poner las piezas». El hueco
+      // no era el tamaño: era el CICLO —vertical → horizontal → vertical— sobre
+      // el mismo montaje, que ninguna suite recorría. Se mide en cada parada lo
+      // que el dedo necesita: que el tablero siga ahí, que estén las 9 piezas,
+      // que sigan midiendo su hueco y que ninguna se salga del marco.
+      if (mode === 'solo' && status === 'ok' && t.name === 'puzzle') {
+        const PARADAS = [
+          { label: 'móvil vertical', w: 390, h: 844 },
+          { label: 'móvil tumbado', w: 844, h: 390 },
+          { label: 'vertical otra vez', w: 390, h: 844 },
+        ];
+        /** @type {string[]} */
+        const rotas = [];
+        for (const p of PARADAS) {
+          await page.setViewportSize({ width: p.w, height: p.h });
+          await page.waitForTimeout(350);   // el CSS decide el tamaño; se le deja asentar
+          const m = await page.evaluate(() => {
+            const play = document.querySelector('.pu-play');
+            const b = document.querySelector('.pu-board')?.getBoundingClientRect();
+            const piezas = [...document.querySelectorAll('.pu-pieces .pu-piece')]
+              .map(e => e.getBoundingClientRect());
+            const marco = document.getElementById('ww-frame')?.getBoundingClientRect();
+            if (!play || !b || !piezas.length || !marco) return { sin: true };
+            const cs = getComputedStyle(play);
+            const columnas = Number(cs.getPropertyValue('--pu-columnas')) || 2;
+            const caja = Number(cs.getPropertyValue('--pu-caja')) || 1.6;
+            const hueco = (b.width / columnas) * caja;
+            const fuera = piezas.filter(r => r.right < marco.left - 1 || r.left > marco.right + 1
+              || r.bottom < marco.top - 1 || r.top > marco.bottom + 1).length;
+            return {
+              tablero: Math.round(b.width) > 0 && Math.round(b.height) > 0,
+              n: piezas.length, fuera,
+              pct: +(100 * piezas[0].width / hueco).toFixed(0),
+            };
+          });
+          if (m.sin) { rotas.push(`${p.label}: sin tablero o sin piezas`); continue; }
+          if (!m.tablero) rotas.push(`${p.label}: el tablero se quedó sin tamaño`);
+          if (m.n !== 9) rotas.push(`${p.label}: ${m.n} piezas (tenían que ser 9)`);
+          if (m.fuera) rotas.push(`${p.label}: ${m.fuera} pieza(s) fuera del marco`);
+          if (Math.abs(m.pct - 100) > 3) rotas.push(`${p.label}: la pieza mide el ${m.pct} % de su hueco`);
+        }
+        await page.setViewportSize({ width: 1280, height: 800 });
+        await page.waitForTimeout(200);
+        const mal = rotas.join(' · ');
+        if (mal) { status = 'error'; detail = `girar el teléfono: ${mal}`; }
+        hits.push({ label: t.label, mode, control: 'girar el teléfono no rompe el tablero', estado: mal || 'ok (vertical → tumbado → vertical)', mal: !!mal });
+      }
       if (mode === 'solo' && status === 'ok' && TACTIL[t.name]) {
         const m = await page.evaluate((sel) => {
           const marco = document.getElementById('ww-frame')?.getBoundingClientRect();

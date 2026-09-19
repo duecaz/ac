@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **370 módulos · 1481 imports internos.**
+> **370 módulos · 1485 imports internos.**
 
 ### Ir a otro documento
 
@@ -34,8 +34,8 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 15 · 3832 | 13 · 1811 | 0.47 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 42 · 5842 | 19 · 3180 | 0.54 |
 | **informes/tareas** | después de clase | 10 · 1388 | 5 · 619 | 0.45 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 94 · 8558 | 13 · 1945 | 0.23 |
-| **infra/común** | todo lo anterior | 195 · 27031 | 79 · 11580 | 0.43 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 94 · 8578 | 13 · 1945 | 0.23 |
+| **infra/común** | todo lo anterior | 195 · 27066 | 80 · 11726 | 0.43 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -64,7 +64,7 @@ graph TD
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>6 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
   V -->|451| C
-  T -->|240| C
+  T -->|244| C
   AD -->|29| C
   A -->|24| C
   A -->|18| V
@@ -108,7 +108,7 @@ graph TD
 | **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (575) · `adapters/pocketbase/realtimeAnswers.js` (484) · `adapters/local/realtime.js` (389) · `adapters/pocketbase/remoteStore.js` (308) · `adapters/pocketbase/realtimeStream.js` (218) |
 | **core** | `core/soloPlayer.js` (674) · `core/auth.js` (490) · `core/vsAnimations.js` (444) · `core/normsCheck.js` (415) · `core/aiContent.js` (413) |
 | **kernel** | `kernel/contracts/activity.js` (449) · `kernel/contracts/session.js` (354) · `kernel/contracts/template.js` (342) · `kernel/session/vsMachine.js` (286) · `kernel/session/teamsMachine.js` (251) |
-| **plantillas** | `templates/match/player.js` (352) · `templates/diagram/player.js` (307) · `templates/colorear/player.js` (301) · `templates/question-live/player.js` (256) · `templates/puzzle/game/imagen.js` (254) |
+| **plantillas** | `templates/match/player.js` (352) · `templates/diagram/player.js` (307) · `templates/colorear/player.js` (306) · `templates/question-live/player.js` (256) · `templates/puzzle/game/imagen.js` (254) |
 | **contenido** | `kernel/content/qaAdapt.js` (169) · `kernel/content/models.js` (155) · `kernel/content/switch.js` (131) · `kernel/content/convert.js` (123) · `kernel/content/sessionItems.js` (37) |
 | **config** | `pocketbase.config.js` (45) |
 
@@ -121,7 +121,7 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 | `core/html.js` | 120 |
 | `core/events.js` | 77 |
 | `core/registry.js` | 53 |
-| `core/frontera.js` | 50 |
+| `core/frontera.js` | 52 |
 | `core/toast.js` | 43 |
 | `core/ids.js` | 30 |
 | `core/clock.js` | 26 |

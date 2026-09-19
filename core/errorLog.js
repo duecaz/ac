@@ -22,12 +22,17 @@ export function recentErrors() {
 /** Vacía el anillo de errores. */
 export function clearErrors() { lsSet(RING_KEY, '[]'); }
 
-/** @param {{message?: unknown, stack?: unknown, page?: string}} o */
-function logClientError({ message, stack, page }) {
-  // Throttle: como mucho uno cada 2 s para evitar bucles.
+/** @param {{message?: unknown, stack?: unknown, page?: string, saltarRitmo?: boolean}} o */
+function logClientError({ message, stack, page, saltarRitmo = false }) {
+  // Throttle: como mucho uno cada 2 s para evitar bucles. Un fallo de red lo
+  // SALTA (`saltarRitmo`): viene acotado por su propia lista de URLs vistas, y
+  // el ritmo se tragaba justo el dato que explica la pantalla rota — un error
+  // de JS al montar y el 404 de debajo llegan con milisegundos de diferencia.
   const now = clock.now();
-  if (now - lastSent < 2000) return;
-  lastSent = now;
+  if (!saltarRitmo) {
+    if (now - lastSent < 2000) return;
+    lastSent = now;
+  }
   const entry = {
     message: String(message || '').slice(0, 4000),
     stack: stack ? String(stack).slice(0, 8000) : null,
@@ -44,11 +49,41 @@ function logClientError({ message, stack, page }) {
   } catch { /* localStorage lleno / no disponible: ignora */ }
 }
 
+/** URLs de recursos ya registradas: el mismo fichero que falta no llena el
+ *  anillo, y el tope corta un bucle que fuera pidiendo URLs distintas. */
+const redVista = new Set();
+const RED_MAX = 10;
+
+/** UN FICHERO QUE NO LLEGÓ, dicho para el informe.
+ *
+ *  `fetch` NO lanza con un 404: devuelve una respuesta y quien llama decide qué
+ *  hacer. El Rompecabezas decide bien —avisa en pantalla (R6)—, pero el informe
+ *  de QA seguía diciendo «(ninguno registrado)» mientras el probador leía el
+ *  404 en la consola, así que su nota no se podía accionar: no había forma de
+ *  saber QUÉ fichero faltaba. Esta es la puerta para contarlo.
+ *  @param {string} url @param {string} [motivo] @param {string} [page]
+ */
+export function registrarFalloDeRed(url, motivo = '', page) {
+  const clave = String(url || '');
+  if (!clave || redVista.has(clave) || redVista.size >= RED_MAX) return;
+  redVista.add(clave);
+  logClientError({ message: `no se pudo cargar ${clave}${motivo ? ` (${motivo})` : ''}`, page, saltarRitmo: true });
+}
+
 /** @param {string} [page] */
 export function installErrorHandlers(page) {
   window.addEventListener('error', (e) => {
     logClientError({ message: e.message, stack: e.error?.stack, page });
   });
+  // FASE DE CAPTURA, y no es un detalle: el fallo de carga de un <img>, un
+  // <script> o un <link> NO BURBUJEA — solo pasa por la ventana bajando. Con el
+  // listener de arriba (burbuja) el registro no vio nunca un fichero ausente, y
+  // por eso un informe de QA con un 404 delante decía «ninguno registrado».
+  window.addEventListener('error', (e) => {
+    const t = /** @type {{tagName?: string, src?: string, href?: string}|null} */ (e.target ?? null);
+    if (!t || !t.tagName) return;   // error de script: ya lo lleva el de burbuja
+    registrarFalloDeRed(t.src || t.href || '(sin url)', `no cargó <${String(t.tagName).toLowerCase()}>`, page);
+  }, true);
   window.addEventListener('unhandledrejection', (e) => {
     const r = e.reason;
     logClientError({ message: r?.message || String(r), stack: r?.stack, page });
