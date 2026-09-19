@@ -436,7 +436,7 @@
           ],
           "accion": "Con la misma Memoria, baja el tiempo a 60 segundos en el editor. Guarda y juega en Individual.",
           "pasos": [
-            "Gira una o dos parejas para que el juego guarde el progreso (esto es el checkpoint: sin él la prueba no aplica).",
+            "Encuentra al menos una pareja CORRECTA y comprueba que queda fija en el tablero: ese estado ya es un checkpoint. Si haces una pareja incorrecta, espera a que ambas cartas vuelvan a cerrarse antes de salir (si te vas a medias, el juego aún no ha guardado nada y la prueba no aplica).",
             "Cierra la pestaña o vete a otra página y espera MÁS de un minuto, hasta pasarte del tiempo.",
             "Vuelve a la actividad y recárgala.",
             "Tiene que terminar sola y enseñar la pantalla de final (con la puntuación), NO dejarte jugando con el reloj parado en 0:00."
