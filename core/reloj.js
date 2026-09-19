@@ -66,6 +66,24 @@ export function relojDe(activity, T = getTemplate(activity?.template)) {
  *  la plantilla; una unidad nueva sin clasificar rompe `tests/reloj.test.mjs`,
  *  que es cuando toca decidir a cuál de las dos familias pertenece. */
 const UNIDADES_DE_PARTIDA = new Set(['partida', 'diagrama', 'sopa']);
+/** Y las que son UNA pieza de la ejecución: al empezar otra, el tiempo vuelve
+ *  a empezar con ella. */
+const UNIDADES_DE_PIEZA = new Set(['pregunta', 'operación', 'frase']);
+
+/** A QUÉ FAMILIA pertenece una unidad declarada — y `null` si no pertenece a
+ *  ninguna, que es el estado que el ratchet vigila: una palabra nueva en un
+ *  `meta.play.reloj.unidad` rompe `tests/reloj.test.mjs` hasta que alguien
+ *  decida si su tiempo es de toda la partida o de la pieza que está en
+ *  pantalla. Sin esto, una unidad desconocida caía en silencio del lado de la
+ *  pieza y su F5 regalaba el límite entero sin que nadie se enterase.
+ *  @param {string|null|undefined} u
+ *  @returns {'partida'|'unidad'|null} */
+export function clasificarUnidad(u) {
+  if (!u) return null;
+  if (UNIDADES_DE_PARTIDA.has(u)) return 'partida';
+  if (UNIDADES_DE_PIEZA.has(u)) return 'unidad';
+  return null;
+}
 
 /** DE QUIÉN es el reloj de esta actividad: de toda la ejecución o de la unidad
  *  que esté en pantalla. Lo preguntan los shells para saber si `rearmar` tiene
@@ -77,8 +95,10 @@ export function alcanceDeReloj(activity, T = getTemplate(activity?.template)) {
   const cfg = relojDe(activity, T);
   if (cfg.tipo === 'ninguno') return 'ninguno';
   if (cfg.tipo === 'crono') return 'partida';       // el cronómetro mide la partida
-  const u = unidadDeCuenta(T);
-  return u && UNIDADES_DE_PARTIDA.has(u) ? 'partida' : 'unidad';
+  // Sin clasificar se supone la pieza: es lo conservador —estrenar tiempo nunca
+  // deja a nadie encerrado— pero NO es un sitio donde quedarse, y por eso el
+  // ratchet lo caza antes de que llegue a producción.
+  return clasificarUnidad(unidadDeCuenta(T)) ?? 'unidad';
 }
 
 /** ¿Esta PLANTILLA admite cuenta atrás? Lo DECLARA ella (`meta.play.reloj`), y

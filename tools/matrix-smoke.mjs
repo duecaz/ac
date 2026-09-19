@@ -1541,6 +1541,59 @@ for (const n of ['tildes', 'comas']) {
   }
 }
 
+// ── EL CRONÓMETRO TAMPOCO VUELVE SOLO (Tildes con `timer: 0`) ──────────────
+// Con límite, la corrección apaga el reloj y ya está. SIN límite lo que hay es
+// un CRONÓMETRO, que es de la partida entera: apagar su chip no bastaba porque
+// el tic siguiente lo volvía a encender: un segundo después de entrar en la
+// corrección, el reloj reaparecía. Se mide esperando MÁS de un tic.
+{
+  const sem = seeded.find(s => s.name === 'tildes');
+  const idCrono = `${sem?.id || ''}_crono`;
+  try {
+    if (!sem) throw new Error('tildes no está sembrada');
+    await page.evaluate(async ([base, id]) => {
+      const storage = await import('/core/storage.js');
+      const { clearSoloProgress } = await import('/core/soloPlayer.js');
+      const a = storage.get(String(base));
+      if (!a) throw new Error(`no está sembrada ${base}`);
+      storage.save({ ...a, id: String(id), title: `${a.title} · sin límite`,
+                     rules: { ...(a.rules || {}), timer: 0 },
+                     updatedAt: new Date().toISOString() });
+      clearSoloProgress(String(id));
+    }, [sem.id, idCrono]);
+    await page.evaluate((id) => { location.hash = `#/play/${id}`; }, idCrono);
+    await page.waitForSelector('[data-ww-start]', { timeout: 9000 });
+    await page.click('[data-ww-start]');
+    await page.waitForSelector('#ww-player-widget .tc-done', { timeout: 9000 });
+    const seVe = () => page.evaluate(() => {
+      const el = document.querySelector('#ww-player-widget [data-hud="tiempo"]');
+      if (!el) return false;
+      const cs = getComputedStyle(el);
+      return cs.display !== 'none' && cs.visibility !== 'hidden';
+    });
+    const enLaHoja = await seVe();
+    let frases = 0;
+    for (let i = 0; i < 8; i++) {
+      if (!await page.locator('#ww-player-widget .tc-done').count()) break;
+      await playRound(page, '#ww-player-widget', {});
+      frases++;
+      await page.waitForTimeout(250);
+    }
+    await page.waitForTimeout(1500);           // MÁS de un tic del cronómetro
+    const enCorreccion = await seVe();
+    const corrigiendo = await page.locator('#ww-player-widget .tc-final').count();
+    const mal = !frases ? 'no se pudo entregar ninguna frase'
+      : !enLaHoja ? 'la hoja no enseña su cronómetro'
+      : !corrigiendo ? 'no llegó a la corrección'
+      : enCorreccion ? 'el cronómetro REAPARECE en la corrección al segundo siguiente' : '';
+    hits.push({ label: 'Tildes (sin límite)', mode: 'solo', control: 'la hoja entera conserva el marco',
+                estado: mal || 'ok (cronómetro a la vista en la hoja, apagado y QUIETO en la corrección)', mal: !!mal });
+  } catch (e) {
+    hits.push({ label: 'Tildes (sin límite)', mode: 'solo', control: 'la hoja entera conserva el marco',
+                estado: String(e.message).split('\n')[0], mal: true });
+  }
+}
+
 // ── MEMORIA: UNA JUGADA CAMBIA CARTAS, NO EL TABLERO ────────────────────────
 // Aquí el listón es más alto que en Quiz o en Tildes, y por una razón de
 // producto: al voltear NO cambia el contenido —las cartas ya están puestas—,

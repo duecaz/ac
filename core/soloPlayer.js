@@ -314,6 +314,17 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
   let reloj = null;
   /** @type {(() => void)|null} */
   let alAgotarseCb = null;
+  // EL AGOTAMIENTO SE RETIENE. Al volver de un F5 con el límite ya vencido, el
+  // reloj anclado al origen expira en su PRIMER tic, que es síncrono dentro de
+  // `listo()` — y el player registra su aviso después (Memoria lo hace al
+  // final). Sin esta retención el evento llegaba a un `null`, el ticker quedaba
+  // terminado y nadie cerraba la partida: el tablero se quedaba abierto en 0.
+  // Un evento TERMINAL no puede depender del orden casual de dos llamadas.
+  let agotadoPendiente = false;
+  const avisarAgotado = () => {
+    if (alAgotarseCb) alAgotarseCb();
+    else agotadoPendiente = true;
+  };
   let superficieLista = false;
   /** Arranca (o rearranca) el reloj desde el origen VIGENTE. Es el único sitio
    *  del shell libre que monta uno: por eso una plantilla no puede tener dos. */
@@ -322,7 +333,7 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
     reloj = montarReloj({
       activity, alive, desde: startedAt, ahora: clock.now,
       pintar: (texto, pct) => relojSet(rootSel, texto, pct),
-      onFin: () => alAgotarseCb?.(),
+      onFin: avisarAgotado,
     });
   }
   /** LA FASE QUE FALTABA: «mi superficie ya está». Idempotente — un player que
@@ -333,13 +344,19 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
     arrancarReloj();
   }
   // Y las dos únicas cosas que un runner puede pedirle al reloj del shell,
-  // ninguna de las cuales es «construye otro»: que empiece la unidad siguiente
-  // (la frase de Tildes/Comas, que declara `unidad: 'frase'`) y que la cierre
-  // (mientras se corrige no se cuenta). En un reloj de PARTIDA las dos no hacen
-  // nada: el tiempo de la partida no se rearma a mitad.
-  const deUnidad = () => alcance === 'unidad' && superficieLista;
-  function rearmarReloj() { if (deUnidad()) arrancarReloj(); }
-  function pararReloj() { if (deUnidad()) { reloj?.stop(); reloj = null; } }
+  // ninguna de las cuales es «construye otro»: que lo PARE (esta frase ya se
+  // entregó, mientras se corrige no se cuenta) y que vuelva a arrancarlo.
+  //
+  // PARAR NO ES REINICIAR, y la diferencia la pone el ALCANCE, no el permiso:
+  //   · reloj de UNIDAD (la frase) → volver a arrancar estrena su tiempo;
+  //   · reloj de PARTIDA (el cronómetro, el tablero) → vuelve a arrancar desde
+  //     el MISMO origen, así que continúa donde iba.
+  // Con estas dos atadas a «solo si es de unidad», Tildes/Comas con `timer: 0`
+  // —que llevan cronómetro, y el cronómetro es de la partida— no podían pararlo:
+  // la corrección apagaba el chip y un segundo después el propio tic lo volvía a
+  // encender. Parar es dejar de PINTAR; el origen no se toca nunca aquí.
+  function rearmarReloj() { if (superficieLista) arrancarReloj(); }
+  function pararReloj() { reloj?.stop(); reloj = null; }
 
   // Progreso opt-in para players LIBRES (Memoria, etc.): como el shell no posee
   // el estado del tablero, el core lo aporta. loadProgress() devuelve el snapshot
@@ -405,7 +422,10 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
   }
 
   return { finish, saveProgress, loadProgress, alive, listo, rearmarReloj, pararReloj,
-           alAgotarse: (/** @type {() => void} */ cb) => { alAgotarseCb = cb; } };
+           alAgotarse: (/** @type {() => void} */ cb) => {
+             alAgotarseCb = cb;
+             if (agotadoPendiente) { agotadoPendiente = false; cb(); }
+           } };
 }
 
 // SequentialShell: drives the item-by-item loop common to Quiz and Math.

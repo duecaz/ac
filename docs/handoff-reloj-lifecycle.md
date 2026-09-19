@@ -123,7 +123,10 @@ puntuación · los estilos · las mecánicas · Live y sus `deadline`s más all�
 comprobar que su hora común sigue intacta. **`serverNow()` no se cambia
 globalmente para arreglar Solo**: eso arreglaría una pantalla y rompería el aula.
 
-## 5 · Las nueve puertas (cada una, ROJA antes del arreglo)
+## 5 · Las puertas (cada una, ROJA antes del arreglo)
+
+> Nueve al aprobarse el plan; **once** desde v1.51.730 — las dos que añadió la
+> revisión (G10 · G11) están en §8.
 
 Cada puerta dice qué defecto demuestra y dónde corre. Node donde la lógica
 basta; navegador donde lo que se juzga es lo que se ve.
@@ -180,3 +183,28 @@ bien.
   existe»), y los verbos `rearmarReloj()` / `pararReloj()` para una unidad más
   pequeña que la partida. `{ reloj:false }` se borró.
 - Los 12 callers del shell libre dicen `ctx.listo()`; olvidarlo rompe CI.
+
+
+## 8 · LO QUE LA REVISIÓN ENCONTRÓ DESPUÉS (v1.51.730)
+
+La v1.51.729 acertó la arquitectura y dejó **dos casos terminales sin cubrir y
+dos redes que prometían más de lo que vigilaban**. Los cuatro, cerrados:
+
+| # | Qué | Cómo se cierra |
+|---|---|---|
+| **G10** | Volver de un F5 con el límite YA vencido: el reloj anclado expira en su primer tic —síncrono, dentro de `listo()`— y el aviso llegaba a un `alAgotarseCb` todavía nulo. El tablero se quedaba abierto en 0. | El shell **retiene** el agotamiento (`agotadoPendiente`) y lo entrega en cuanto alguien registra `alAgotarse`. Un evento terminal no depende del orden casual de dos llamadas. |
+| **G11** | Tildes/Comas con `timer: 0` llevan CRONÓMETRO, que es de la partida: `pararReloj()` era no-op para ese alcance, así que la corrección apagaba el chip y **el tic siguiente lo volvía a encender**. | `pararReloj`/`rearmarReloj` valen para cualquier alcance. **Parar es dejar de pintar; rearmar NO reinicia el origen**: la unidad estrena tiempo, la partida continúa donde iba. |
+| — | G9 preguntaba **por fichero**: `question-live` monta dos players y con un solo `ctx.listo()` pasaba entero. | Se cuenta por LLAMADA (`runFreeformPlayer` vs `.listo()`), con el shell excluido. Contra-prueba: borrar uno de los dos lo delata. |
+| — | `alcanceDeReloj` prometía que una unidad nueva rompería CI, y la suite ni la importaba: caía en silencio del lado de la pieza. | `clasificarUnidad()` devuelve `null` para lo no clasificado y la suite exige que ninguna plantilla lo haga. Contra-prueba con una palabra que nadie declara (`tablero`). |
+
+Y una corrección de la prueba misma: **G2 no atravesaba el `finish()` real** —
+calculaba el tiempo a mano, o sea comprobaba mi aritmética, no la del shell.
+Ahora responde los ítems que quedan y lee el `timeUsed` que el shell entrega.
+
+### Lo que sigue SIN estar cubierto (y hay que decirlo al probar)
+
+La reanudación es **por checkpoint**, no continua: Memoria guarda tras estados
+estables y el secuencial no persiste mientras sigue en el primer ítem. Así que
+hoy un F5 continúa **cuando ya hay progreso guardado**, no siempre. Que un F5
+anterior al primer checkpoint conserve el tiempo es otra decisión de producto,
+no un defecto de este frente.

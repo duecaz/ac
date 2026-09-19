@@ -26,7 +26,7 @@ const leer = (p) => readFileSync(join(RAIZ, p), 'utf8');
 
 await import('../core/registerTemplates.js');
 const { listTemplates } = await import('../core/registry.js');
-const { relojDe, unidadDeCuenta } = await import('../core/reloj.js');
+const { relojDe, unidadDeCuenta, clasificarUnidad, alcanceDeReloj } = await import('../core/reloj.js');
 // Solo las de VERDAD: otras suites registran plantillas de mentira en el mismo
 // registro, y una regla del proyecto no se juzga con maniquíes.
 const TS = listTemplates().filter(T => existsSync(join(RAIZ, 'templates', String(T.meta?.name || ''))));
@@ -94,6 +94,33 @@ const TS = listTemplates().filter(T => existsSync(join(RAIZ, 'templates', String
   ok('lo que el juego lee, el editor lo ofrece — y nada se ofrece sin que el juego lo lea');
 }
 
+// ── 3b. TODA UNIDAD DECLARADA ESTÁ CLASIFICADA ──────────────────────────────
+// La unidad no es solo una palabra para el editor («Tiempo por frase»): decide
+// qué pasa al REANUDAR. Si es de toda la partida, un F5 continúa con lo que
+// quedaba; si es de la pieza que está en pantalla, la siguiente estrena su
+// tiempo. Una palabra nueva sin clasificar caería en silencio del lado de la
+// pieza —y un tablero de 180 s regalaría los 180 otra vez—, así que aquí se
+// exige la decisión.
+{
+  const sinClasificar = TS
+    .map(T => ({ n: T.meta.name, u: unidadDeCuenta(T) }))
+    .filter(x => x.u && !clasificarUnidad(x.u))
+    .map(x => `${x.n} (${x.u})`);
+  assert.deepStrictEqual(sinClasificar, [],
+    `unidades declaradas que nadie clasificó —¿su tiempo es de la partida o de la pieza?—: ${sinClasificar.join(', ')}`);
+  // CONTRA-PRUEBA: el ratchet ve de verdad una palabra nueva.
+  assert.strictEqual(clasificarUnidad('tablero'), null,
+    'CONTRA-PRUEBA: una unidad que nadie ha clasificado se DELATA, no se supone');
+  // Y el alcance sale de esa clasificación, no del nombre de la plantilla.
+  assert.strictEqual(alcanceDeReloj({ template: 'memory', rules: { timer: 180 } }), 'partida',
+    'un tablero entero: el límite es de la partida');
+  assert.strictEqual(alcanceDeReloj({ template: 'quiz', rules: { timer: 30 } }), 'unidad',
+    'una pregunta: el límite es de la pieza');
+  assert.strictEqual(alcanceDeReloj({ template: 'wheel', rules: {} }), 'ninguno',
+    'y quien no mide nada no tiene alcance que discutir');
+  ok('cada unidad declarada dice si su tiempo es de la PARTIDA o de la PIEZA (y una nueva rompe CI)');
+}
+
 // ── 4. UN SOLO MÓDULO MONTA RELOJES DE ACTIVIDAD ────────────────────────────
 // Los primitivos (§23) siguen siendo los de siempre; lo que no puede volver a
 // pasar es que cada player los orqueste por su cuenta, que es como acabamos con
@@ -129,8 +156,15 @@ const TS = listTemplates().filter(T => existsSync(join(RAIZ, 'templates', String
       // Y AL REVÉS: quien usa el shell libre tiene que DECIR cuándo existe su
       // superficie (`ctx.listo()`), o su reloj no arranca nunca y la pantalla se
       // queda sin él en silencio — que es peor que el defecto que arreglamos.
-      if (/\brunFreeformPlayer\s*\(/.test(src) && !/\.listo\s*\(\s*\)/.test(src)) {
-        culpables.push(`${rel} (no dice cuándo existe su superficie: falta ctx.listo())`);
+      // …y se cuenta por LLAMADA, no por fichero: `question-live` monta DOS
+      // players (cajas y ruleta) y con un `.listo()` suelto el fichero pasaba
+      // entero aunque una de las dos variantes se quedara sin reloj.
+      // (el propio shell queda fuera: ahí `runFreeformPlayer(` es su definición
+      //  y su ejemplo de uso en la cabecera, no una llamada)
+      const usos = rel === 'core/soloPlayer.js' ? 0 : (src.match(/\brunFreeformPlayer\s*\(/g) || []).length;
+      const listos = (src.match(/\.listo\s*\(\s*\)/g) || []).length;
+      if (usos > listos) {
+        culpables.push(`${rel} (${usos} player(s) del shell libre y ${listos} ctx.listo(): alguno no dice cuándo existe su superficie)`);
       }
     }
   };
@@ -244,6 +278,8 @@ const TS = listTemplates().filter(T => existsSync(join(RAIZ, 'templates', String
     // Se recorre la cola VIVA: lo que se cancele a mitad del propio tic (un
     // avance que para el reloj del ítem anterior) ya no dispara.
     const tic = () => { for (const id of [...cola.keys()]) cola.get(id)?.(); };
+    // Drena hasta que no quede nada pendiente (los avances encadenan timeouts).
+    const drenar = () => { for (let v = 0; v < 20 && cola.size; v++) tic(); };
     const mem = new Map();
     global.localStorage = /** @type {any} */ ({
       getItem: (k) => (mem.has(k) ? mem.get(k) : null),
@@ -307,22 +343,29 @@ const TS = listTemplates().filter(T => existsSync(join(RAIZ, 'templates', String
       tic();
       ahora += 37_000;                       // 37 s fuera de la partida (F5 incluido)
       const raiz = hacerRaiz();
-      let visto = null;
-      const { state } = runSequentialPlayer(raiz, act, { mode: 'solo', onFinish: () => {} }, {
-        renderItem({ idx }) { if (visto === null) visto = idx; },
-      });
+      // Se ATRAVIESA el `finish()` de verdad: responder los dos ítems que
+      // quedan y leer el `timeUsed` que el shell entrega. Calcularlo a mano en
+      // la prueba comprobaría mi aritmética, no la del shell.
+      /** @type {{timeUsed?: number}|null} */
+      let cierre = null;
+      /** @type {number|null} */
+      let primerIdx = null;
+      runSequentialPlayer(raiz, act,
+        { mode: 'solo', onFinish: (r) => { cierre = r; } }, {
+          renderItem({ idx, item, submit }) {
+            if (primerIdx === null) primerIdx = idx;
+            ahora += 2_500;   // lo que el alumno tarda en cada uno
+            submit({ itemId: item.id, correct: true, points: 1 });
+          },
+        });
       assert.ok(raiz.html.includes('2 / 3'),
         'G2: la cabecera NACE con la página restaurada, no con «1 / 3» corregido después');
       assert.strictEqual(raiz.pintadas[0], '0:37',
         'G2: el primer valor del reloj sale del origen guardado, no de cero');
-      ahora += 5_000;
-      let visteUsed = null;
-      const raiz2 = raiz;   // (el mismo montaje: terminar pinta la pantalla de fin)
-      runSequentialPlayerFinishHack(state);
-      function runSequentialPlayerFinishHack(st) { visteUsed = Math.round((clock.now() - st.startedAt) / 1000); }
-      assert.strictEqual(visteUsed, 42,
-        'G2: y `timeUsed` mide desde ESE mismo origen (37 + 5), no desde el montaje');
-      assert.ok(raiz2.montado, 'G2: (el marco se montó)');
+      drenar();
+      assert.strictEqual(cierre?.timeUsed, 42,
+        'G2: y el `timeUsed` que ENTREGA el shell mide desde ese mismo origen (37 + 5)');
+      assert.strictEqual(primerIdx, 1, 'G2: (retomó por el ítem 2, no por el primero)');
       ok('G2 · secuencial F5: página y origen restaurados ANTES de montar y de arrancar el reloj');
     }
 
@@ -443,6 +486,59 @@ const TS = listTemplates().filter(T => existsSync(join(RAIZ, 'templates', String
         'G7: tras el F5 quedan los segundos que quedaban, no el límite entero');
       ok('G7 · cuenta atrás de PARTIDA: el F5 conserva lo consumido');
     }
+    // ── G10 · EL AGOTAMIENTO NO SE PUEDE PERDER ────────────────────────────
+    // Caso terminal: se guarda progreso en una Memoria de 180 s y se vuelve
+    // PASADO el límite. El reloj anclado al origen expira en su primer tic, que
+    // es SÍNCRONO dentro de `listo()` — y el player registra su `alAgotarse`
+    // después, como hace Memoria. El aviso llegaba a un `null`: el ticker
+    // quedaba terminado, nadie cerraba la partida y el alumno se quedaba con el
+    // tablero abierto en 0. Un evento terminal no puede depender del orden
+    // casual de dos llamadas, así que el shell lo RETIENE hasta que haya quien
+    // lo escuche.
+    {
+      mem.clear();
+      const act = tablero({ timer: 180 });
+      const c1 = runFreeformPlayer(hacerRaiz(), act, { mode: 'solo' });
+      c1.saveProgress({ hecho: 1 });
+      ahora += 200_000;                      // se acabó el tiempo estando fuera
+      const raiz = hacerRaiz();
+      const c2 = runFreeformPlayer(raiz, act, { mode: 'solo', onFinish: () => {} });
+      c2.loadProgress();
+      raiz.innerHTML = '<div></div>';
+      let cerrada = false;
+      /** @type {any} */ (c2).listo();        // …aquí expira, en el primer tic
+      c2.alAgotarse(() => { cerrada = true; });   // …y esto llega DESPUÉS
+      assert.strictEqual(cerrada, true,
+        'G10: el agotamiento que ocurre antes de registrar el aviso no se pierde');
+      ok('G10 · volver con el tiempo ya agotado cierra la partida, no la deja abierta en 0');
+    }
+
+    // ── G11 · PARAR NO ES REINICIAR ────────────────────────────────────────
+    // Tildes y Comas con `timer: 0` llevan CRONÓMETRO, que es de la partida. Al
+    // entregar una frase, el runner pide parar —«esta frase ya está entregada:
+    // su tiempo no corre»— y con el guard viejo eso era un no-op para un reloj
+    // de partida: el cronómetro seguía vivo y, al segundo siguiente, `relojSet`
+    // volvía a ENCENDER el chip que la corrección acababa de apagar. Parar es
+    // dejar de pintar; volver a arrancar NO reinicia el origen.
+    {
+      mem.clear();
+      const raiz = hacerRaiz();
+      const ctx = runFreeformPlayer(raiz, tablero(), { mode: 'solo', onFinish: () => {} });
+      raiz.innerHTML = '<div></div>';
+      /** @type {any} */ (ctx).listo();
+      ahora += 20_000; tic();
+      assert.strictEqual(raiz.pintadas[raiz.pintadas.length - 1], '0:20', 'G11: (el cronómetro corre)');
+      const cuantas = raiz.pintadas.length;
+      ctx.pararReloj();
+      ahora += 5_000; tic(); ahora += 5_000; tic();
+      assert.strictEqual(raiz.pintadas.length, cuantas,
+        'G11: parado NO pinta — y por eso la corrección no vuelve a encender el chip');
+      ctx.rearmarReloj();
+      assert.strictEqual(raiz.pintadas[raiz.pintadas.length - 1], '0:30',
+        'G11: al volver, continúa desde el MISMO origen (30 s), no desde cero');
+      ok('G11 · parar el reloj deja de pintarlo; rearmar no reinicia el origen de la partida');
+    }
+
   } finally {
     setEffectsMuted(fxAntes);
     globalThis.document = docReal;
