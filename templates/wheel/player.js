@@ -114,4 +114,5 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
   }
 
   paint();
+  ctx.listo();   // la superficie ya existe: el shell arranca su reloj (§23)
 }

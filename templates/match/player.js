@@ -80,6 +80,7 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   };
 
   mount(rootSel, buildLayout(lefts, rights, activity, raw.length));
+  ctx.listo();   // la superficie ya existe: el shell arranca su reloj (§23)
 
   // `rootSel` puede llegar como Element (así lo declara el contrato): con
   // `document.querySelector(rootSel)` a secas, ese caso se quedaba sin raíz.

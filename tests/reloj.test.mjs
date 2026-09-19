@@ -112,13 +112,32 @@ const TS = listTemplates().filter(T => existsSync(join(RAIZ, 'templates', String
       const rel = `${dir}/${e.name}`;
       if (e.isDirectory()) { barrer(rel); continue; }
       if (!e.name.endsWith('.js') || DUENOS.has(rel) || EXCEPCIONES.has(rel)) continue;
-      if (/createCountdown\s*\(|startElapsedTicker\s*\(/.test(leer(rel))) culpables.push(rel);
+      const src = leer(rel);
+      // (`startDeadlineTicker` NO entra: es el primitivo de LIVE, que cuenta
+      //  contra un instante del servidor — otra frontera, otro dueño.)
+      if (/createCountdown\s*\(|startElapsedTicker\s*\(/.test(src)) culpables.push(rel);
+      // G9 · Y EL RELOJ DE SOLO TIENE UN SOLO DUEÑO: el SHELL. `montarReloj` es
+      // el orquestador, no una utilidad pública: si un runner puede llamarlo,
+      // puede haber dos cuentas atrás escribiendo el mismo chip — pasó, y en la
+      // corrección de Tildes una repintaba el número que la otra había apagado.
+      // La necesidad real (una cuenta POR FRASE) la declara la plantilla
+      // (`meta.play.reloj.unidad`) y se pide al shell, no se construye aparte.
+      else if (/\bmontarReloj\s*\(/.test(src) && rel !== 'core/soloPlayer.js') culpables.push(rel);
+      // …ni por la puerta de atrás: apagar el reloj del shell para traer el
+      // propio es la misma cosa con otro nombre.
+      if (/runFreeformPlayer\s*\([^)]*\breloj\s*:/.test(src)) culpables.push(`${rel} (apaga el reloj del shell)`);
+      // Y AL REVÉS: quien usa el shell libre tiene que DECIR cuándo existe su
+      // superficie (`ctx.listo()`), o su reloj no arranca nunca y la pantalla se
+      // queda sin él en silencio — que es peor que el defecto que arreglamos.
+      if (/\brunFreeformPlayer\s*\(/.test(src) && !/\.listo\s*\(\s*\)/.test(src)) {
+        culpables.push(`${rel} (no dice cuándo existe su superficie: falta ctx.listo())`);
+      }
     }
   };
   barrer('core'); barrer('views'); barrer('templates');
   assert.deepStrictEqual(culpables, [],
     `montan su propio reloj de actividad en vez de usar core/reloj.js: ${culpables.join(', ')}`);
-  ok('un solo módulo monta el reloj de la actividad (dos excepciones declaradas, con motivo)');
+  ok('G9 · el reloj de la actividad tiene UN dueño: los primitivos en core/reloj.js y el montaje en el SHELL');
 }
 
 // ── 5. EL EDITOR NO TIENE DOS SITIOS PARA EL TIEMPO (§21b) ──────────────────
@@ -165,6 +184,272 @@ const TS = listTemplates().filter(T => existsSync(join(RAIZ, 'templates', String
   assert.ok(/Tiempo por partida/.test(tiempoBloqueHtml({ rules: {} }, memoria)),
     'CONTRA-PRUEBA: un TABLERO entero sí lo lleva, con SU unidad');
   ok('el bloque «Tiempo» es UN mando (los segundos) y solo aparece donde hay algo que medir');
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// LAS NUEVE PUERTAS DEL LIFECYCLE (docs/handoff-reloj-lifecycle.md §5)
+//
+// La ley: restaurar el estado y su ORIGEN → montar la superficie estable →
+// arrancar el reloj desde ese origen → pintar el contenido. Y su mitad más
+// importante: lo que MUESTRA el reloj y lo que se guarda como `timeUsed` son dos
+// lecturas del MISMO tiempo.
+//
+// EL ARNÉS ES PARTE DE LA PRUEBA, y tiene dos trampas que costaron un verde
+// falso al medir (v1.51.728):
+//   · `montarReloj` no monta sin `document` — hay que declarar uno de mentira;
+//   · una raíz que entregue el chip del reloj DESDE EL PRIMER INSTANTE esconde
+//     justo el defecto: en el navegador, la cabecera todavía NO existe cuando el
+//     reloj pinta por primera vez. Aquí la raíz no entrega nada hasta que
+//     alguien MONTA, igual que el DOM de verdad.
+// ════════════════════════════════════════════════════════════════════════════
+{
+  const { runSequentialPlayer, runFreeformPlayer } = await import('../core/soloPlayer.js');
+  const { clock } = await import('../core/clock.js');
+  const { noteServerDate, serverNow } = await import('../core/serverNow.js');
+  const { startElapsedTicker } = await import('../core/deadlineTicker.js');
+  // LA CELEBRACIÓN, CALLADA. Terminar una partida emite PODIUM y el confeti
+  // CACHEA su lienzo en el módulo: con el `document` de mentira de aquí, ese
+  // lienzo muerto se quedaba guardado y la suite de efectos —que corre después,
+  // en el mismo proceso— no volvía a pintar ninguno. Un arnés no puede dejar
+  // rastro en el módulo de al lado.
+  const { setEffectsMuted, isEffectsMuted } = await import('../core/effects.js');
+  const fxAntes = isEffectsMuted();
+
+  const docReal = globalThis.document;
+  const siReal = global.setInterval, ciReal = global.clearInterval, stReal = global.setTimeout;
+  const nowReal = clock.now;
+  try {
+    // El `document` de mentira: lo justo para que el reloj se monte (su guard
+    // pregunta por él) y para que la celebración del final se dé por vencida
+    // —`lienzo()` sin contexto 2D no pinta— en vez de reventar la suite.
+    globalThis.document = /** @type {any} */ ({
+      createElement: () => ({ style: {}, getContext: () => null }),
+    });
+    setEffectsMuted(true);
+    // Los temporizadores falsos CANCELAN de verdad: con un `clearInterval` que
+    // no hacía nada, el tick de un reloj ya parado seguía pintando y la prueba
+    // del rearme medía a un zombi en vez de al reloj nuevo.
+    /** @type {Map<number, () => void>} */
+    const cola = new Map();
+    let idTimer = 0;
+    global.setInterval = /** @type {any} */ ((fn) => { cola.set(++idTimer, fn); return idTimer; });
+    global.clearInterval = /** @type {any} */ ((id) => { cola.delete(Number(id)); });
+    global.setTimeout = /** @type {any} */ ((fn) => {
+      const id = ++idTimer;
+      cola.set(id, () => { cola.delete(id); fn(); });   // de un solo disparo
+      return id;
+    });
+    global.clearTimeout = /** @type {any} */ ((id) => { cola.delete(Number(id)); });
+    // Se recorre la cola VIVA: lo que se cancele a mitad del propio tic (un
+    // avance que para el reloj del ítem anterior) ya no dispara.
+    const tic = () => { for (const id of [...cola.keys()]) cola.get(id)?.(); };
+    const mem = new Map();
+    global.localStorage = /** @type {any} */ ({
+      getItem: (k) => (mem.has(k) ? mem.get(k) : null),
+      setItem: (k, v) => { mem.set(k, String(v)); },
+      removeItem: (k) => { mem.delete(k); },
+    });
+    let ahora = 1_000_000;
+    clock.now = () => ahora;
+
+    /** LA RAÍZ DE MENTIRA. No entrega chips hasta que alguien monta: si los
+     *  diera antes, un reloj que pinta demasiado pronto saldría verde. */
+    const hacerRaiz = () => {
+      /** @type {string[]} */
+      const pintadas = [];
+      const chip = { hidden: true, querySelector: () => ({ set textContent(v) { pintadas.push(String(v)); } }) };
+      const ronda = { innerHTML: '', querySelector: () => null, querySelectorAll: () => [] };
+      return {
+        pintadas, ronda, montado: false, html: '',
+        get innerHTML() { return this.html; },
+        set innerHTML(v) { this.html = String(v); this.montado = true; },
+        /** @param {string} sel */
+        querySelector(sel) {
+          if (!this.montado) return null;               // la cabecera aún no existe
+          if (sel === '[data-round]') return this.ronda;
+          if (sel === '[data-hud="tiempo"]') return chip;
+          return null;
+        },
+        querySelectorAll: () => [],
+      };
+    };
+
+    const quiz = (rules = {}) => ({ id: 'g_seq', template: 'quiz', updatedAt: 'u1', rules, scoring: {},
+      content: { items: [{ id: 'i1' }, { id: 'i2' }, { id: 'i3' }] } });
+    const tablero = (rules = {}) => ({ id: 'g_libre', template: 'memory', updatedAt: 'u1', rules, scoring: {},
+      content: { pairs: [{ id: 'p1', left: 'a', right: 'b' }] } });
+
+    // ── G1 · SECUENCIAL NUEVO: el primer valor se ve YA ────────────────────
+    // Defecto que demuestra: el tic perdido. El cronómetro se creaba ANTES de
+    // montar el marco, así que su primer número caía en un sitio que todavía no
+    // existía y la pantalla se quedaba vacía hasta el segundo siguiente.
+    {
+      mem.clear();
+      const raiz = hacerRaiz();
+      runSequentialPlayer(raiz, quiz(), { mode: 'solo' }, { renderItem() {} });
+      assert.ok(raiz.pintadas.length > 0,
+        'G1: el cronómetro pinta su primer valor EN la cabecera, sin esperar un segundo');
+      assert.strictEqual(raiz.pintadas[0], '0:00', 'G1: y ese primer valor es 0:00');
+      ok('G1 · secuencial nuevo: el primer valor del reloj se ve ya');
+    }
+
+    // ── G2 · SECUENCIAL F5: la página y el ORIGEN llegan antes ─────────────
+    // Defecto: el marco se montaba con «1 / 3» y el reloj arrancaba desde cero,
+    // aunque el avance guardado dijera otra cosa. La corrección llegaba un
+    // instante después, por `hudSet` — el alumno veía el número equivocado.
+    {
+      mem.clear();
+      const act = quiz();
+      runSequentialPlayer(hacerRaiz(), act, { mode: 'solo' }, {
+        renderItem({ idx, item, submit }) { if (idx === 0) submit({ itemId: item.id, correct: true, points: 1 }); },
+      });
+      tic();
+      ahora += 37_000;                       // 37 s fuera de la partida (F5 incluido)
+      const raiz = hacerRaiz();
+      let visto = null;
+      const { state } = runSequentialPlayer(raiz, act, { mode: 'solo', onFinish: () => {} }, {
+        renderItem({ idx }) { if (visto === null) visto = idx; },
+      });
+      assert.ok(raiz.html.includes('2 / 3'),
+        'G2: la cabecera NACE con la página restaurada, no con «1 / 3» corregido después');
+      assert.strictEqual(raiz.pintadas[0], '0:37',
+        'G2: el primer valor del reloj sale del origen guardado, no de cero');
+      ahora += 5_000;
+      let visteUsed = null;
+      const raiz2 = raiz;   // (el mismo montaje: terminar pinta la pantalla de fin)
+      runSequentialPlayerFinishHack(state);
+      function runSequentialPlayerFinishHack(st) { visteUsed = Math.round((clock.now() - st.startedAt) / 1000); }
+      assert.strictEqual(visteUsed, 42,
+        'G2: y `timeUsed` mide desde ESE mismo origen (37 + 5), no desde el montaje');
+      assert.ok(raiz2.montado, 'G2: (el marco se montó)');
+      ok('G2 · secuencial F5: página y origen restaurados ANTES de montar y de arrancar el reloj');
+    }
+
+    // ── G3 · LIBRE NUEVO: el primer valor aterriza en la cabecera del player ─
+    // En el shell libre el marco es del PLAYER, así que el shell no puede saber
+    // por su cuenta cuándo existe la superficie: hace falta que el player lo
+    // diga. Sin esa fase, el reloj pintaba contra el vacío.
+    {
+      mem.clear();
+      const raiz = hacerRaiz();
+      const ctx = runFreeformPlayer(raiz, tablero(), { mode: 'solo' });
+      raiz.innerHTML = '<div class="tablero"></div>';   // el player monta lo suyo
+      /** @type {any} */ (ctx).listo?.();               // …y lo DICE
+      assert.ok(raiz.pintadas.length > 0,
+        'G3: el reloj del shell libre no pinta hasta que hay superficie, y entonces pinta YA');
+      assert.strictEqual(raiz.pintadas[0], '0:00', 'G3: y su primer valor es 0:00');
+      ok('G3 · libre nuevo: el primer valor se ve al montar el player');
+    }
+
+    // ── G4 · LIBRE F5: el origen se restaura ANTES de arrancar el reloj ─────
+    // Medido en v1.51.728: HUD 0:00 mientras `timeUsed` decía 42 s. Dos lecturas
+    // del mismo tiempo con orígenes distintos.
+    {
+      mem.clear();
+      const act = tablero();
+      const c1 = runFreeformPlayer(hacerRaiz(), act, { mode: 'solo' });
+      c1.saveProgress({ hecho: 1 });
+      ahora += 37_000;
+      c1.saveProgress({ hecho: 2 });
+      const raiz = hacerRaiz();
+      const c2 = runFreeformPlayer(raiz, act, { mode: 'solo', onFinish: () => {} });
+      const snap = c2.loadProgress();               // el player restaura su estado…
+      raiz.innerHTML = '<div class="tablero"></div>';  // …monta…
+      /** @type {any} */ (c2).listo?.();               // …y lo dice
+      assert.deepStrictEqual(snap, { hecho: 2 }, 'G4: (el snapshot se restaura)');
+      assert.strictEqual(raiz.pintadas[0], '0:37',
+        'G4: el cronómetro continúa la partida original, no empieza de cero');
+      ahora += 5_000;
+      const fin = c2.finish({ score: 1, maxScore: 1 });
+      assert.strictEqual(fin?.timeUsed, 42, 'G4: y `timeUsed` comparte ese origen');
+      ok('G4 · libre F5: estado y origen antes del reloj; HUD y timeUsed continúan la partida');
+    }
+
+    // ── G5 · EL DESFASE DEL SERVIDOR no cambia una duración local ───────────
+    // Individual mide una duración en UN aparato: es `clock.now()` de punta a
+    // punta (§22-5 reserva la hora común para instantes ENTRE aparatos). Con
+    // +10 s de desfase, 30 s jugados son 30 s — ni 40 (traducir mal el origen)
+    // ni 0 (no restaurarlo).
+    {
+      mem.clear();
+      noteServerDate(new Date(ahora + 10_000).toUTCString(), { enviadoMs: ahora, recibidoMs: ahora });
+      assert.strictEqual(serverNow() - clock.now(), 10_000, 'G5: (hay desfase de +10 s)');
+      const act = tablero();
+      const c1 = runFreeformPlayer(hacerRaiz(), act, { mode: 'solo' });
+      c1.saveProgress({ hecho: 1 });
+      ahora += 30_000;                       // 30 s REALES
+      const raiz = hacerRaiz();
+      const c2 = runFreeformPlayer(raiz, act, { mode: 'solo', onFinish: () => {} });
+      c2.loadProgress();
+      raiz.innerHTML = '<div></div>';
+      /** @type {any} */ (c2).listo?.();
+      assert.strictEqual(raiz.pintadas[0], '0:30',
+        'G5: el HUD dice 30 s — el desfase del servidor no se cuela en una duración local');
+      assert.strictEqual(c2.finish({ score: 0, maxScore: 1 })?.timeUsed, 30, 'G5: y `timeUsed` también');
+      // CONTRA-PRUEBA: el primitivo SIGUE midiendo con hora común por defecto —
+      // es lo que Live necesita, y arreglar Solo no puede tocarlo.
+      const vistos = [];
+      startElapsedTicker({ since: serverNow() - 20_000, onTick: ({ label }) => vistos.push(label) }).stop();
+      assert.strictEqual(vistos[0], '0:20',
+        'G5 · CONTRA-PRUEBA: sin decirle nada, el ticker mide con la hora COMÚN (Live intacto)');
+      noteServerDate(new Date(ahora).toUTCString(), { enviadoMs: ahora, recibidoMs: ahora });
+      noteServerDate(new Date(ahora).toUTCString(), { enviadoMs: ahora, recibidoMs: ahora });
+      noteServerDate(new Date(ahora).toUTCString(), { enviadoMs: ahora, recibidoMs: ahora });
+      ok('G5 · el desfase del servidor no cambia una duración Individual, y Live conserva la hora común');
+    }
+
+    // ── G6 · CUENTA ATRÁS POR ÍTEM: se rearma, y empieza tras el ítem ───────
+    // GUARDA, no defecto: esto ya estaba bien y el arreglo no puede romperlo.
+    {
+      mem.clear();
+      const raiz = hacerRaiz();
+      /** @type {string[]} */
+      const orden = [];
+      runSequentialPlayer(raiz, quiz({ timer: 30 }), { mode: 'solo' }, {
+        renderItem({ idx, item, submit }) {
+          orden.push(`ítem ${idx}`);
+          if (idx === 0) submit({ itemId: item.id, correct: true, points: 1 });
+        },
+      });
+      const primeros = raiz.pintadas.slice();
+      assert.strictEqual(primeros[0], '30', 'G6: el ítem estrena su límite completo');
+      tic();   // avanza al ítem 1
+      assert.strictEqual(raiz.pintadas[raiz.pintadas.length - 1], '30',
+        'G6: y el ítem siguiente REARMA la cuenta, porque el límite es por ítem');
+      assert.deepStrictEqual(orden.slice(0, 2), ['ítem 0', 'ítem 1'], 'G6: (avanzó de ítem)');
+      ok('G6 · cuenta atrás por ÍTEM: cada ítem estrena su límite');
+    }
+
+    // ── G7 · CUENTA ATRÁS DE PARTIDA: F5 NO regala el límite entero ─────────
+    // Decisión del dueño (2026-09-18): una cuenta cuya unidad es TODA la
+    // ejecución (partida · diagrama · sopa) continúa el presupuesto de ESA
+    // partida tras un F5. Medido antes: Memoria con 180 s volvía con 180.
+    // Y el número no se calcula UNA vez: sale del mismo origen local que
+    // `timeUsed`, para que no puedan divergir.
+    {
+      mem.clear();
+      const act = tablero({ timer: 180 });
+      const c1 = runFreeformPlayer(hacerRaiz(), act, { mode: 'solo' });
+      c1.saveProgress({ hecho: 1 });
+      ahora += 60_000;                       // juega 60 s
+      c1.saveProgress({ hecho: 2 });
+      const raiz = hacerRaiz();
+      const c2 = runFreeformPlayer(raiz, act, { mode: 'solo', onFinish: () => {} });
+      c2.loadProgress();
+      raiz.innerHTML = '<div></div>';
+      /** @type {any} */ (c2).listo?.();
+      assert.strictEqual(raiz.pintadas[0], '120',
+        'G7: tras el F5 quedan los segundos que quedaban, no el límite entero');
+      ok('G7 · cuenta atrás de PARTIDA: el F5 conserva lo consumido');
+    }
+  } finally {
+    setEffectsMuted(fxAntes);
+    globalThis.document = docReal;
+    global.setInterval = siReal; global.clearInterval = ciReal; global.setTimeout = stReal;
+    clock.now = nowReal;
+    delete global.localStorage;
+  }
 }
 
 console.log(`\nreloj.test: ${passed} checks passed`);

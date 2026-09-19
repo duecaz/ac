@@ -17,10 +17,9 @@ import { runFreeformPlayer } from './soloPlayer.js';
 import { passageHtml, fitPassage } from './textCorrectionPasaje.js';
 import { filasRevision, panelRevisionHtml, valorAnulado } from './textCorrectionRevision.js';
 import { renderTextCorrectionRound, desdeToque, herramientasTcHtml } from './textCorrectionRonda.js';
-import { cabeceraHtml, hudSet, hudMandos, relojSet, relojActivo } from './playerHud.js';
+import { cabeceraHtml, hudSet, hudMandos, relojActivo } from './playerHud.js';
 import { corrigeAlFinal } from './constants.js';
-import { montarReloj, relojDe } from './reloj.js';
-import { serverNow } from './serverNow.js';
+import { relojDe } from './reloj.js';
 
 /** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
 /** @typedef {import('../kernel/contracts/activity.js').Passage} Passage */
@@ -46,11 +45,13 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
   const totalMarks = passages.reduce((n, p) => n + (p.marks || []).filter(m => m.kind === kind).length, 0);
   const maxScore = activity.scoring?.maxScore || totalMarks * ppc || passages.length * ppc;
 
-  // `reloj: false`: esta hoja cuenta POR FRASE y rearma el suyo en cada una
-  // (abajo). Sin decírselo al shell había DOS cuentas atrás sobre el mismo
-  // chip —la del shell desde el principio de la partida y la de la frase— y la
-  // del shell repintaba el número en la corrección, que ya lo había apagado.
-  const ctx = runFreeformPlayer(rootSel, activity, opts, { reloj: false });
+  // EL RELOJ ES DEL SHELL, también aquí. Esta hoja cuenta POR FRASE —lo declara
+  // la plantilla (`meta.play.reloj.unidad === 'frase'`)— y lo único que hace es
+  // PEDIRLE al shell que lo rearme en cada una. Tuvo el suyo propio y durante
+  // una versión hubo DOS cuentas atrás escribiendo el mismo chip; la salida de
+  // entonces fue apagar el del shell con un booleano, que dejaba la puerta
+  // abierta a que mañana otro runner trajera el suyo. Ahora no hay con qué.
+  const ctx = runFreeformPlayer(rootSel, activity, opts);
   let idx = 0, score = 0, hits = 0, misses = 0, over = 0;
   /** Lo cerrado de cada frase: lo marcado, lo que pedía y su puntaje.
    *  @typedef {{p: Passage, got: Set<number>, want: Set<number>, hits: number,
@@ -100,10 +101,6 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
   // HUD. Antes tenía aquí su cuenta atrás y su cronómetro, copiados: por eso el
   // ajuste del editor acabó existiendo en unas plantillas sí y en otras no.
   const segundos = Math.max(0, Number(activity.rules?.timer) || 0);
-  const inicioCrono = serverNow();   // mismo reloj que mide el primitivo (§22-5)
-  /** @type {{stop: () => void}|null} */
-  let reloj = null;
-  const pararReloj = () => { if (reloj) { reloj.stop(); reloj = null; } };
 
   // ── LA HOJA SE MONTA UNA VEZ ───────────────────────────────────────────────
   // Hasta v1.51.723 esto era un `shell(bodyHtml)` que hacía `mount(rootSel, …)`
@@ -130,6 +127,7 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
   const cuerpoOpt = raiz?.querySelector('[data-tc-body]') ?? null;
   if (!cuerpoOpt) return;   // el marco no llegó a montarse (§23)
   const cuerpo = cuerpoOpt;
+  ctx.listo();   // la hoja ya existe: el shell puede arrancar su reloj (§23)
 
   /** Lo único que cambia entre fases: el cuerpo de la hoja, y los indicadores
    *  por su DATO. Fuera de la hoja se escribe (herramientas y reloj a la vista);
@@ -155,16 +153,11 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     const ronda = renderTextCorrectionRound(cuerpo, passages[idx] || null, {
       kind, onSubmit: grade, cabecera: false, mandos: raiz,
     });
-    pararReloj();
-    reloj = montarReloj({
-      activity,
-      desde: inicioCrono,
-      alive: () => ctx.alive(),
-      pintar: (texto, pct) => relojSet(raiz, texto, pct),
-      // Se acabó el tiempo: se entrega LO QUE HAYA. Ni se pierde el trabajo ni se
-      // deja al alumno bloqueado en una hoja que ya no puede terminar.
-      onFin: () => ronda.flush(),
-    });
+    // Se acabó el tiempo: se entrega LO QUE HAYA. Ni se pierde el trabajo ni se
+    // deja al alumno bloqueado en una hoja que ya no puede terminar. (Se vuelve a
+    // decir en cada frase porque la hoja que hay que entregar es otra.)
+    ctx.alAgotarse(() => ronda.flush());
+    ctx.rearmarReloj();   // frase nueva ⇒ tiempo nuevo (la unidad es la frase)
   }
 
   // ANULAR ES DEL DOCENTE, NO DEL ALUMNO (§22). El botón solo existe en
@@ -208,7 +201,7 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
 
   /** @param {number[]} value */
   function grade(value) {
-    pararReloj();
+    ctx.pararReloj();   // esta frase ya está entregada: su tiempo no corre
     const p = passages[idx];
     if (!p) return;
     // MISMO scorer que VS/Equipos/Live/Tarea (fuente única): no reimplementamos

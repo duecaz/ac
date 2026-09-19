@@ -1478,10 +1478,23 @@ for (const n of ['tildes', 'comas']) {
         const cs = getComputedStyle(el);
         return cs.display !== 'none' && cs.visibility !== 'hidden';
       };
-      return { numero: vis('[data-hud="tiempo"]'), barra: vis('[data-progreso]') };
+      // …y CUÁNTOS relojes hay. Un segundo dueño se delata por el número: dos
+      // cuentas atrás escribiendo el mismo chip se pisan, y la frase nueva no
+      // estrenaría su límite completo.
+      const chip = document.querySelector('#ww-player-widget [data-hud="tiempo"] [data-hud-val]');
+      return {
+        numero: vis('[data-hud="tiempo"]'), barra: vis('[data-progreso]'),
+        queda: Number(String(chip?.textContent || '').trim()) || 0,
+        chips: document.querySelectorAll('#ww-player-widget [data-hud="tiempo"]').length,
+      };
     });
     const fases = [];
     fases.push({ fase: 'frase 1', ...(await relojVisible()) });
+    // SE DEJA CORRER EL RELOJ a propósito antes de entregar: si la frase
+    // siguiente NO rearmara su límite, llegaría con estos segundos ya gastados y
+    // la comprobación de abajo lo vería. Sin esta espera, los dos casos —rearmar
+    // y no rearmar— se parecen demasiado para distinguirlos.
+    await page.waitForTimeout(3000);
     // Frase a frase hasta que no quede hoja que entregar (tope: no se cuelga).
     let frases = 0;
     for (let i = 0; i < 8; i++) {
@@ -1505,15 +1518,22 @@ for (const n of ['tildes', 'comas']) {
     const enCorreccion = fases[fases.length - 1];
     const apagado = fases.length > 1 && !enCorreccion.numero && !enCorreccion.barra;
     const encendido = enHoja.length > 0 && enHoja.every(f => f.numero && f.barra);
+    // G8 · LA UNIDAD ES LA FRASE: cada una estrena su límite (60 s), y hay UN
+    // solo chip de tiempo. Se admite 1 s de margen porque entre el montaje y la
+    // medida pasa tiempo de verdad.
+    const rearma = enHoja.every(f => f.queda >= 58 && f.queda <= 60);
+    const unSoloReloj = fases.every(f => f.chips === 1);
     const mal = !frases ? 'no se pudo entregar ninguna frase'
       : !fin.hay ? 'la hoja se queda sin cabecera al llegar a la corrección'
       : !fin.marca ? 'alguna fase rehace la cabecera (el reloj y el maximizar renacen a mitad de hoja)'
       : !fin.corrigiendo ? 'la hoja no llegó a la corrección final'
       : !encendido ? `en la hoja falta parte del reloj: ${enHoja.map(f => `${f.fase} ${f.numero ? 'nº' : 'sin nº'}/${f.barra ? 'barra' : 'sin barra'}`).join(' · ')}`
       : !apagado ? `en la corrección se queda ${enCorreccion.numero ? 'el número' : ''}${enCorreccion.numero && enCorreccion.barra ? ' y ' : ''}${enCorreccion.barra ? 'la BARRA congelada' : ''}`
+      : !unSoloReloj ? `hay ${Math.max(...fases.map(f => f.chips))} relojes en la cabecera: alguien montó el suyo`
+      : !rearma ? `la frase nueva no estrena su límite: ${enHoja.map(f => `${f.fase} ${f.queda}s`).join(' · ')}`
       : '';
     hits.push({ label: sem.label, mode: 'solo', control: 'la hoja entera conserva el marco',
-                estado: mal || `ok (${frases} frase(s) → corrección · reloj encendido en la hoja y apagado al corregir)`,
+                estado: mal || `ok (${frases} frase(s) → corrección · un solo reloj, rearmado por frase, apagado al corregir)`,
                 mal: !!mal });
   } catch (e) {
     hits.push({ label: sem.label, mode: 'solo', control: 'la hoja entera conserva el marco',

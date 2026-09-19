@@ -135,6 +135,7 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
   const raiz = raizDe(rootSel);
   const gridOpt = raiz?.querySelector('.ww-memo-grid') ?? null;
   if (!gridOpt) return;   // el marco no llegó a montarse (§23)
+  ctx.listo();   // la superficie ya existe: el shell arranca su reloj (§23)
   /** Cada carta, por su id. Se resuelve UNA vez: durante la partida los nodos
    *  son siempre los mismos, así que no hace falta volver a buscarlos.
    *  @type {Map<string, HTMLButtonElement>} */

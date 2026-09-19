@@ -38,6 +38,7 @@ export function renderBallsortPlayer(rootSel, activity, opts = {}) {
     || scoreBallsort({ value: { solved: true, moveCount: 0, elapsedMs: 0 }, item, activity }).points;
 
   mount(rootSel, html`<div class="ww-bs-solo"><div id="bs-solo-host"></div></div>`);
+  ctx.listo();   // la superficie ya existe: el shell arranca su reloj (§23)
   const raiz = raizDe(rootSel);
   const host = /** @type {HTMLElement|null} */ (raiz?.querySelector('#bs-solo-host') ?? null);
   if (!host) return;   // la ruta cambió mientras se montaba (§23)

@@ -157,6 +157,7 @@ export function renderTangramPlayer(rootSel, activity, opts = {}) {
   const svgOpt = /** @type {SVGSVGElement|null} */ (root?.querySelector('.ta-svg') ?? null);
   const capaOpt = root?.querySelector('.ta-piezas') ?? null;
   if (!svgOpt || !capaOpt) return;   // el marco no llegó a montarse: no hay tablero que cablear
+  ctx.listo();   // la superficie ya existe: el shell arranca su reloj (§23)
 
   const colocaciones = colocacionesIniciales(filas, alturasFila, anchoBandeja, gap, centroX, yBandeja);
   let resuelto = false;

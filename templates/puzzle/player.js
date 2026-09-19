@@ -72,6 +72,7 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
 
   const root = raizDe(rootSel);
   if (!root) return;
+  ctx.listo();   // la superficie ya existe: el shell arranca su reloj (§23)
   const arenaOpt   = /** @type {HTMLElement|null} */ (root.querySelector('.pu-arena'));
   const boardOpt   = /** @type {HTMLElement|null} */ (root.querySelector('[data-pu-board]'));
   // EL TAMAÑO LO DECIDE EL CSS, ANTES DE PINTAR (styles/puzzle.css): tablero y

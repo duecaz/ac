@@ -106,6 +106,7 @@ export async function renderColorearPlayer(rootSel, activity, opts = {}) {
   const linea = raiz?.querySelector('#co-linea');
   const lienzo = /** @type {HTMLCanvasElement|null} */ (raiz?.querySelector('#co-tinta'));
   const cx = lienzo?.getContext('2d') || null;
+  ctx.listo();   // la superficie ya existe: el shell arranca su reloj (§23)
 
   // El primer color nace ELEGIDO: el niño puede pintar sin haber tocado antes un
   // color — nunca un tablero muerto a la espera de un gesto que no sabe que hace

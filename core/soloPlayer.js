@@ -12,8 +12,8 @@ import { trySaveResult } from './results.js';
 import { FEEDBACK_DELAY } from './constants.js';
 import { GameEvents, emitGame } from './gameEvents.js';
 import { shuffle } from './azar.js';
-import { cabeceraHtml, hudSet } from './playerHud.js';
-import { montarReloj, relojDe } from './reloj.js';
+import { cabeceraHtml, hudSet, relojSet } from './playerHud.js';
+import { montarReloj, relojDe, alcanceDeReloj } from './reloj.js';
 import { clock } from './clock.js';
 import { defaultMaxScore } from './scoring/index.js';
 import { lsGet, lsSet, lsDel } from './ls.js';
@@ -158,6 +158,9 @@ import { claimStage } from './stageClaim.js';
  * @property {() => Record<string, unknown>|null} loadProgress
  * @property {() => boolean} alive
  * @property {(cb: () => void) => void} alAgotarse
+ * @property {() => void} listo          «mi superficie ya existe» → arranca el reloj
+ * @property {() => void} rearmarReloj   empieza otra UNIDAD (una frase nueva)
+ * @property {() => void} pararReloj     esa unidad terminó (la corrección no cuenta)
  */
 
 // Reanudar al recargar (F5) SOLO en modo individual: guarda el avance (idx/score/
@@ -283,10 +286,9 @@ function cablearRepetir(rootSel, activityId) {
  * @param {string|Element} rootSel
  * @param {Activity} activity
  * @param {PlayerOpts} [opts]
- * @param {{reloj?: boolean}} [config]  `reloj:false` = este caller trae el suyo
  * @returns {FreeformCtx}
  */
-export function runFreeformPlayer(rootSel, activity, opts = {}, { reloj = true } = {}) {
+export function runFreeformPlayer(rootSel, activity, opts = {}) {
   let startedAt = clock.now();
   let finished = false;
   // Ficha de ocupación (§23): un timer del core (el spin de la Ruleta, el
@@ -294,34 +296,50 @@ export function runFreeformPlayer(rootSel, activity, opts = {}, { reloj = true }
   // u otro modo NO debe repintar — el core pregunta ctx.alive() antes.
   const alive = claimStage(rootSel);
 
-  // EL RELOJ lo monta el SHELL, porque el shell es quien posee el tiempo — el
-  // core solo pinta su tablero. Cuál toca (cuenta atrás o cronómetro) lo decide
-  // `core/reloj.js`, que es el único que lo sabe; aquí solo se dice DÓNDE se
-  // pinta (el chip del HUD, que hudSet re-encuentra aunque el core re-renderice)
-  // y hasta cuándo vale (el guard del escenario, §23).
-  // `alAgotarse`: qué hace la plantilla cuando el reloj llega a cero (la Sopa
-  // termina la partida). El shell monta el reloj UNA vez y lo pinta; la
-  // plantilla ya no monta relojes.
-  //
-  // …CON UNA EXCEPCIÓN DECLARADA (`reloj: false`): la hoja de Tildes y Comas
-  // cuenta POR FRASE —el límite del editor son «segundos por ítem» y ahí un
-  // ítem es una frase—, así que su runner rearma el suyo en cada una. Con los
-  // dos montados había DOS cuentas atrás escribiendo el mismo chip: la del
-  // shell corriendo desde el principio de la partida y la de la frase volviendo
-  // a 30, y en la corrección la del shell seguía repintando un número que esa
-  // pantalla ya había apagado. Se declara aquí, en el dueño, en vez de dejar
-  // que el caller apague a manotazos lo que el shell enciende. (El resto del
-  // lío del reloj —el primer tic que se pierde, el `startedAt` que se restaura
-  // después de arrancar— es un frente aparte: docs/leyes.md §23.)
+  // ── EL RELOJ: DEL SHELL, PERO NO TODAVÍA ──────────────────────────────────
+  // El shell posee el tiempo; el core solo pinta su tablero. Lo que cambió en
+  // v1.51.729 es CUÁNDO arranca, porque arrancarlo aquí tenía dos defectos
+  // medidos y ninguno era de una línea:
+  //   · en el shell LIBRE el marco es del player, así que al construir todavía
+  //     no existe el chip donde pintar: el primer número se perdía y la pantalla
+  //     se quedaba vacía hasta el segundo siguiente;
+  //   · y el origen bueno lo trae la REANUDACIÓN (`loadProgress`), que el player
+  //     pide DESPUÉS: el reloj nacía contando desde cero mientras `timeUsed`
+  //     contaba desde el origen restaurado — 0:00 en pantalla y 42 s guardados.
+  // Por eso hay una fase explícita: el player dice `ctx.listo()` cuando su
+  // superficie existe, y solo entonces arranca. Nada de `setTimeout` ni de
+  // esperar a que «para entonces ya habrá montado»: eso es timing accidental.
+  const alcance = alcanceDeReloj(activity);
+  /** @type {{stop: () => void}|null} */
+  let reloj = null;
   /** @type {(() => void)|null} */
   let alAgotarseCb = null;
-  const crono = reloj
-    ? montarReloj({
-        activity, alive,
-        pintar: (texto) => hudSet(rootSel, 'tiempo', texto),
-        onFin: () => alAgotarseCb?.(),
-      })
-    : { stop: () => {} };
+  let superficieLista = false;
+  /** Arranca (o rearranca) el reloj desde el origen VIGENTE. Es el único sitio
+   *  del shell libre que monta uno: por eso una plantilla no puede tener dos. */
+  function arrancarReloj() {
+    reloj?.stop();
+    reloj = montarReloj({
+      activity, alive, desde: startedAt, ahora: clock.now,
+      pintar: (texto, pct) => relojSet(rootSel, texto, pct),
+      onFin: () => alAgotarseCb?.(),
+    });
+  }
+  /** LA FASE QUE FALTABA: «mi superficie ya está». Idempotente — un player que
+   *  la diga dos veces no reinicia su partida. */
+  function listo() {
+    if (superficieLista) return;
+    superficieLista = true;
+    arrancarReloj();
+  }
+  // Y las dos únicas cosas que un runner puede pedirle al reloj del shell,
+  // ninguna de las cuales es «construye otro»: que empiece la unidad siguiente
+  // (la frase de Tildes/Comas, que declara `unidad: 'frase'`) y que la cierre
+  // (mientras se corrige no se cuenta). En un reloj de PARTIDA las dos no hacen
+  // nada: el tiempo de la partida no se rearma a mitad.
+  const deUnidad = () => alcance === 'unidad' && superficieLista;
+  function rearmarReloj() { if (deUnidad()) arrancarReloj(); }
+  function pararReloj() { if (deUnidad()) { reloj?.stop(); reloj = null; } }
 
   // Progreso opt-in para players LIBRES (Memoria, etc.): como el shell no posee
   // el estado del tablero, el core lo aporta. loadProgress() devuelve el snapshot
@@ -359,7 +377,7 @@ export function runFreeformPlayer(rootSel, activity, opts = {}, { reloj = true }
   } = {}) {
     if (finished || !alive()) return;   // un final zombi ni guarda ni repinta (§23)
     finished = true;
-    crono.stop();   // §23: el reloj se va con su pantalla (y los tests sin DOM real salen limpios)
+    reloj?.stop();  // §23: el reloj se va con su pantalla (y los tests sin DOM real salen limpios)
     progreso.limpiar(); // partida terminada → no reanudar
 
     const timeUsed = Math.round((clock.now() - startedAt) / 1000);
@@ -386,7 +404,8 @@ export function runFreeformPlayer(rootSel, activity, opts = {}, { reloj = true }
     return { timeUsed, score, maxScore };
   }
 
-  return { finish, saveProgress, loadProgress, alive, alAgotarse: (/** @type {() => void} */ cb) => { alAgotarseCb = cb; } };
+  return { finish, saveProgress, loadProgress, alive, listo, rearmarReloj, pararReloj,
+           alAgotarse: (/** @type {() => void} */ cb) => { alAgotarseCb = cb; } };
 }
 
 // SequentialShell: drives the item-by-item loop common to Quiz and Math.
@@ -440,32 +459,13 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks) {
   // sobreviven al cambio de ruta/modo; sus repintados tardíos se descartan.
   const alive = claimStage(rootSel);
 
-  const crono = relojTipo === 'crono'
-    ? montarReloj({ activity, alive, pintar: (t) => hudSet(rootSel, 'tiempo', t) })
-    : { stop: () => {} };
-
-  // ── EL MARCO, UNA VEZ ──────────────────────────────────────────────────────
-  // El shell es el DUEÑO del marco: la cabecera (página · racha · RELOJ ·
-  // pantalla completa) se monta aquí y no se vuelve a crear en toda la partida.
-  // La plantilla solo declara lo suyo (`callbacks.marco`) y pinta DENTRO del
-  // hueco de la ronda. Hasta v1.51.721 esto lo montaba cada `renderItem` con un
-  // `mount(rootSel, …)`, y por eso avanzar de pregunta destruía el marco entero.
-  // (El orden respecto al reloj se mantiene tal cual estaba; moverlo es otro
-  // cambio, con su propia prueba — no se cuela aquí.)
-  const marco = callbacks.marco || {};
-  mount(rootSel, html`
-    <div class="ww-player${marco.clase ? ` ${marco.clase}` : ''}">
-      ${cabeceraHtml({
-        pagina: `${state.idx + 1} / ${items.length}`,
-        herramientas: marco.herramientas,
-        progreso: marco.progreso,
-      })}
-      <div class="ww-ronda" data-round></div>
-    </div>`);
-  const raiz = raizDe(rootSel);
-  const rondaOpt = raiz?.querySelector('[data-round]') ?? null;
-
+  // ── PRIMERO EL ESTADO Y SU ORIGEN ─────────────────────────────────────────
   // Reanudar (F5): retoma el avance guardado si es de ESTA versión y va a medias.
+  // Va ANTES de montar nada, y ese orden es la mitad del arreglo de v1.51.729:
+  // antes el marco nacía con «1 / 3» y el reloj contando desde cero, y un
+  // instante después `hudSet` corregía la página — el alumno veía el número
+  // equivocado, y el reloj ya no se corregía nunca: seguía contando desde el
+  // montaje mientras `timeUsed` contaba desde el origen restaurado.
   const progreso = crearProgreso(activity, opts);
   {
     const saved = progreso.cargar();
@@ -482,6 +482,35 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks) {
     if (state.idx <= 0 || state.idx >= items.length) return; // nada útil al inicio/final
     progreso.guardar({ idx: state.idx, score: state.score, answers: state.answers, startedAt: state.startedAt });
   }
+
+  // ── DESPUÉS LA SUPERFICIE ─────────────────────────────────────────────────
+  // El shell es el DUEÑO del marco: la cabecera (página · racha · RELOJ ·
+  // pantalla completa) se monta aquí y no se vuelve a crear en toda la partida.
+  // La plantilla solo declara lo suyo (`callbacks.marco`) y pinta DENTRO del
+  // hueco de la ronda. Hasta v1.51.721 esto lo montaba cada `renderItem` con un
+  // `mount(rootSel, …)`, y por eso avanzar de pregunta destruía el marco entero.
+  const marco = callbacks.marco || {};
+  mount(rootSel, html`
+    <div class="ww-player${marco.clase ? ` ${marco.clase}` : ''}">
+      ${cabeceraHtml({
+        pagina: `${state.idx + 1} / ${items.length}`,
+        herramientas: marco.herramientas,
+        progreso: marco.progreso,
+      })}
+      <div class="ww-ronda" data-round></div>
+    </div>`);
+  const raiz = raizDe(rootSel);
+  const rondaOpt = raiz?.querySelector('[data-round]') ?? null;
+
+  // ── Y SOLO ENTONCES EL RELOJ, desde el origen que ya es el bueno ──────────
+  // `ahora: clock.now` porque esto es una duración LOCAL (§22-5: la hora común
+  // es para instantes que se comparan ENTRE aparatos). Es la misma base de la
+  // que sale `timeUsed`, así que el número que se ve y el que se guarda son dos
+  // lecturas del mismo tiempo.
+  const crono = relojTipo === 'crono'
+    ? montarReloj({ activity, alive, desde: state.startedAt, ahora: clock.now,
+                    pintar: (t, pct) => relojSet(rootSel, t, pct) })
+    : { stop: () => {} };
 
   const maxScore = () => (callbacks.maxScore
     ? callbacks.maxScore(items, activity)
@@ -537,8 +566,8 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks) {
     stopTimer();
     if (relojTipo !== 'cuenta') return null;
     timerHandle = montarReloj({
-      activity, alive,
-      pintar: (texto) => hudSet(rootSel, 'tiempo', texto),
+      activity, alive, ahora: clock.now,
+      pintar: (texto, pct) => relojSet(rootSel, texto, pct),
       // SIN LÍMITE NO HAY MISTERIO, PERO CON LÍMITE HAY QUE HACER ALGO. Si la
       // plantilla no dice qué (Operaciones no lo decía), el shell hace lo
       // obvio: se acabó el tiempo de este ítem, se registra sin respuesta y se

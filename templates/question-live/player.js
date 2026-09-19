@@ -84,6 +84,7 @@ function renderBoxes(rootSel, activity, opts = {}) {
   const tableroOpt = root?.querySelector('.ab-board') ?? null;
   const panelOpt = root?.querySelector('[data-ab-panel]') ?? null;
   if (!tableroOpt || !panelOpt) return;   // el marco no llegó a montarse (§23)
+  ctx.listo();   // la superficie ya existe: el shell arranca su reloj (§23)
   const tablero = tableroOpt, panel = panelOpt;
 
   /** La tarjeta de la caja abierta, o la pista de «toca una caja». */
@@ -174,6 +175,7 @@ function renderWheel(rootSel, activity, opts = {}) {
   const mandosOpt = /** @type {HTMLElement|null} */ (root?.querySelector('[data-ab-mandos]') ?? null);
   const panelOpt = root?.querySelector('[data-ab-panel]') ?? null;
   if (!ruedaOpt || !mandosOpt || !panelOpt) return;   // el marco no llegó a montarse (§23)
+  ctx.listo();   // la superficie ya existe: el shell arranca su reloj (§23)
   const rueda = ruedaOpt, mandos = mandosOpt, panel = panelOpt;
 
   /** Los índices que quedan por salir. @returns {number[]} */

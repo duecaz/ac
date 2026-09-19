@@ -2,10 +2,9 @@
 
 > **Tipo**: plan · **Sube a**: [`docs/leyes.md`](leyes.md) §23 · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha); al ejecutarlo, las nueve puertas de §5
 
-> Frente abierto el 2026-09-18, al cerrar la campaña del remontado del DOM
-> (`REHACEN_EL_MARCO` vacía, v1.51.727). **Este doc es el PLAN: la medición ya
-> está hecha, el código NO se ha tocado.** Se ejecuta cuando el dueño lo
-> apruebe, y lo primero que se escribe entonces son las pruebas en ROJO.
+> Frente abierto el 2026-09-18 al cerrar la campaña del remontado del DOM
+> (`REHACEN_EL_MARCO` vacía, v1.51.727), aprobado por el dueño y **EJECUTADO en
+> v1.51.729**. Lo que sigue es el plan tal como se aprobó; el resultado, en §7.
 
 ## 0 · Por qué es un frente y no un arreglo
 
@@ -147,3 +146,37 @@ El ANTES/DESPUÉS **de cada caso de §1 y de cada puerta de §5** —no «prefli
 verde»—, la lista completa de ficheros tocados, y el cuadro de §3b actualizado si
 el diseño se movió. Si alguna puerta obliga a cambiar el diseño, se escribe el
 porqué aquí antes de cambiarlo.
+
+
+## 7 · EJECUTADO (v1.51.729)
+
+Las nueve puertas viven en `tests/reloj.test.mjs` (G1-G7, G9) y en
+`tools/matrix-smoke.mjs` (G8). **Todas se escribieron antes del arreglo y se
+vieron en ROJO**; G6 nació verde a propósito, porque vigila lo que ya estaba
+bien.
+
+| Puerta | Antes | Después |
+|---|---|---|
+| G1 · secuencial nuevo | el primer valor no llegaba a la cabecera | `0:00` al montar |
+| G2 · secuencial F5 | cabecera «1 / 3» + reloj en `0:00` | «2 / 3» y `0:37` de nacimiento |
+| G3 · libre nuevo | el reloj pintaba contra el vacío | `0:00` al decir el player que existe |
+| G4 · libre F5 | HUD `0:00` · `timeUsed` 42 s | `0:37` y 42 s, mismo origen |
+| G5 · desfase +10 s | (no restauraba, y traducir mal daba `0:40`) | `0:30` y 30 s · Live sigue con hora común |
+| G6 · cuenta por ítem | ya era correcto | sigue: cada ítem estrena su límite |
+| G7 · cuenta de partida + F5 | volvía a **180** | **120** |
+| G8 · Tildes/Comas | (el rearme no se medía) | un solo reloj · 60 s por frase · apagado al corregir |
+| G9 · propiedad | `textCorrectionSolo` montaba el suyo + `reloj:false` | solo el shell monta; la puerta ya no existe |
+
+**Lo que cambió de sitio la autoridad**
+
+- `startElapsedTicker` y `startDeadlineTicker` aceptan `now`, **con `serverNow`
+  de defecto**: Live no se entera y Solo inyecta `clock.now`.
+- `montarReloj` recibe el ORIGEN y su fuente, y distingue las dos cuentas atrás
+  por la unidad declarada (`alcanceDeReloj`): la de unidad estrena tiempo, la de
+  partida se ancla al origen y lo recalcula en cada tic — nunca un «restante»
+  cerrado al montar, que es como se separaría de `timeUsed`.
+- El shell secuencial **restaura antes de montar** y arranca el reloj después.
+- El shell libre gana la fase que le faltaba: `ctx.listo()` («mi superficie ya
+  existe»), y los verbos `rearmarReloj()` / `pararReloj()` para una unidad más
+  pequeña que la partida. `{ reloj:false }` se borró.
+- Los 12 callers del shell libre dicen `ctx.listo()`; olvidarlo rompe CI.

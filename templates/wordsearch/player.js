@@ -71,6 +71,7 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
   }
 
   mount(rootSel, html`<div class="ww-ws" data-ws="marco">${cabeceraHtml({ pagina: `0 / ${total}` })}</div>`);
+  ctx.listo();   // la superficie ya existe: el shell arranca su reloj (§23)
   const marco = $('[data-ws="marco"]', rootEl());
   if (!marco) return;   // la ruta cambió mientras se montaba (§23)
 

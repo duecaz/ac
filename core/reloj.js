@@ -36,7 +36,7 @@
 // ese primitivo (§22-5).
 import { getTemplate } from './registry.js';
 import { createCountdown } from './soloTimer.js';
-import { startElapsedTicker } from './deadlineTicker.js';
+import { startElapsedTicker, startDeadlineTicker } from './deadlineTicker.js';
 import { serverNow } from './serverNow.js';
 import { GameEvents, emitGame } from './gameEvents.js';
 
@@ -55,6 +55,30 @@ export function relojDe(activity, T = getTemplate(activity?.template)) {
   if (limite > 0) return { tipo: 'cuenta', segundos: limite };
   if (!admiteCrono(T)) return { tipo: 'ninguno', segundos: 0 };
   return { tipo: 'crono', segundos: 0 };
+}
+
+/** UNIDADES QUE SON TODA LA EJECUCIÓN. La plantilla declara su unidad
+ *  (`meta.play.reloj.unidad`) y de ahí sale el comportamiento al REANUDAR, que
+ *  es lo que el dueño decidió el 2026-09-18: un límite de TODA la partida no se
+ *  regala con un F5 —Memoria con 180 s vuelve con los que quedaban—, mientras
+ *  que un límite por ítem o por frase estrena su tiempo cada vez, porque la
+ *  unidad empieza de nuevo. Se clasifica la PALABRA declarada, no el nombre de
+ *  la plantilla; una unidad nueva sin clasificar rompe `tests/reloj.test.mjs`,
+ *  que es cuando toca decidir a cuál de las dos familias pertenece. */
+const UNIDADES_DE_PARTIDA = new Set(['partida', 'diagrama', 'sopa']);
+
+/** DE QUIÉN es el reloj de esta actividad: de toda la ejecución o de la unidad
+ *  que esté en pantalla. Lo preguntan los shells para saber si `rearmar` tiene
+ *  sentido y si la cuenta se ancla a un origen.
+ *  @param {import('../kernel/contracts/activity.js').Activity|null|undefined} activity
+ *  @param {import('./registry.js').PlantillaRegistrada|null} [T]
+ *  @returns {'partida'|'unidad'|'ninguno'} */
+export function alcanceDeReloj(activity, T = getTemplate(activity?.template)) {
+  const cfg = relojDe(activity, T);
+  if (cfg.tipo === 'ninguno') return 'ninguno';
+  if (cfg.tipo === 'crono') return 'partida';       // el cronómetro mide la partida
+  const u = unidadDeCuenta(T);
+  return u && UNIDADES_DE_PARTIDA.has(u) ? 'partida' : 'unidad';
 }
 
 /** ¿Esta PLANTILLA admite cuenta atrás? Lo DECLARA ella (`meta.play.reloj`), y
@@ -94,15 +118,25 @@ function admiteCrono(T) {
  * Monta el reloj que toque y devuelve `{ tipo, stop }`.
  * `activity` dice QUÉ reloj toca (rules.timer + la plantilla); `pintar` es dónde
  * se ve (el `pct` solo tiene sentido en la cuenta atrás, y en el cronómetro es
- * null); `alive` es el guard de escenario (§23: un tick tardío no pinta); `desde`
- * el instante de inicio del ascendente (serverNow()); `onFin`, que se acabó el
- * tiempo (solo cuenta atrás).
+ * null); `alive` es el guard de escenario (§23: un tick tardío no pinta);
+ * `desde` el ORIGEN de la partida —el mismo del que sale `timeUsed`, para que
+ * el número que se ve y el que se guarda no puedan divergir—; `ahora`, la
+ * fuente de tiempo de esa misma base; `onFin`, que se acabó el tiempo.
+ *
+ * DOS CUENTAS ATRÁS, según la unidad que declara la plantilla:
+ *   · de UNIDAD (pregunta · operación · frase) → duración desde ya, y cada
+ *     unidad nueva estrena su tiempo entero;
+ *   · de PARTIDA (partida · diagrama · sopa) → anclada al ORIGEN, así que un F5
+ *     vuelve con lo que quedaba en vez de regalar el límite otra vez. No se
+ *     calcula el restante una sola vez al montar: cada tic lo deriva del origen,
+ *     que es la única forma de que no se separe de `timeUsed`.
  * @param {{activity?: import('../kernel/contracts/activity.js').Activity|null,
  *   pintar?: (texto: string, pct: number|null) => void,
- *   alive?: () => boolean, desde?: number, onFin?: () => void}} [o]
+ *   alive?: () => boolean, desde?: number, ahora?: () => number,
+ *   onFin?: () => void}} [o]
  * @returns {{tipo: string, stop: () => void}}
  */
-export function montarReloj({ activity, pintar, alive = () => true, desde, onFin } = {}) {
+export function montarReloj({ activity, pintar, alive = () => true, desde, ahora = serverNow, onFin } = {}) {
   const nada = { tipo: 'ninguno', stop: () => {} };
   const cfg = relojDe(activity);
   if (typeof pintar !== 'function' || cfg.tipo === 'ninguno') return nada;
@@ -113,6 +147,24 @@ export function montarReloj({ activity, pintar, alive = () => true, desde, onFin
   // que acordarse en cada llamante.
   if (typeof document === 'undefined') return nada;
 
+  const TIC_DESDE = 5;
+  if (cfg.tipo === 'cuenta' && alcanceDeReloj(activity) === 'partida' && typeof desde === 'number') {
+    // ANCLADA AL ORIGEN: el límite es de la partida entera, así que lo que queda
+    // se deriva del mismo instante del que sale `timeUsed`. `startDeadlineTicker`
+    // es el primitivo de «hasta un instante» (§23) y aquí el instante es LOCAL,
+    // por eso se le inyecta `ahora`.
+    const totalMs = cfg.segundos * 1000;
+    const t = startDeadlineTicker({
+      deadline: desde + totalMs, totalMs, everyMs: 1000, now: ahora, while: alive,
+      onTick: ({ remainSec, pct }) => {
+        pintar(String(Math.max(0, remainSec)), pct);
+        if (remainSec > 0 && remainSec <= TIC_DESDE) emitGame(GameEvents.TICK, { remainSec });
+      },
+      onExpire: () => { if (alive()) onFin?.(); },
+    });
+    return { tipo: 'cuenta', stop: t.stop };
+  }
+
   if (cfg.tipo === 'cuenta') {
     const total = cfg.segundos;
     // TIC-TAC en los últimos segundos. `core/sounds.js` llevaba desde el
@@ -120,7 +172,6 @@ export function montarReloj({ activity, pintar, alive = () => true, desde, onFin
     // (barrido B4, 2026-09-02): el sonido existía, cargado y mudo. Lo emite el
     // dueño del reloj, que es el único que sabe cuánto queda, y solo en la
     // cuenta atrás: un cronómetro ascendente no apremia a nadie.
-    const TIC_DESDE = 5;
     const cuenta = createCountdown(total, {
       onTick: (quedan) => {
         if (!alive()) return;
@@ -136,7 +187,8 @@ export function montarReloj({ activity, pintar, alive = () => true, desde, onFin
   }
 
   const tick = startElapsedTicker({
-    since: desde ?? serverNow(),
+    since: desde ?? ahora(),
+    now: ahora,
     while: alive,
     onTick: ({ label }) => pintar(label, null),
   });

@@ -23,6 +23,12 @@ import { mmss } from './timings.js';
  * @param {()=>boolean} [o.while]  si devuelve false, el ticker se detiene solo
  *        (p.ej. "mientras la fase siga siendo 'question'"): evita que un reloj
  *        zombi repinte encima de la pantalla siguiente.
+ * @param {() => number} [o.now]  LA FUENTE DE TIEMPO, y es una frontera (§22-5):
+ *        por defecto la hora COMÚN (`serverNow`), que es lo que Live necesita
+ *        para que host y alumnos cuenten lo mismo. Un límite que vive dentro de
+ *        UN aparato —la partida de Individual— inyecta `clock.now` y así su
+ *        cuenta y su `timeUsed` leen el mismo tiempo. Se inyecta, no se cambia
+ *        el defecto: arreglar Solo tocando esto rompería el aula.
  * @param {(fn:()=>void, ms:number)=>number} [o.setIntervalFn]
  * @param {(id:number)=>void} [o.clearIntervalFn]
  *        scheduler inyectable → tests deterministas (y ctx.setInterval de las
@@ -31,7 +37,7 @@ import { mmss } from './timings.js';
  */
 export function startDeadlineTicker({
   deadline, totalMs = 0, everyMs = 250,
-  onTick, onExpire, while: keepGoing,
+  onTick, onExpire, while: keepGoing, now = serverNow,
   setIntervalFn = setInterval, clearIntervalFn = clearInterval,
 } = {}) {
   const endMs = deadline instanceof Date ? deadline.getTime()
@@ -46,7 +52,7 @@ export function startDeadlineTicker({
 
   const tick = () => {
     if (keepGoing && !keepGoing()) return stop();
-    const remainMs = Math.max(0, endMs - serverNow());
+    const remainMs = Math.max(0, endMs - now());
     const pct = totalMs > 0 ? Math.max(0, Math.min(100, 100 * remainMs / totalMs)) : 0;
     onTick?.({ remainMs, remainSec: Math.ceil(remainMs / 1000), pct });
     if (remainMs <= 0 && !expired) { expired = true; stop(); onExpire?.(); }
@@ -67,12 +73,15 @@ export function startDeadlineTicker({
  * @param {number} [o.everyMs=1000]
  * @param {(t:{elapsedSec:number,label:string})=>void} [o.onTick]
  * @param {()=>boolean} [o.while]
+ * @param {() => number} [o.now]  la fuente de tiempo — misma frontera que arriba:
+ *        hora COMÚN por defecto (el `started_at` de una sala lo estampó otro
+ *        aparato), `clock.now` cuando el origen es local y nunca sale de aquí.
  * @param {(fn:()=>void, ms:number)=>number} [o.setIntervalFn]
  * @param {(id:number)=>void} [o.clearIntervalFn]
  * @returns {{ stop: () => void }}
  */
 export function startElapsedTicker({
-  since, everyMs = 1000, onTick, while: keepGoing,
+  since, everyMs = 1000, onTick, while: keepGoing, now = serverNow,
   setIntervalFn = setInterval, clearIntervalFn = clearInterval,
 } = {}) {
   const startMs = since instanceof Date ? since.getTime()
@@ -83,8 +92,11 @@ export function startElapsedTicker({
   const stop = () => { if (handle != null) { clearIntervalFn(handle); handle = null; } };
   const tick = () => {
     if (keepGoing && !keepGoing()) return stop();
-    // `since` es el `started_at` de la SALA (lo estampó el profe) → hora común.
-    const elapsedSec = Number.isFinite(startMs) ? Math.max(0, Math.floor((serverNow() - startMs) / 1000)) : 0;
+    // El origen y el «ahora» tienen que ser de la MISMA base: el `started_at` de
+    // una SALA lo estampó otro aparato (hora común), y el de una partida
+    // Individual es de éste (`clock.now`). Mezclarlas mete el desfase del
+    // servidor dentro de la duración: con +10 s, 30 s jugados se leían 0:40.
+    const elapsedSec = Number.isFinite(startMs) ? Math.max(0, Math.floor((now() - startMs) / 1000)) : 0;
     onTick?.({ elapsedSec, label: mmss(elapsedSec * 1000, Math.floor) });
   };
   tick();

@@ -63,6 +63,7 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   let arrastre = null;
 
   mount(rootSel, buildLayout(leftLabels, rightLabels, pins, image, activity, pins.length));
+  ctx.listo();   // la superficie ya existe: el shell arranca su reloj (§23)
 
   // El marco puede no estar (la ruta cambió mientras se montaba, §23): se
   // comprueba UNA vez y desde aquí abajo las piezas ya no son nulas.
