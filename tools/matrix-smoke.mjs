@@ -30,6 +30,29 @@ const only = process.argv.slice(2);
 const { playRound, MECANICAS } = await import('./helpers/roundDrivers.mjs');
 const { medirLegibilidad } = await import('./helpers/legibilidad.mjs');
 const { conMarcoLleno } = await import('./helpers/marcoLleno.mjs');
+// LA CAJA DE UNA PIEZA (celda + una lengüeta por lado), traída de SU FUENTE —
+// `game/contornos.js`, que es quien la define y quien dibuja los contornos con
+// ella. No se copia el 1,6 aquí ni se lee `--pu-kx`/`--pu-ky` del navegador:
+// esas variables son la implementación que esta red juzga, y comprobar una
+// cuenta con la misma cuenta fue exactamente cómo el tablero de 385×116 pasó
+// por verde.
+const { CAJA: PZ_CAJA } = await import('../templates/puzzle/game/contornos.js');
+
+/** LAS TRES REJILLAS QUE EL PRODUCTO OFRECE (`meta.play.options.piezas`) y las
+ *  CUATRO ventanas del ciclo real de un móvil. 3×3 era la única que se medía —
+ *  y es la única donde filas y columnas valen lo mismo, es decir, la única
+ *  donde el defecto de v1.51.734 no podía aparecer. */
+const PZ_REJILLAS = [
+  { id: 'mx_puzzle_2x2', filas: 2, columnas: 2, etq: '4 piezas' },
+  { id: 'mx_puzzle_2x3', filas: 2, columnas: 3, etq: '6 piezas' },
+  { id: 'mx_puzzle_3x3', filas: 3, columnas: 3, etq: '9 piezas' },
+];
+const PZ_VENTANAS = [
+  { w: 1280, h: 800, etq: 'escritorio' },
+  { w: 390, h: 844, etq: 'móvil vertical' },
+  { w: 844, h: 390, etq: 'móvil tumbado' },
+  { w: 390, h: 844, etq: 'vertical otra vez' },
+];
 
 // Modos que esta matriz sabe conducir hoy. `live` cubre el LADO DEL HOST (crear
 // sala + lobby con PIN), que es donde vive la máquina de fases; el lado del alumno
@@ -210,9 +233,9 @@ const LIENZOS = await page.evaluate(async () => {
     .filter(([, d]) => d.colorBase).map(([n, d]) => [`bg-${n}`, d.colorBase]));
 });
 
-const seeded = await page.evaluate(async () => {
+const seeded = await page.evaluate(async (REJILLAS) => {
   await import('/core/registerTemplates.js');
-  const { listTemplates } = await import('/core/registry.js');
+  const { listTemplates, getTemplate } = await import('/core/registry.js');
   const storage = await import('/core/storage.js');
   const out = [];
   for (const T of listTemplates()) {
@@ -241,22 +264,20 @@ const seeded = await page.evaluate(async () => {
     try { storage.save(a); out.push({ name: m.name, label: m.label || m.name, id: a.id }); }
     catch (e) { out.push({ name: m.name, label: m.label || m.name, id: a.id, seedError: e.message }); }
   }
-  // UNA REJILLA NO CUADRADA, aparte de la siembra normal. El rompecabezas nace
-  // 3×3 y TODO lo que se midió de él se midió en 3×3 — la única forma en que
-  // filas y columnas valen lo mismo. Con «6 piezas» (2×3) el tablero salía
-  // 385×116 y la pieza 205×308: más alta que el tablero entero. No se juega
-  // (no hace falta): se monta, se mide y se sale.
-  {
-    const { getTemplate } = await import('/core/registry.js');
+  // LAS TRES REJILLAS DEL PRODUCTO, aparte de la siembra normal. El rompecabezas
+  // nace 3×3 y TODO lo que se midió de él se midió en 3×3 — la única forma en
+  // que filas y columnas valen lo mismo. Con «6 piezas» (2×3) el tablero salía
+  // 385×116 y la pieza 205×308: más alta que el tablero entero.
+  for (const r of REJILLAS) {
     const T = getTemplate('puzzle'), m = T.meta;
-    const a = { id: 'mx_puzzle_2x3', template: 'puzzle', title: 'Matriz · Rompecabezas 2×3',
+    const a = { id: r.id, template: 'puzzle', title: `Matriz · Rompecabezas ${r.filas}×${r.columnas}`,
       content: m.defaultContent(), rules: m.defaultRules(), scoring: m.defaultScoring(),
       updatedAt: new Date().toISOString() };
-    a.content.items[0].filas = 2; a.content.items[0].columnas = 3;
+    a.content.items[0].filas = r.filas; a.content.items[0].columnas = r.columnas;
     try { storage.save(a); } catch { /* lo dirá la red al no encontrar el tablero */ }
   }
   return out;
-});
+}, PZ_REJILLAS);
 
 // Modos que cada plantilla DECLARA soportar (misma fuente que el panel de modos).
 const caps = await page.evaluate(async () => {
@@ -678,55 +699,103 @@ for (const t of seeded) {
       // volver a meter un nombre en este Set es una decisión que hay que
       // escribir, no un descuido que se cuela.
       const REHACEN_EL_MARCO = new Set();
-      // LA PIEZA MIDE SU HUECO (rompecabezas). Medido antes de arreglarlo: 117
-      // px de pieza contra 234 de hueco en escritorio, 64 contra 191 en móvil.
-      // El dueño: «las piezas no están del mismo tamaño que donde encajan» —
-      // y comparar la pieza con el hueco ES el juego.
+      // ── EL ROMPECABEZAS SE MIDE ENTERO: 3 REJILLAS × 4 VENTANAS ─────────
+      // Esta red decía «ok (100 %)» con la pieza midiendo 308 px de alto y el
+      // tablero entero 116 (v1.51.733). Tres motivos, y los tres eran de la
+      // red: derivaba el hueco de `--pu-caja`/`--pu-columnas` —las mismas
+      // variables de las que sale el ancho de la pieza, o sea comparaba la
+      // cuenta consigo misma—, miraba un solo eje (el sano) y solo montaba 3×3,
+      // que es la única rejilla donde filas y columnas valen lo mismo y el
+      // defecto no puede aparecer.
+      //
+      // Ahora el ESPERADO no toca la implementación: `CAJA` viene de
+      // `game/contornos.js` (su fuente) y las filas/columnas de la actividad
+      // sembrada, que las sabemos porque las pusimos nosotros. Lo que se mide
+      // son rectángulos del navegador.
       if (mode === 'solo' && status === 'ok' && t.name === 'puzzle') {
-        // SE MIDE EL TABLERO QUE SE VE, no el que debería salir de la fórmula.
-        // Esta red decía «ok (100 %)» con la pieza midiendo 308 px de alto y el
-        // tablero entero 116, porque derivaba el hueco de `--pu-caja` y
-        // `--pu-columnas` —las mismas variables de las que sale el ancho de la
-        // pieza— y comparaba una cuenta consigo misma. Ahora el hueco sale del
-        // rectángulo REAL del tablero y se miran los DOS ejes: el alto era el
-        // roto, y el ancho salía bien en los dos casos.
-        const medirEscala = () => page.evaluate(() => {
-          const b = document.querySelector('.pu-board')?.getBoundingClientRect();
-          const p = document.querySelector('.pu-pieces .pu-piece')?.getBoundingClientRect();
+        /** @type {string[]} */
+        const rotas = [];
+        /** Filas FÍSICAS de la bandeja: se agrupan las piezas por su `top`
+         *  redondeado. Es el dato que dice si `flex-wrap` obedece el reparto
+         *  declarado (`--pu-por-fila`/`--pu-filas-bandeja`) o si hoy coincide
+         *  por casualidad, porque había sitio. */
+        const medir = (caja) => page.evaluate((CAJA) => {
           const play = document.querySelector('.pu-play');
-          if (!b || !p || !play) return { sin: true };
+          const boardEl = document.querySelector('.pu-board');
+          const marcoEl = document.getElementById('ww-frame');
+          if (!play || !boardEl || !marcoEl) return { sin: true };
+          const b = boardEl.getBoundingClientRect();
+          const marco = marcoEl.getBoundingClientRect();
+          const piezas = [...document.querySelectorAll('.pu-pieces .pu-piece')].map(e => e.getBoundingClientRect());
           const cs = getComputedStyle(play);
-          const columnas = Number(cs.getPropertyValue('--pu-columnas')) || 2;
-          const filas = Number(cs.getPropertyValue('--pu-filas')) || columnas;
-          const caja = Number(cs.getPropertyValue('--pu-caja')) || 1.6;
+          const csArena = getComputedStyle(document.querySelector('.pu-arena'));
+          const solapa = (r) => r.right > b.left + 1 && r.left < b.right - 1
+            && r.bottom > b.top + 1 && r.top < b.bottom - 1;
+          const fuera = (r) => r.left < marco.left - 2 || r.right > marco.right + 2
+            || r.top < marco.top - 2 || r.bottom > marco.bottom + 2;
+          // Las filas se AGRUPAN por cercanía, no por un redondeo a cubos: dos
+          // piezas de la misma fila con `top` 101,9 y 102,1 caían en cubos
+          // distintos y el arnés inventaba una fila (un arnés que cuenta mal da
+          // un rojo falso, que cuesta tanto como un verde falso).
+          const alto = piezas[0]?.height || 1;
+          const tops = piezas.map(r => r.top).sort((a, b) => a - b);
+          let filasFisicas = tops.length ? 1 : 0;
+          for (let i = 1; i < tops.length; i++) if (tops[i] - tops[i - 1] > alto / 2) filasFisicas++;
           return {
-            pctX: +(100 * p.width / ((b.width / columnas) * caja)).toFixed(0),
-            pctY: +(100 * p.height / ((b.height / filas) * caja)).toFixed(0),
-            // El tablero es CUADRADO por contrato (`aspect-ratio: 1/1`). Si sale
-            // aplastado es que alguien lo encogió, y entonces ninguna celda mide
-            // lo que la pieza cree.
-            board: `${Math.round(b.width)}×${Math.round(b.height)}`,
-            cuadrado: Math.abs(b.width - b.height) <= Math.max(2, b.width * 0.02),
-            filas, columnas,
+            bw: b.width, bh: b.height, n: piezas.length,
+            pw: piezas[0]?.width ?? 0, ph: piezas[0]?.height ?? 0,
+            pisan: piezas.filter(solapa).length,
+            fuera: piezas.filter(fuera).length,
+            filasFisicas,
+            // El desborde, en píxeles y no como un sí/no: medio píxel de
+            // redondeo y una pieza cortada por la mitad no son lo mismo.
+            desborde: Math.round(Math.max(0, ...piezas.map(r => Math.max(
+              marco.left - r.left, r.right - marco.right, marco.top - r.top, r.bottom - marco.bottom)))),
+            porFilaDeclarado: Number(csArena.getPropertyValue('--pu-por-fila')) || null,
+            filasBandejaDeclarado: Number(csArena.getPropertyValue('--pu-filas-bandeja')) || null,
+            // Lo que costaría un reparto: se cuenta, no se compensa a ojo.
+            gap: getComputedStyle(document.querySelector('.pu-pieces')).gap,
+            CAJA,
           };
-        });
-        const juzgar = (m, etq) => {
-          if (m.sin) return `${etq}: sin tablero o sin piezas`;
-          const fallos = [];
-          if (!m.cuadrado) fallos.push(`el tablero salió ${m.board} (tiene que ser cuadrado)`);
-          if (Math.abs(m.pctX - 100) > 3) fallos.push(`la pieza mide el ${m.pctX} % de su hueco de ANCHO`);
-          if (Math.abs(m.pctY - 100) > 3) fallos.push(`la pieza mide el ${m.pctY} % de su hueco de ALTO`);
-          return fallos.length ? `${etq} (${m.filas}×${m.columnas}): ${fallos.join(' · ')}` : '';
-        };
-        const malCuadrada = juzgar(await medirEscala(), 'rejilla cuadrada');
-        // Y LA REJILLA NO CUADRADA, que es donde vivía el defecto.
-        await page.evaluate(() => { location.hash = '#/mine'; });
-        await page.waitForTimeout(120);
-        await page.evaluate(() => { location.hash = '#/play/mx_puzzle_2x3'; });
-        await page.waitForSelector('[data-ww-start]', { timeout: 10000 }).catch(() => {});
-        await page.click('[data-ww-start]').catch(() => {});
-        await page.waitForTimeout(600);
-        const malRect = juzgar(await medirEscala(), '6 piezas');
+        }, caja);
+
+        /** @type {{rejilla: string, ventana: string, filas: number, fisicas: number|null, porFila: number|null}[]} */
+        const reparto = [];
+        for (const r of PZ_REJILLAS) {
+          await page.evaluate(() => { location.hash = '#/mine'; });
+          await page.waitForTimeout(120);
+          await page.evaluate(id => { location.hash = `#/play/${id}`; }, r.id);
+          await page.waitForSelector('[data-ww-start]', { timeout: 10000 }).catch(() => {});
+          await page.click('[data-ww-start]').catch(() => {});
+          await page.waitForTimeout(500);
+          for (const v of PZ_VENTANAS) {
+            await page.setViewportSize({ width: v.w, height: v.h });
+            await page.waitForTimeout(350);   // el CSS decide el tamaño; se le deja asentar
+            const m = await medir(PZ_CAJA);
+            const donde = `${r.etq} · ${v.etq}`;
+            if (m.sin) { rotas.push(`${donde}: no hay tablero ni marco montados`); continue; }
+            const total = r.filas * r.columnas;
+            // 1 · el tablero existe, tiene tamaño y es cuadrado
+            if (!(m.bw > 0 && m.bh > 0)) rotas.push(`${donde}: el tablero se quedó en ${Math.round(m.bw)}×${Math.round(m.bh)}`);
+            else if (Math.abs(m.bw - m.bh) > Math.max(2, m.bw * 0.02)) rotas.push(`${donde}: el tablero salió ${Math.round(m.bw)}×${Math.round(m.bh)} (tiene que ser cuadrado)`);
+            // 2 · están TODAS las piezas
+            if (m.n !== total) rotas.push(`${donde}: ${m.n} piezas en la bandeja (tenían que ser ${total})`);
+            // 3 y 4 · la pieza mide su hueco en los DOS ejes (esperado de CAJA)
+            if (m.n && m.bw > 0 && m.bh > 0) {
+              const espX = PZ_CAJA * m.bw / r.columnas, espY = PZ_CAJA * m.bh / r.filas;
+              const pctX = +(100 * m.pw / espX).toFixed(0), pctY = +(100 * m.ph / espY).toFixed(0);
+              if (Math.abs(pctX - 100) > 3) rotas.push(`${donde}: la pieza mide el ${pctX} % de su hueco de ANCHO`);
+              if (Math.abs(pctY - 100) > 3) rotas.push(`${donde}: la pieza mide el ${pctY} % de su hueco de ALTO`);
+            }
+            // 5 y 6 · ni fuera del marco ni encima del tablero
+            if (m.fuera) rotas.push(`${donde}: ${m.fuera} pieza(s) fuera del marco (hasta ${m.desborde} px)`);
+            if (m.pisan) rotas.push(`${donde}: ${m.pisan} pieza(s) de la bandeja encima del tablero`);
+            // EL REPARTO REAL, para el informe: no es veredicto todavía (ver abajo).
+            reparto.push({ rejilla: r.etq, ventana: v.etq, filas: m.filasBandejaDeclarado,
+              fisicas: m.filasFisicas, porFila: m.porFilaDeclarado });
+          }
+        }
+        await page.setViewportSize({ width: 1280, height: 800 });
         // Se vuelve a la sembrada normal: las redes de abajo miden ESE montaje.
         await page.evaluate(() => { location.hash = '#/mine'; });
         await page.waitForTimeout(120);
@@ -734,60 +803,20 @@ for (const t of seeded) {
         await page.waitForSelector('[data-ww-start]', { timeout: 10000 }).catch(() => {});
         await page.click('[data-ww-start]').catch(() => {});
         await page.waitForTimeout(600);
-        const mal = [malCuadrada, malRect].filter(Boolean).join(' · ');
-        if (mal) { status = 'error'; detail = `escala: ${mal}`; }
-        hits.push({ label: t.label, mode, control: 'la pieza mide su hueco (1:1, los dos ejes)', estado: mal || 'ok (3×3 y 2×3)', mal: !!mal });
-      }
-      // ── GIRAR EL TELÉFONO CON EL JUEGO YA VIVO (rompecabezas) ───────────
-      // La red de arriba mide el montaje RECIÉN hecho y a un solo tamaño, y por
-      // eso podía estar verde mientras un compañero reportaba (ronda 2026-09-18)
-      // «en el móvil cuando cambias a horizontal y vertical no se ve bien; un
-      // bug muy feo es que ya no está el molde para poner las piezas». El hueco
-      // no era el tamaño: era el CICLO —vertical → horizontal → vertical— sobre
-      // el mismo montaje, que ninguna suite recorría. Se mide en cada parada lo
-      // que el dedo necesita: que el tablero siga ahí, que estén las 9 piezas,
-      // que sigan midiendo su hueco y que ninguna se salga del marco.
-      if (mode === 'solo' && status === 'ok' && t.name === 'puzzle') {
-        const PARADAS = [
-          { label: 'móvil vertical', w: 390, h: 844 },
-          { label: 'móvil tumbado', w: 844, h: 390 },
-          { label: 'vertical otra vez', w: 390, h: 844 },
-        ];
-        /** @type {string[]} */
-        const rotas = [];
-        for (const p of PARADAS) {
-          await page.setViewportSize({ width: p.w, height: p.h });
-          await page.waitForTimeout(350);   // el CSS decide el tamaño; se le deja asentar
-          const m = await page.evaluate(() => {
-            const play = document.querySelector('.pu-play');
-            const b = document.querySelector('.pu-board')?.getBoundingClientRect();
-            const piezas = [...document.querySelectorAll('.pu-pieces .pu-piece')]
-              .map(e => e.getBoundingClientRect());
-            const marco = document.getElementById('ww-frame')?.getBoundingClientRect();
-            if (!play || !b || !piezas.length || !marco) return { sin: true };
-            const cs = getComputedStyle(play);
-            const columnas = Number(cs.getPropertyValue('--pu-columnas')) || 2;
-            const caja = Number(cs.getPropertyValue('--pu-caja')) || 1.6;
-            const hueco = (b.width / columnas) * caja;
-            const fuera = piezas.filter(r => r.right < marco.left - 1 || r.left > marco.right + 1
-              || r.bottom < marco.top - 1 || r.top > marco.bottom + 1).length;
-            return {
-              tablero: Math.round(b.width) > 0 && Math.round(b.height) > 0,
-              n: piezas.length, fuera,
-              pct: +(100 * piezas[0].width / hueco).toFixed(0),
-            };
-          });
-          if (m.sin) { rotas.push(`${p.label}: sin tablero o sin piezas`); continue; }
-          if (!m.tablero) rotas.push(`${p.label}: el tablero se quedó sin tamaño`);
-          if (m.n !== 9) rotas.push(`${p.label}: ${m.n} piezas (tenían que ser 9)`);
-          if (m.fuera) rotas.push(`${p.label}: ${m.fuera} pieza(s) fuera del marco`);
-          if (Math.abs(m.pct - 100) > 3) rotas.push(`${p.label}: la pieza mide el ${m.pct} % de su hueco`);
+
+        // EL REPARTO DE LA BANDEJA ES UNA PREDICCIÓN, y aquí se comprueba.
+        // `--pu-lado` presupuesta el alto contando `--pu-filas-bandeja` filas de
+        // piezas; si `flex-wrap` decide otra cosa, la cuenta es correcta sobre
+        // una bandeja que no existe. Que hoy coincida por espacio disponible no
+        // basta: se mide y se dice.
+        const desajustes = reparto.filter(x => x.fisicas !== null && x.filas !== null && x.fisicas !== x.filas);
+        for (const d of desajustes) {
+          rotas.push(`${d.rejilla} · ${d.ventana}: la bandeja presupuestó ${d.filas} fila(s) y el navegador puso ${d.fisicas}`);
         }
-        await page.setViewportSize({ width: 1280, height: 800 });
-        await page.waitForTimeout(200);
         const mal = rotas.join(' · ');
-        if (mal) { status = 'error'; detail = `girar el teléfono: ${mal}`; }
-        hits.push({ label: t.label, mode, control: 'girar el teléfono no rompe el tablero', estado: mal || 'ok (vertical → tumbado → vertical)', mal: !!mal });
+        if (mal) { status = 'error'; detail = `rompecabezas: ${mal}`; }
+        hits.push({ label: t.label, mode, control: 'rompecabezas: 3 rejillas × 4 ventanas (tablero · nº de piezas · pieza=hueco en los 2 ejes · dentro del marco · sin pisar · reparto real)',
+          estado: mal || `ok (${PZ_REJILLAS.length}×${PZ_VENTANAS.length} paradas, reparto declarado = real)`, mal: !!mal });
       }
       if (mode === 'solo' && status === 'ok' && TACTIL[t.name]) {
         const m = await page.evaluate((sel) => {

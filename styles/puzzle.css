@@ -60,14 +60,28 @@
      lo veía porque derivaba el hueco de estas mismas variables: comparaba la
      cuenta consigo misma, y solo en 3×3. */
   container-type: size;
+  /* LO QUE CUESTA REPARTIR, contado y no estimado. Estos tres números son los
+     MISMOS que usa la bandeja más abajo (por eso viven aquí y no ahí): si la
+     cuenta y la maquetación no comparten el número, la cuenta habla de una
+     bandeja que no existe. Antes el presupuesto restaba `2cqmin` de ancho y
+     `4cqmin` de alto —dos cifras a ojo— mientras la bandeja gastaba
+     `(por_fila − 1) · gap + 2 · padding`: con 4 piezas en escritorio las cuatro
+     pedían EXACTAMENTE el ancho disponible, los huecos no cabían, `flex-wrap`
+     bajaba una a una segunda fila que nadie había presupuestado y esa fila se
+     salía del marco hasta 111 px (medido, v1.51.735). */
+  --pu-gap: max(2px, .6cqmin);
+  --pu-pad: max(4px, 1cqmin);
+  --pu-hueco: 2cqmin;            /* el aire entre el tablero y la bandeja */
   --pu-kx: calc(var(--pu-caja) / var(--pu-columnas, 2));
   --pu-ky: calc(var(--pu-caja) / var(--pu-filas, var(--pu-columnas, 2)));
   --pu-lado: min(
-    calc((100cqw - 2cqmin) / (var(--pu-por-fila, 1) * var(--pu-kx))),
-    calc((100cqh - 4cqmin) / (1 + var(--pu-filas-bandeja, 1) * var(--pu-ky)))
+    calc((100cqw - (var(--pu-por-fila, 1) - 1) * var(--pu-gap) - 2 * var(--pu-pad))
+         / (var(--pu-por-fila, 1) * var(--pu-kx))),
+    calc((100cqh - var(--pu-hueco) - (var(--pu-filas-bandeja, 1) - 1) * var(--pu-gap) - 2 * var(--pu-pad))
+         / (1 + var(--pu-filas-bandeja, 1) * var(--pu-ky)))
   );
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2cqmin;
+  gap: var(--pu-hueco);
 }
 /* EN VERTICAL la bandeja se reparte en más filas: con la de apaisado (hasta 5
    por fila) el tablero se quedaba en 146 px en un móvil. El player declara las
@@ -127,12 +141,27 @@
      así que no puede ser contenedor de tamaño de sí mismo (ciclo). El `cqw`
      de las piezas cae en el `.pu-play` de fuera —ESTABLE, ver arriba—, que
      ya declara el eje en línea. */
-  display: flex; flex-wrap: wrap; align-content: center;
-  justify-content: center;
+  /* CUADRÍCULA EXPLÍCITA, no `flex-wrap`. El reparto (`--pu-por-fila` ×
+     `--pu-filas-bandeja`) entra en el presupuesto de `--pu-lado`, así que con
+     `flex-wrap` era una PREDICCIÓN: el navegador decidía por su cuenta cuántas
+     filas hacía y, cuando no coincidía, la cuenta seguía siendo correcta sobre
+     una bandeja imaginaria. Medido en v1.51.735, no coincidía casi nunca: 4
+     piezas presupuestaban 1 fila y salían 2; en móvil, 2 filas y salían 4; 9
+     piezas presupuestaban 3 y salían 5. Con `repeat(var(--pu-por-fila), auto)`
+     el número de columnas ES el declarado y las filas salen de dividir, así que
+     la fórmula y lo que se ve comparten estructura en vez de parecerse.
+     (Coste aceptado: si la última fila va incompleta, sus piezas quedan en sus
+     columnas en vez de centradas bajo el resto. En una bandeja de piezas
+     barajadas no molesta; un `justify-content` no lo arregla sin devolver la
+     posición al navegador, que es lo que se acaba de quitar.) */
+  display: grid;
+  grid-template-columns: repeat(var(--pu-por-fila, 1), auto);
+  justify-content: center; align-content: center;
   /* El hueco entre piezas es pequeño A PROPÓSITO: la caja ya lleva el aire
-     de las lengüetas (TAB por lado), que separa los núcleos de sobra. */
-  gap: max(2px, .6cqmin);
-  padding: max(4px, 1cqmin);
+     de las lengüetas (TAB por lado), que separa los núcleos de sobra. Los DOS
+     números salen de `.pu-arena`, que es quien los presupuesta. */
+  gap: var(--pu-gap);
+  padding: var(--pu-pad);
 }
 .pu-piece {
   /* EXACTAMENTE LO QUE MIDE SU HUECO: la celda del tablero más las lengüetas.
